@@ -1,0 +1,13 @@
+﻿# Dependencies and local tooling
+node_modules/
+.env
+.env.*
+!.env.example
+# Test output
+test-results/
+playwright-report/
+coverage/
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
