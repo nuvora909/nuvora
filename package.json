@@ -1,0 +1,18 @@
+{
+  "name": "nuvora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nuvora learning platform: website, student portal, database and automation",
+  "type": "module",
+  "scripts": {
+    "test:db": "node --test \"tests/db/*.test.mjs\"",
+    "test:db:3x": "node tests/run-3x.mjs \"tests/db/*.test.mjs\"",
+    "test:sabotage": "node tests/sabotage.mjs",
+    "seed": "node scripts/build-seed.mjs",
+    "test": "node --test \"tests/db/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0"
+  }
+}
