@@ -26,7 +26,7 @@ export async function teach(ctx) {
     <div class="content">
       ${batches.length ? html`<div class="grid2 even">${batches.map((b) => html`
         <section class="card" aria-labelledby="b-${b.id}">
-          <div class="spread"><div><h2 id="b-${b.id}">${b.code}</h2><p class="sub">${b.program}</p></div>
+          <div class="spread"><div><h2 id="b-${b.id}">${b.code}</h2><p class="sub">${b.program}<br>Term ${b.term}: ${b.term_title}</p></div>
             <span class="pill ${b.status === 'active' ? 'good' : 'info'}">${b.week ? `Week ${b.week} of ${b.weeks}` : `Starts ${fmtDate(b.starts_on)}`}</span></div>
           <div class="tiles" style="grid-template-columns:repeat(2,minmax(0,1fr))">
             <div class="tile"><b>${b.students}</b><span>Students</span></div>
@@ -120,7 +120,7 @@ export async function roster(ctx) {
   const b = r.batch;
   ctx.setTitle(`Roster ${b.code}`);
   ctx.render(html`
-    <header class="band"><div><p class="eyebrow"><a href="#/teach">Teaching</a> · ${b.program}</p><h1>${b.code} roster</h1>
+    <header class="band"><div><p class="eyebrow"><a href="#/teach">Teaching</a> · ${b.program} · Term ${b.term}</p><h1>${b.code} roster</h1>
       <p class="sub">${r.students.length} ${r.students.length === 1 ? 'student' : 'students'} · ${b.week ? `week ${b.week} of ${b.weeks}` : `starts ${fmtDate(b.starts_on)}`}</p></div>
       <a class="btn ghost" href="#/grading?batch=${b.id}">${icon('grade')} Grade this batch</a></header>
     <div class="content"><section class="card">

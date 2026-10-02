@@ -36,7 +36,18 @@ function wireDownloads(root) {
   }
 }
 
-function notEnrolledView(nextStart) {
+// Between terms: the next term's seat is held, but opens only once the enrollment is confirmed.
+function reservedView(reserved) {
+  return html`<header class="band"><div><h1>Your next term</h1><p class="sub">You finished your last term. Your seat in the next one is reserved.</p></div></header>
+  <div class="content">${reserved.map((r) => html`<section class="card empty" aria-labelledby="r-${r.id}">
+    <b id="r-${r.id}">Term ${r.term}: ${r.term_title} starts ${fmtDate(r.starts_on)}</b>
+    <p>${r.program} · <span class="mono">${r.code}</span></p>
+    <p class="small" style="margin-top:10px">Your seat is reserved. Lessons and live classes open here as soon as your enrollment for the term is confirmed.</p>
+  </section>`)}</div>`;
+}
+
+function notEnrolledView(nextStart, reserved = []) {
+  if (reserved.length) return reservedView(reserved);
   return html`<header class="band"><div><h1>Welcome to Nuvora</h1><p class="sub">You’re signed in, but not enrolled in a batch yet.</p></div></header>
   <div class="content"><section class="card empty">
     <b>You’re not enrolled in a batch yet</b>
@@ -47,9 +58,9 @@ function notEnrolledView(nextStart) {
 }
 
 async function requireBatch(ctx) {
-  await ctx.dashboard();
+  const d = await ctx.dashboard();
   const b = ctx.batch();
-  if (!b && !ctx.stale()) ctx.render(notEnrolledView(await rpc('next_start_date').catch(() => null)));
+  if (!b && !ctx.stale()) ctx.render(notEnrolledView(await rpc('next_start_date').catch(() => null), d.reserved));
   return b;
 }
 
@@ -59,7 +70,7 @@ export async function home(ctx) {
   if (ctx.stale()) return;
   if (!d.batches.length) {
     const next = await rpc('next_start_date').catch(() => null);
-    return ctx.render(notEnrolledView(next));
+    return ctx.render(notEnrolledView(next, d.reserved));
   }
   const b = ctx.batch();
   const pct = b.lessons_total ? Math.round((100 * b.lessons_completed) / b.lessons_total) : 0;
@@ -131,18 +142,20 @@ export async function course(ctx) {
   if (!b || ctx.stale()) return;
   const c = await rpc('my_course', { p_batch: b.id });
   if (ctx.stale()) return;
-  const all = c.modules.flatMap((m) => m.lessons);
+  // The batch's own term, plus earlier terms the student completed (kept for review).
+  const termModules = c.modules.filter((m) => m.current);
+  const all = termModules.flatMap((m) => m.lessons);
   const done = all.filter((l) => l.completed).length;
-  const current = c.modules.find((m) => m.lessons.some((l) => !l.completed)) ?? c.modules[0];
+  const current = termModules.find((m) => m.lessons.some((l) => !l.completed)) ?? termModules[0];
   ctx.setTitle(c.batch.program);
   ctx.render(html`
     <header class="band"><div><p class="eyebrow">${c.batch.code} · ${weekLabel(c.batch)}</p><h1>${c.batch.program}</h1>
-      <p class="sub">${done} of ${all.length} lessons complete · lessons count as complete at 90% watched</p></div></header>
+      <p class="sub">Term ${c.batch.term} of ${c.batch.terms}: ${c.batch.term_title} · ${done} of ${all.length} lessons complete · lessons count as complete at 90% watched</p></div></header>
     <div class="content">
       ${c.modules.map((m) => {
         const mDone = m.lessons.filter((l) => l.completed).length;
         return html`<details class="mod"${m.id === current?.id ? ' open' : ''}>
-          <summary><h2>Module ${m.position} · ${m.title}</h2><span class="row"><span class="pill ${mDone === m.lessons.length ? 'good' : ''}">${mDone}/${m.lessons.length} complete</span><span class="chev">${icon('next')}</span></span></summary>
+          <summary><h2>Term ${m.term} · ${m.title}</h2><span class="row">${m.current ? '' : html`<span class="pill good">${icon('check')} Completed term</span>`}<span class="pill ${mDone === m.lessons.length ? 'good' : ''}">${mDone}/${m.lessons.length} complete</span><span class="chev">${icon('next')}</span></span></summary>
           <div class="lessons">${m.lessons.map((l) => html`
             <a class="lesson" href="#/lesson/${l.id}">
               <span class="st ${l.completed ? 'done' : l.percent > 0 ? 'prog' : ''}" aria-hidden="true">${icon(l.completed ? 'checkc' : l.percent > 0 ? 'half' : 'circle')}</span>
@@ -162,7 +175,7 @@ export async function lesson(ctx) {
   ctx.setTitle(l.title);
   const resumeAt = !l.completed && l.last_position > 5 && l.last_position < l.duration - 5 ? l.last_position : 0;
   ctx.render(html`
-    <header class="band"><div><p class="eyebrow"><a href="#/course">My course</a> · Module ${l.module.position}: ${l.module.title}</p><h1>${l.title}</h1>
+    <header class="band"><div><p class="eyebrow"><a href="#/course">My course</a> · Term ${l.term.no}: ${l.term.title}</p><h1>${l.title}</h1>
       <p class="sub">${l.code} · Lesson ${l.index} of ${l.total} · ${l.kind === 'reading' ? 'Reading' : fmtMinutes(l.duration)}</p></div></header>
     <div class="content">
       ${l.can_track ? '' : html`<p class="okmsg" role="note">Preview mode: staff viewing isn’t recorded as progress.</p>`}
@@ -197,7 +210,7 @@ export async function lesson(ctx) {
   }
 
   const player = new DemoPlayer($('[data-player]', ctx.main), {
-    duration: l.duration, title: l.title, eyebrow: `${l.code} · Module ${l.module.position}`,
+    duration: l.duration, title: l.title, eyebrow: `${l.code} · Term ${l.term.no}`,
     start: resumeAt, watermark: ctx.me?.email ?? '',
   });
   let tracker = null;

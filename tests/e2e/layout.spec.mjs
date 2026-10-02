@@ -47,7 +47,7 @@ for (const size of [{ name: 'phone', width: 390, height: 844 }, { name: 'small p
       await checkPage(page, `${p} @${size.width}`);
     }
     await page.goto('/portal/#/course');
-    await page.locator('a.lesson').first().click();
+    await page.locator('details.mod[open] a.lesson').first().click();
     await checkPage(page, `lesson @${size.width}`);
     await page.screenshot({ path: `test-results/screens/lesson-${size.width}.png`, fullPage: true });
   });

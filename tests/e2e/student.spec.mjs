@@ -5,19 +5,20 @@ import { reset, sql, one, loginAs, watchErrors, ACCOUNTS } from './helpers.mjs';
 let demo;
 test.beforeEach(async ({ request }) => { demo = await reset(request); });
 
+// Lessons of Maya's current term (term 2 of B.S. AI & ML; she finished term 1 in the demo).
 const lessonIds = (request) => sql(request, `select l.id, l.title, l.duration_seconds d from lessons l join modules m on m.id = l.module_id
-                                             where m.program_id = 'bs-aiml' order by m.position, l.position`);
+                                             where m.program_id = 'bs-aiml' and m.term_no = 2 order by l.position`);
 
 test('dashboard shows the student\'s own batch with numbers that match the database', async ({ page, request }) => {
   const errors = watchErrors(page);
   await loginAs(page, 'student');
   const code = await one(request, `select code from batches where id = $1`, [demo.batch.current]);
   const held = await one(request, `select count(*)::int from sessions where batch_id = $1 and ends_at <= now()`, [demo.batch.current]);
-  const attended = await one(request, `select count(*)::int from attendance where student_id = $1`, [demo.id.student]);
+  const attended = await one(request, `select count(*)::int from attendance a join sessions s on s.id = a.session_id where a.student_id = $1 and s.batch_id = $2`, [demo.id.student, demo.batch.current]);
   await expect(page.getByRole('heading', { name: 'Welcome back, Maya' })).toBeVisible();
   await expect(page.locator('.band .eyebrow')).toContainText(code);
   const tiles = page.locator('.tile');
-  await expect(tiles.nth(0)).toContainText('3/16');
+  await expect(tiles.nth(0)).toContainText('2/4');
   await expect(tiles.nth(1)).toContainText(`${attended}/${held}`);
   await expect(tiles.nth(2)).toContainText('1/3');
   await expect(page.getByRole('region', { name: 'Continue watching' }).locator('a.item')).toHaveCount(1);
@@ -46,21 +47,23 @@ test('a student never sees another batch, program or staff page', async ({ page,
   expect(res).toBe(404);
 });
 
-test('course page lists every lesson with progress, and the current module is open', async ({ page }) => {
+test('course page lists the current term open, the completed term for review, and nothing beyond', async ({ page }) => {
   await loginAs(page, 'student');
   await page.locator('[data-nav="course"]').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('B.S. Artificial Intelligence & Machine Learning');
-  await expect(page.locator('a.lesson')).toHaveCount(16);
-  await expect(page.locator('a.lesson .st.done')).toHaveCount(3);
+  await expect(page.locator('a.lesson')).toHaveCount(8);
+  await expect(page.locator('a.lesson .st.done')).toHaveCount(6);
   await expect(page.locator('details.mod[open]')).toHaveCount(1);
-  await expect(page.locator('details.mod[open] summary')).toContainText('Module 1');
-  await expect(page.getByText('3 of 16 lessons complete')).toBeVisible();
+  await expect(page.locator('details.mod[open] summary')).toContainText('Term 2');
+  await expect(page.getByText(/Term 2 of 12: Mathematics for ML · 2 of 4 lessons complete/)).toBeVisible();
+  await expect(page.locator('details.mod summary').first()).toContainText('Completed term');
+  await expect(page.getByText('Term 3')).toHaveCount(0);
 });
 
 test('watching a lesson to 90% completes it; progress is saved as you watch', async ({ page, request }) => {
   const errors = watchErrors(page);
   const lessons = await lessonIds(request);
-  const l = lessons[3];                                              // 40% watched in the demo
+  const l = lessons[2];                                              // 40% watched in the demo
   await page.clock.install();
   await loginAs(page, 'student');
   await page.goto(`/portal/#/lesson/${l.id}`);
@@ -86,7 +89,7 @@ test('watching a lesson to 90% completes it; progress is saved as you watch', as
 
 test('skipping to the end of a video does not count as watching it', async ({ page, request }) => {
   const lessons = await lessonIds(request);
-  const l = lessons[4];                                              // not started
+  const l = lessons[3];                                              // not started
   await page.clock.install();
   await loginAs(page, 'student');
   await page.goto(`/portal/#/lesson/${l.id}`);
@@ -165,7 +168,7 @@ test('submitting an assignment: https links only, then it awaits review', async 
   await expect(page.getByText('Submitted. Your instructor will review it soon.')).toBeVisible();
   await expect(page.locator('section.assign').nth(1).locator('.pill').first()).toHaveText('Submitted · awaiting review');
   const saved = (await sql(request, `select link_url, note from submissions s join batch_assignments a on a.id = s.assignment_id
-                                     where s.student_id = $1 order by a.due_at`, [demo.id.student]))[1];
+                                     where s.student_id = $1 and a.batch_id = $2 order by a.due_at`, [demo.id.student, demo.batch.current]))[1];
   expect(saved).toEqual({ link_url: 'https://github.com/maya-demo/project-2', note: 'Model card is in the README.' });
   await expect(page.locator('section.assign').first().locator('.feedback')).toContainText('Proficient');
   expect(errors).toEqual([]);
