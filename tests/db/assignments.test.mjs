@@ -30,6 +30,14 @@ test('a student submits a link to their own batch\'s assignment', async () => {
 test('submissions need an https link or a file', async () => {
   await rejects(h.as(b)(`select submit_assignment($1, 'http://insecure.example')`, [task]), 'https://');
   await rejects(h.as(b)(`select submit_assignment($1, '  ', null)`, [task]), 'Add a link or a file');
+  await rejects(h.as(b)(`select submit_assignment($1, 'javascript:alert(1)')`, [task]), 'https://');
+});
+
+test('oversized links, notes and feedback are refused', async () => {
+  await rejects(h.as(b)(`select submit_assignment($1, $2)`, [task, 'https://x.io/' + 'a'.repeat(500)]), '500 characters');
+  await rejects(h.as(b)(`select submit_assignment($1, 'https://x.io', null, $2)`, [task, 'n'.repeat(2001)]), '2000');
+  await rejects(h.as(iOct)(`select grade_submission(gen_random_uuid(), 'basic', $1)`, ['f'.repeat(5001)]), '5000 characters');
+  assert.equal(await h.one(h.sql, `select count(*)::int from submissions where student_id = $1`, [b]), 0);
 });
 
 test('classmates cannot see each other\'s work', async () => {

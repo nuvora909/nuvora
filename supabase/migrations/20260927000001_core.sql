@@ -251,8 +251,8 @@ revoke all on all tables in schema public from anon, authenticated;
 
 -- Public catalog (the website can list programs and syllabi without signing in).
 grant select on public.programs, public.modules to anon, authenticated;
-grant select (id, module_id, position, code, title, kind, duration_seconds) on public.lessons to anon;
-grant select on public.lessons to authenticated;
+-- Video ids stay server-side: playback is authorised per student by the video service, never by id alone.
+grant select (id, module_id, position, code, title, kind, duration_seconds) on public.lessons to anon, authenticated;
 create policy catalog_programs_public on public.programs for select to anon using (active);
 create policy catalog_programs on public.programs for select to authenticated using (active or public.is_admin());
 create policy catalog_modules  on public.modules  for select using (true);
@@ -273,9 +273,12 @@ create policy profiles_read on public.profiles for select using (
 create policy profiles_update_self on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
 
 -- Batches and everything inside them: only people enrolled (active), their staff, or admins.
-grant select on public.batches, public.batch_staff, public.enrollments, public.sessions,
+grant select on public.batches, public.batch_staff, public.enrollments,
                 public.batch_assignments, public.submissions, public.lesson_progress, public.attendance
   to authenticated;
+-- Zoom links and recording ids are not readable directly: my_sessions() hands out a join link only
+-- from 15 minutes before a class until it ends, so links cannot be collected and shared in advance.
+grant select (id, batch_id, template_id, title, starts_at, ends_at, status) on public.sessions to authenticated;
 create policy batches_read     on public.batches           for select using (public.can_see_batch(id));
 create policy staff_read       on public.batch_staff       for select using (public.can_see_batch(batch_id));
 create policy sessions_read    on public.sessions          for select using (public.can_see_batch(batch_id));

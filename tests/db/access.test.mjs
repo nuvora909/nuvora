@@ -49,8 +49,11 @@ test('a signed-in user with no enrollment sees nothing', async () => {
 });
 
 test('join links of other batches never leak', async () => {
-  const { aOct } = ids;
-  assert.equal(await h.one(h.as(aOct), `select count(*)::int from sessions where join_url like '%secret%'`), 0);
+  const { aOct, nov } = ids;
+  await rejects(h.as(aOct)(`select join_url from sessions`), '42501');
+  await rejects(h.as(aOct)(`select my_sessions($1)`, [nov]), 'Batch not found');
+  const dash = await h.one(h.as(aOct), `select my_dashboard()`);
+  assert.equal(JSON.stringify(dash).includes('secret'), false);
 });
 
 test('signed-out visitors can read the public catalog but no batch data', async () => {

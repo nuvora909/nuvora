@@ -15,6 +15,18 @@ const CASES = [
   ['Classmates can read each other\'s work', 'assignments', 'alter table public.submissions disable row level security;'],
   ['Students can run the batch creator', 'batches', 'grant execute on function public.create_batch(text, date) to authenticated;'],
   ['Watch progress is visible to everyone', 'progress', 'alter table public.lesson_progress disable row level security;'],
+  ['Zoom links readable straight from the table', 'portal', 'grant select on public.sessions to authenticated;'],
+  ['Join links handed out days early', 'portal', `create or replace function public.my_sessions(p_batch uuid) returns jsonb language sql stable
+     security definer set search_path = public, pg_temp as $$ select coalesce(jsonb_agg(jsonb_build_object('id', id, 'join_url', join_url,
+     'phase', 'upcoming', 'has_recording', false) order by starts_at), '[]') from sessions where batch_id = (public.portal_batch(p_batch)).id $$;`],
+  ['Any instructor sees every grading queue', 'portal', `create or replace function public.staff_grading_queue(p_batch uuid default null) returns jsonb
+     language sql stable security definer set search_path = public, pg_temp as $$ select coalesce(jsonb_agg(jsonb_build_object('id', s.id,
+     'student', jsonb_build_object('email', p.email), 'attempt', s.attempt, 'previous_feedback', s.feedback)), '[]') from submissions s
+     join profiles p on p.id = s.student_id where s.status = 'submitted' $$;`],
+  ['Course PDFs downloadable by any signed-in user', 'materials', `create policy leak on storage.objects for select to authenticated using (bucket_id = 'course-files');`],
+  ['Students may upload files into course storage', 'materials', `create policy up on storage.objects for insert to authenticated with check (true);`],
+  ['A new function left open to visitors', 'privileges', `create function public.leak() returns int language sql as 'select 1';`],
+  ['A new table without row security', 'privileges', `create table public.leak (x int);`],
   ['Students can fake their own attendance', 'enrollment', 'grant execute on function public.record_attendance(uuid, text, timestamptz, timestamptz) to authenticated;'],
 ];
 

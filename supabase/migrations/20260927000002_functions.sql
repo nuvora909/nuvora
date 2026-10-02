@@ -178,6 +178,17 @@ begin
   if not public.is_admin() then raise exception 'Admins only' using errcode = '42501'; end if;
 end $$;
 
+-- Instructors and admins (by role), or anyone assigned to teach a batch.
+create function public.require_staff() returns void
+language plpgsql stable security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null
+     or not (exists (select 1 from public.profiles where id = auth.uid() and role in ('instructor','admin'))
+             or exists (select 1 from public.batch_staff where user_id = auth.uid())) then
+    raise exception 'Staff only' using errcode = '42501';
+  end if;
+end $$;
+
 create function public.admin_create_batch(p_program text, p_starts_on date) returns uuid
 language plpgsql security definer set search_path = public, pg_temp as $$
 begin
@@ -340,6 +351,9 @@ begin
   if p_link is not null and p_link !~* '^https://' then
     raise exception 'Links must start with https://' using errcode = '22023';
   end if;
+  if char_length(p_link) > 500 or char_length(p_file) > 500 or char_length(p_note) > 2000 then
+    raise exception 'Links are limited to 500 characters and notes to 2000' using errcode = '22001';
+  end if;
 
   select batch_id into bid from public.batch_assignments where id = p_assignment;
   if bid is null or not exists (select 1 from public.enrollments
@@ -373,6 +387,9 @@ declare s public.submissions; bid uuid;
 begin
   if p_grade not in ('distinguished','proficient','basic','not_yet') then
     raise exception 'Invalid grade %', p_grade using errcode = '22023';
+  end if;
+  if char_length(p_feedback) > 5000 then
+    raise exception 'Feedback is limited to 5000 characters' using errcode = '22001';
   end if;
   select * into s from public.submissions where id = p_submission;
   if not found then raise exception 'Unknown submission' using errcode = 'P0002'; end if;
@@ -471,7 +488,10 @@ begin
                               where m.program_id = b.program_id and lp.student_id = uid and lp.completed_at is not null),
         'next_sessions', coalesce((select jsonb_agg(x order by x->>'starts_at') from (
              select jsonb_build_object('id', s.id, 'title', s.title, 'starts_at', s.starts_at, 'ends_at', s.ends_at,
-                                       'join_url', s.join_url, 'status', s.status) as x
+                                       'status', s.status,
+                                       -- Real clock, not p_now: the caller must not be able to unlock links early.
+                                       'join_url', case when now() between s.starts_at - interval '15 minutes' and s.ends_at
+                                                        then s.join_url end) as x
              from public.sessions s where s.batch_id = b.id and s.ends_at > p_now and s.status <> 'cancelled'
              order by s.starts_at limit 3) q), '[]'::jsonb),
         'recordings', (select count(*) from public.sessions s where s.batch_id = b.id and s.recording_asset_id is not null),
@@ -508,9 +528,7 @@ returns table (student_id uuid, full_name text, email text, batch_code text, las
 language plpgsql stable security definer set search_path = public, pg_temp as $$
 #variable_conflict use_column
 begin
-  if auth.uid() is null or not (public.is_admin() or exists (select 1 from public.batch_staff bs where bs.user_id = auth.uid())) then
-    raise exception 'Staff only' using errcode = '42501';
-  end if;
+  perform public.require_staff();
   return query
     select p.id, p.full_name, p.email, b.code,
            coalesce(p.last_active_at, e.enrolled_at),

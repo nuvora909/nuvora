@@ -5,11 +5,14 @@
   "description": "Nuvora learning platform: website, student portal, database and automation",
   "type": "module",
   "scripts": {
-    "test:db": "node --test \"tests/db/*.test.mjs\"",
-    "test:db:3x": "node tests/run-3x.mjs \"tests/db/*.test.mjs\"",
-    "test:sabotage": "node tests/sabotage.mjs",
+    "dev": "node server/dev-server.mjs",
     "seed": "node scripts/build-seed.mjs",
-    "test": "node --test \"tests/db/*.test.mjs\""
+    "test": "node tests/run-3x.mjs",
+    "test:db": "node --test \"tests/db/*.test.mjs\"",
+    "test:server": "node --test \"tests/server/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "test:once": "node --test \"tests/db/*.test.mjs\" \"tests/server/*.test.mjs\" && playwright test",
+    "test:sabotage": "node tests/sabotage.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

@@ -1,39 +1,17 @@
 // Test harness: a fresh in-memory PostgreSQL with a Supabase-like auth layer, all migrations and the seed.
-import { PGlite } from '@electric-sql/pglite';
-import { readFileSync, readdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { after } from 'node:test';
+import { createDb, closeDb, runAs } from '../../server/localdb.mjs';
 
-const root = new URL('../../supabase/', import.meta.url);
-
-// Mirrors what Supabase provides: auth.users, auth.uid() from the request JWT, and the three API roles.
-const AUTH_STUB = `
-  create schema auth;
-  create table auth.users (id uuid primary key, email text unique, raw_user_meta_data jsonb not null default '{}');
-  create function auth.uid() returns uuid language sql stable as $$
-    select nullif(nullif(current_setting('request.jwt.claims', true), '')::json->>'sub', '')::uuid $$;
-  create role anon nologin;
-  create role authenticated nologin;
-  create role service_role nologin bypassrls;
-  grant usage on schema public, auth to anon, authenticated, service_role;
-  grant execute on function auth.uid() to anon, authenticated, service_role;
-`;
+// Close every database this test file opened, so the file's process can exit.
+after(() => closeDb());
 
 export async function freshDb() {
-  const db = new PGlite();
-  await db.exec(AUTH_STUB);
-  const files = readdirSync(new URL('migrations/', root)).filter((f) => f.endsWith('.sql')).sort();
-  for (const f of files) await db.exec(readFileSync(new URL(`migrations/${f}`, root), 'utf8'));
-  await db.exec(readFileSync(new URL('seed.sql', root), 'utf8'));
+  const db = await createDb();
   // Used only by tests/sabotage.mjs: deliberately breaks a rule to prove the tests notice.
   if (process.env.NUVORA_SABOTAGE_SQL) await db.exec(process.env.NUVORA_SABOTAGE_SQL);
 
-  // Run a query as a given role, the way Supabase's API does (SET ROLE + JWT claims, in one transaction).
-  const run = (role, claims) => async (sql, params = []) =>
-    db.transaction(async (tx) => {
-      await tx.exec(`set local role ${role}`);
-      await tx.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify(claims)]);
-      return tx.query(sql, params);
-    });
+  const run = (role, claims) => (sql, params = []) => runAs(db, role, claims, sql, params);
 
   const h = {
     db,
