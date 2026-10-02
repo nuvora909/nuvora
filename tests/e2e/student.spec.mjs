@@ -15,7 +15,7 @@ test('dashboard shows the student\'s own batch with numbers that match the datab
   const code = await one(request, `select code from batches where id = $1`, [demo.batch.current]);
   const held = await one(request, `select count(*)::int from sessions where batch_id = $1 and ends_at <= now()`, [demo.batch.current]);
   const attended = await one(request, `select count(*)::int from attendance a join sessions s on s.id = a.session_id where a.student_id = $1 and s.batch_id = $2`, [demo.id.student, demo.batch.current]);
-  await expect(page.getByRole('heading', { name: 'Welcome back, Maya' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Good (morning|afternoon|evening), Maya/ })).toBeVisible();
   await expect(page.locator('.band .eyebrow')).toContainText(code);
   const tiles = page.locator('.tile');
   await expect(tiles.nth(0)).toContainText('2/4');
