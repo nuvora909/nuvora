@@ -16,7 +16,9 @@ const patch = (signature, from, to = '') => `do $patch$ declare d text := pg_get
     d := replace(d, ${lit(f)}, ${lit(t)});`).join('')}
     execute d;
   end $patch$;`;
-const ANY_ENROLLMENT = `exists (select 1 from public.enrollments x where x.student_id = uid and x.program_id = m.program_id and x.status in ('active','completed'))`;
+const SEAT = 'request_seat(text,date,text,text,text,boolean,text,text,jsonb,text)';
+const const_seat = (name, sql) => [name, 'seat_requests', sql];
+const ANY_ENROLLMENT =`exists (select 1 from public.enrollments x where x.student_id = uid and x.program_id = m.program_id and x.status in ('active','completed'))`;
 
 const CASES = [
   ['Every student can see every batch', 'access', fn('can_see_batch(p_batch uuid) returns boolean', 'select true')],
@@ -53,6 +55,16 @@ const CASES = [
   ['A batch runs every term\'s classes and projects', 'terms', patch('create_batch(text,date,int)', 'and t.term_no = p_term')],
   ['Students progress without finishing the term', 'terms', patch('progress_terms(date)', 'and public.term_requirements_met(e.student_id, e.batch_id)')],
   ['Each daily run reserves another seat', 'terms', patch('progress_terms(date)', 'and xb.term_no > b.term_no)', 'and false)')],
+  // Seat requests from the website.
+  const_seat('Visitors can read seat requests', 'grant select on public.seat_requests to anon;'),
+  const_seat('Any signed-in user can list seat requests', patch('admin_seat_requests(text)', 'perform public.require_admin();')),
+  const_seat('Repeated requests are stored again', patch(SEAT, `and created_at > now() - interval '30 days'`, 'and false')),
+  const_seat('No daily limit per email', patch(SEAT, `interval '24 hours') >= 5 then`, `interval '24 hours') >= 500 then`)),
+  const_seat('Applications accepted after the apply-by date', patch('seat_start_problem(date,date)', 'when p_start - 7 < p_today', 'when p_start < p_today')),
+  const_seat('Requests accepted without consent', patch(SEAT, 'if p_consent is not true then', 'if false then')),
+  const_seat('Unknown answer keys stored', patch(SEAT, `where d.key not in ('role','goal','hours','coding','has_bachelor','match','score')
+                   or`, 'where')),
+  const_seat('Admins are not told about new requests', 'drop trigger seat_request_created on public.seat_requests;'),
 ];
 
 // Optional filter: node tests/sabotage.mjs <test file name> runs only the cases checked by that file.

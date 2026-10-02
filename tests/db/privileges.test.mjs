@@ -6,11 +6,12 @@ import assert from 'node:assert/strict';
 import { freshDb } from './helpers.mjs';
 
 // Functions each role may call. Everything else in `public` must be closed to them.
-const ANON_FUNCTIONS = ['first_monday', 'next_start_date'];
+// request_seat: the public website's "Request a seat" form (checks every field itself).
+const ANON_FUNCTIONS = ['first_monday', 'next_start_date', 'request_seat'];
 const AUTHENTICATED_FUNCTIONS = [
   // used inside security rules (can_read_material: the storage rule for PDF downloads)
   'can_read_material', 'can_see_batch', 'is_admin', 'my_active_batches', 'teaches',
-  'first_monday', 'next_start_date',
+  'first_monday', 'next_start_date', 'request_seat',
   // student actions and pages
   'record_progress', 'mark_reading_done', 'submit_assignment', 'my_dashboard', 'my_course', 'my_lesson',
   'my_sessions', 'my_assignments', 'my_notifications', 'mark_notifications_read', 'update_my_profile',
@@ -18,7 +19,7 @@ const AUTHENTICATED_FUNCTIONS = [
   'grade_submission', 'staff_at_risk', 'staff_overview', 'staff_grading_queue', 'staff_roster',
   // admin (each checks the admin role itself)
   'admin_create_batch', 'admin_enroll', 'admin_transfer', 'admin_set_enrollment_status', 'admin_set_role',
-  'admin_assign_staff', 'require_admin',
+  'admin_assign_staff', 'require_admin', 'admin_seat_requests', 'admin_update_seat_request',
 ].sort();
 
 // Tables (and for partial grants, the columns) each role may read or change.
@@ -53,7 +54,7 @@ const columns = async (role, table, priv) => {
   return ok.length === all.length ? '*' : ok;
 };
 
-test('visitors can call only the date helpers', async () => {
+test('visitors can call only the date helpers and the seat request form', async () => {
   assert.deepEqual(await callable('anon'), ANON_FUNCTIONS);
 });
 
