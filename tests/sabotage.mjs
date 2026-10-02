@@ -65,6 +65,19 @@ const CASES = [
   const_seat('Unknown answer keys stored', patch(SEAT, `where d.key not in ('role','goal','hours','coding','has_bachelor','match','score')
                    or`, 'where')),
   const_seat('Admins are not told about new requests', 'drop trigger seat_request_created on public.seat_requests;'),
+  // The student home: own data only, verified events only, the real clock for anything time-gated.
+  ['The caller\'s clock unlocks Zoom links on the home page', 'home', patch('batch_summary_json(batches,uuid,timestamptz)',
+    `when now() between s.starts_at - interval '15 minutes' and s.ends_at`, `when p_now between s.starts_at - interval '15 minutes' and s.ends_at`)],
+  ['The home page opens any batch', 'home', patch('my_home(uuid,timestamptz)', 'b := public.portal_batch(p_batch);', 'select * into b from public.batches where id = p_batch;')],
+  ['The streak is sent even when switched off', 'home', patch('my_home(uuid,timestamptz)', `'streak', case when me.show_streak then`, `'streak', case when true then`)],
+  ['Replaying a video counts as a learning day', 'home', patch('on_lesson_progress()', 'if added <= 0 and not finished then return new; end if;')],
+  ['Streaks survive two missed days', 'home', patch('streak_of(date[],date)', '>= day - 2', '>= day - 3')],
+  ['Submitting counts as passing', 'home', patch('achievements_json(uuid,text,timestamptz)',
+    `(select min(graded_at) from subs where grade in ('proficient','distinguished'))`, '(select min(submitted_at) from subs)')],
+  ['Badges without passing every project', 'home', patch('badges_json(uuid,text)', 'and public.term_requirements_met(p_user, b.id)')],
+  ['Achievements announced again on every event', 'home', patch('award_achievements(uuid)', `(x->>'ref')::uuid`, 'gen_random_uuid()')],
+  ['A finished lesson counts as mastered without its project', 'home', patch('gaps_json(uuid,text,text)',
+    `when lp.completed_at is not null and pj.passed then 'mastered'`, `when lp.completed_at is not null then 'mastered'`)],
 ];
 
 // Optional filter: node tests/sabotage.mjs <test file name> runs only the cases checked by that file.

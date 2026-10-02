@@ -86,6 +86,8 @@ export async function loadDemo(db) {
     const reserved = await one(db.query(`select id from public.enrollments where student_id = $1 and status = 'reserved'`, [id[s]]));
     await as(id.admin)(`select admin_set_enrollment_status($1, 'active')`, [reserved]);
   }
+  await db.query(`update public.enrollments set updated_at = (($2::date + 1) + time '09:00') at time zone 'Asia/Kolkata'
+                  where batch_id = $1`, [term1, t1.ends_on]);
 
   // ---------------------------------------------------------------- the current and next batches
   const current = await one(db.query(`select b.id from public.enrollments e join public.batches b on b.id = e.batch_id
@@ -169,6 +171,23 @@ export async function loadDemo(db) {
 
   await db.query(`update public.profiles set last_active_at = now() - interval '1 day' where id = $1`, [id.student]);
   await db.query(`update public.profiles set last_active_at = now() - interval '19 days' where id = $1`, [id.classmate]);
+
+  // Learning days, as the portal records them from verified events. The demo backdates its events, so the
+  // days are rebuilt from the stored timestamps, plus the days Maya watched parts of her current lessons
+  // over the last two weeks (the lesson rows keep only the latest).
+  await db.query(`delete from public.activity_days`);
+  await db.query(`insert into public.activity_days (user_id, day, watched_slices, lessons_completed, submissions, classes_attended)
+                  select user_id, day, sum(slices), sum(lessons), sum(subs), sum(classes) from (
+                    select student_id as user_id, learning_day(updated_at) as day, watched_seconds / 10 as slices, 0 as lessons, 0 as subs, 0 as classes
+                      from public.lesson_progress where watched_seconds > 0
+                    union all select student_id, learning_day(completed_at), 0, 1, 0, 0 from public.lesson_progress where completed_at is not null
+                    union all select student_id, learning_day(submitted_at), 0, 0, 1, 0 from public.submissions
+                    union all select student_id, learning_day(first_joined_at), 0, 0, 0, 1 from public.attendance
+                    union all select $1, learning_day(now()) - d, 24, 0, 0, 0 from unnest(array[1, 2, 4, 5, 6, 8, 9, 10, 12]) as d
+                  ) x group by user_id, day`, [id.student]);
+  // Maya's goal: ML Engineer. Leo has not chosen one (the portal suggests one for his program).
+  await as(id.student)(`select set_my_goal('ml-engineer')`);
+  for (const s of ['student', 'classmate', 'nextBatch', 'otherProgram']) await service(`select award_achievements($1)`, [id[s]]);
 
   return { batch, id, starts: { current: starts.cur, next: starts.nxt, term1: t1Start } };
 }

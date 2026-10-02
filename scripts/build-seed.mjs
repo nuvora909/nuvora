@@ -1,7 +1,10 @@
 // Builds supabase/seed.sql from scripts/catalog.mjs: programs, their terms, one module of four lessons per
-// term, the live-class pattern of every term and its three graded projects.
+// term, the live-class pattern of every term and its three graded projects; plus the career roles and the
+// skills each uses from the website's data (web/data), for the portal's goals and competency gaps.
 import { writeFileSync } from 'node:fs';
-import { PROGRAMS, TERMS, LIVE_PATTERN, TIMEZONE, CAPACITY } from './catalog.mjs';
+import { PROGRAMS, TERMS, PROJECT_FOR_LESSON, LIVE_PATTERN, TIMEZONE, CAPACITY } from './catalog.mjs';
+import { ROLES } from '../web/data/careers.mjs';
+import { PROGRAMS as WEB_PROGRAMS } from '../web/data/programs.mjs';
 
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
 // Deterministic lesson lengths between 18 and 36 minutes, so tests and demos are repeatable.
@@ -51,6 +54,30 @@ const projectRows = PROGRAMS.flatMap((p) => TERMS[p.id].flatMap((t, ti) => t.pro
   `  (${q(p.id)}, ${ti + 1}, ${q(projectTitle(title, i))}, ${q('Submit a link to your work (GitHub, notebook or document). Graded on the four-level mastery rubric.')}, ${days})`)));
 out.push('insert into public.assignment_templates (program_id, term_no, title, instructions, due_offset_days) values');
 out.push(projectRows.join(',\n') + ';', '');
+
+// Which project assesses each lesson (matched by its due day, which is unique within a term).
+const assessed = PROGRAMS.flatMap((p) => TERMS[p.id].flatMap((t, ti) => t.lessons.map((_, li) =>
+  `  (${q(p.id)}, ${ti + 1}, ${li + 1}, ${t.projects[PROJECT_FOR_LESSON[li]][1]})`)));
+out.push('update public.lessons l set assessed_by = t.id');
+out.push('from public.modules m, public.assignment_templates t, (values');
+out.push(assessed.join(',\n'));
+out.push(') as v(program_id, term_no, pos, due)');
+out.push('where m.id = l.module_id and v.program_id = m.program_id and v.term_no = m.term_no and v.pos = l.position');
+out.push('  and t.program_id = m.program_id and t.term_no = m.term_no and t.due_offset_days = v.due;', '');
+
+// Career roles, the skills each uses (with the lesson that teaches it), and the roles each program prepares
+// for, in the website's order (the first is the goal suggested to a student of that program).
+const roleIds = Object.keys(ROLES);
+const taught = new Set(PROGRAMS.flatMap((p) => TERMS[p.id].flatMap((t) => t.lessons.map(([code]) => code))));
+for (const [id, r] of Object.entries(ROLES)) {
+  for (const [, code] of r.skills) if (!taught.has(code)) throw new Error(`${id}: no program teaches ${code}`);
+}
+out.push('insert into public.career_roles (id, title, summary, position) values');
+out.push(roleIds.map((id, i) => `  (${q(id)}, ${q(ROLES[id].title)}, ${q(ROLES[id].summary)}, ${i + 1})`).join(',\n') + ';', '');
+out.push('insert into public.role_skills (role_id, position, skill, lesson_code) values');
+out.push(roleIds.flatMap((id) => ROLES[id].skills.map(([skill, code], i) => `  (${q(id)}, ${i + 1}, ${q(skill)}, ${q(code)})`)).join(',\n') + ';', '');
+out.push('insert into public.program_roles (program_id, role_id, position) values');
+out.push(WEB_PROGRAMS.flatMap((p) => p.roles.map((role, i) => `  (${q(p.id)}, ${q(role)}, ${i + 1})`)).join(',\n') + ';', '');
 
 writeFileSync(new URL('../supabase/seed.sql', import.meta.url), out.join('\n'));
 const terms = PROGRAMS.reduce((n, p) => n + TERMS[p.id].length, 0);

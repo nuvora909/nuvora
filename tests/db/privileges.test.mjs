@@ -15,6 +15,7 @@ const AUTHENTICATED_FUNCTIONS = [
   // student actions and pages
   'record_progress', 'mark_reading_done', 'submit_assignment', 'my_dashboard', 'my_course', 'my_lesson',
   'my_sessions', 'my_assignments', 'my_notifications', 'mark_notifications_read', 'update_my_profile',
+  'my_home', 'set_my_goal', 'set_streak_visibility',
   // staff
   'grade_submission', 'staff_at_risk', 'staff_overview', 'staff_grading_queue', 'staff_roster',
   // admin (each checks the admin role itself)
