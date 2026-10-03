@@ -29,7 +29,7 @@ const visible = async (user, table) =>
 
 test('a student sees only their own batch, its sessions and assignments', async () => {
   const { aOct, oct } = ids;
-  assert.deepEqual((await h.as(aOct)(`select code from batches`)).rows.map((r) => r.code), ['BSAIML-2026-10']);
+  assert.deepEqual((await h.as(aOct)(`select code from batches`)).rows.map((r) => r.code), ['BSAIML-T1-2026-10']);
   assert.deepEqual(await visible(aOct, 'sessions'), [oct]);
   assert.deepEqual(await visible(aOct, 'batch_assignments'), [oct]);
   assert.equal(await h.one(h.as(aOct), `select count(*)::int from sessions`), 24);
@@ -101,11 +101,11 @@ test('transferring a student switches their access immediately', async () => {
   await h.as(admin)(`select admin_transfer($1, $2)`, [eA, nov]);
   assert.deepEqual(await visible(aOct, 'sessions'), [nov]);
   const dash = await h.one(h.as(aOct), `select my_dashboard()`);
-  assert.deepEqual(dash.batches.map((b) => b.code), ['BSAIML-2026-11']);
+  assert.deepEqual(dash.batches.map((b) => b.code), ['BSAIML-T1-2026-11']);
 });
 
 test('the student dashboard only contains the caller\'s batches', async () => {
   const { cNone, dMsds } = ids;
   assert.deepEqual((await h.one(h.as(cNone), `select my_dashboard()`)).batches, []);
-  assert.deepEqual((await h.one(h.as(dMsds), `select my_dashboard()`)).batches.map((b) => b.code), ['MSDS-2026-10']);
+  assert.deepEqual((await h.one(h.as(dMsds), `select my_dashboard()`)).batches.map((b) => b.code), ['MSDS-T1-2026-10']);
 });

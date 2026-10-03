@@ -26,7 +26,7 @@ before(async () => {
   await h.as(admin)(`select admin_assign_staff($1, $2)`, [nov, iNov]);
   await h.sql(`update sessions set join_url = 'https://zoom.us/j/' || substr(md5(id::text), 1, 10)`);
   lessons = (await h.sql(`select l.id from lessons l join modules m on m.id = l.module_id
-                          where m.program_id = 'bs-aiml' order by m.position, l.position`)).rows.map((r) => r.id);
+                          where m.program_id = 'bs-aiml' and m.term_no = 1 order by l.position`)).rows.map((r) => r.id);
   octSessions = (await h.sql(`select id from sessions where batch_id = $1 order by starts_at`, [oct])).rows.map((r) => r.id);
 });
 
@@ -37,9 +37,9 @@ const startIn = (id, mins) => h.sql(`update sessions set starts_at = now() + mak
 test('course page lists every module and lesson with the student\'s own progress', async () => {
   await h.as(a)(`select record_progress($1, 0, 30)`, [lessons[0]]);
   const c = await h.one(h.as(a), `select my_course($1)`, [oct]);
-  assert.equal(c.batch.code, 'BSAIML-2026-10');
+  assert.equal(c.batch.code, 'BSAIML-T1-2026-10');
   assert.equal(c.batch.weeks, 12);
-  assert.equal(c.modules.flatMap((m) => m.lessons).length, 16);
+  assert.equal(c.modules.flatMap((m) => m.lessons).length, 4, 'only the lessons of the batch\'s term');
   assert.deepEqual(c.modules.map((m) => m.position), [...c.modules.keys()].map((i) => i + 1), 'modules in order');
   const first = c.modules[0].lessons[0];
   assert.equal(first.id, lessons[0]);
@@ -72,12 +72,12 @@ test('lesson page knows its neighbours and whether progress is tracked', async (
   assert.equal(first.prev, null);
   assert.equal(first.next.id, lessons[1]);
   assert.equal(first.index, 1);
-  assert.equal(first.total, 16);
+  assert.equal(first.total, 4);
   assert.equal(first.can_track, true);
   assert.equal(first.batch_id, oct);
-  const last = await h.one(h.as(a), `select my_lesson($1)`, [lessons[15]]);
+  const last = await h.one(h.as(a), `select my_lesson($1)`, [lessons[3]]);
   assert.equal(last.next, null);
-  assert.equal(last.prev.id, lessons[14]);
+  assert.equal(last.prev.id, lessons[2]);
   const preview = await h.one(h.as(iOct), `select my_lesson($1)`, [lessons[0]]);
   assert.equal(preview.can_track, false, 'staff preview is not counted');
   await rejects(h.as(d)(`select my_lesson($1)`, [lessons[0]]), 'Lesson not found');
@@ -172,7 +172,7 @@ test('students can rename themselves within limits, and nothing else', async () 
 
 test('staff overview shows only the batches a person teaches', async () => {
   const mine = await h.one(h.as(iOct), `select staff_overview()`);
-  assert.deepEqual(mine.map((x) => x.code), ['BSAIML-2026-10']);
+  assert.deepEqual(mine.map((x) => x.code), ['BSAIML-T1-2026-10']);
   assert.equal(mine[0].students, 2);
   assert.ok('next_session' in mine[0]);
   const all = await h.one(h.as(admin), `select staff_overview()`);
@@ -205,7 +205,7 @@ test('roster shows each student\'s progress to that batch\'s staff only', async 
   const asha = r.students.find((s) => s.email === 'asha@test.io');
   assert.equal(asha.attended, 1);
   assert.equal(asha.passed, 1);
-  assert.equal(r.lessons_total, 16);
+  assert.equal(r.lessons_total, 4);
   await rejects(h.as(iNov)(`select staff_roster($1)`, [oct]), 'Batch not found');
   await rejects(h.as(iOct)(`select staff_roster(gen_random_uuid())`), 'Batch not found');
 });

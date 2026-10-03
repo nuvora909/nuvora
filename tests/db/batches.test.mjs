@@ -26,9 +26,10 @@ test('monthly job creates one batch per program with its full schedule, and is s
   assert.equal(await h.one(h.service, `select create_monthly_batches('2026-11-01')`), 7);
   assert.equal(await h.one(h.service, `select create_monthly_batches('2026-11-01')`), 0, 'second run creates nothing');
   assert.equal(await h.one(h.sql, `select count(*)::int from batches`), 7);
+  assert.equal(await h.one(h.sql, `select count(*)::int from batches where term_no <> 1`), 0, 'new students start in term 1');
 
-  const b = (await h.sql(`select * from batches where code = 'BSAIML-2026-11'`)).rows[0];
-  assert.ok(b, 'batch code follows PROGRAM-YYYY-MM');
+  const b = (await h.sql(`select * from batches where code = 'BSAIML-T1-2026-11'`)).rows[0];
+  assert.ok(b, 'batch code follows PROGRAM-Tn-YYYY-MM');
   assert.equal(await h.one(h.sql, `select starts_on::text from batches where id = $1`, [b.id]), '2026-11-02');
   assert.equal(await h.one(h.sql, `select ends_on::text from batches where id = $1`, [b.id]), '2027-01-24');
   assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1`, [b.id]), 24);

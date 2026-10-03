@@ -36,6 +36,21 @@ async function checkPage(page, label) {
   expect(noAlt, `${label}: images have alt text`).toBe(0);
 }
 
+// The home page's cards (rings, next step, targets, streak, achievements, badges, skills, terms) must all
+// be there and sit inside the screen.
+async function checkHome(page, label) {
+  await expect(page.locator('main .btn.gold'), `${label}: one main action`).toHaveCount(1);
+  const cards = await page.locator('[data-home-card]').evaluateAll((els) => els.map((el) => {
+    const r = el.getBoundingClientRect();
+    return { id: el.getAttribute('aria-labelledby'), left: r.left, right: r.right, width: r.width };
+  }));
+  expect(cards.map((c) => c.id), `${label}: home cards`).toEqual(['h-next', 'h-path', 'h-today', 'h-streak', 'h-upcoming', 'h-progress',
+    'h-terms', 'h-cw', 'h-due', 'h-ach', 'h-badges', 'h-gaps']);
+  const vw = page.viewportSize().width;
+  for (const c of cards) expect(c.left >= 0 && c.right <= vw + 1 && c.width > 200, `${label}: ${c.id} fits (${c.left}-${c.right} of ${vw})`).toBe(true);
+  await expect(page.getByRole('img', { name: /^Learning path \d+% complete$/ })).toBeVisible();
+}
+
 for (const size of [{ name: 'phone', width: 390, height: 844 }, { name: 'small phone', width: 320, height: 640 }, { name: 'tablet', width: 820, height: 1180 }]) {
   test(`student pages fit a ${size.name} screen (${size.width}px)`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
@@ -45,9 +60,13 @@ for (const size of [{ name: 'phone', width: 390, height: 844 }, { name: 'small p
     for (const p of PAGES) {
       await page.goto(`/portal/${p}`);
       await checkPage(page, `${p} @${size.width}`);
+      if (p === '#/home') {
+        await checkHome(page, `home @${size.width}`);
+        await page.screenshot({ path: `test-results/screens/home-${size.width}.png`, fullPage: true });
+      }
     }
     await page.goto('/portal/#/course');
-    await page.locator('a.lesson').first().click();
+    await page.locator('details.mod[open] a.lesson').first().click();
     await checkPage(page, `lesson @${size.width}`);
     await page.screenshot({ path: `test-results/screens/lesson-${size.width}.png`, fullPage: true });
   });
@@ -86,6 +105,8 @@ test('dark mode uses the dark palette', async ({ page }) => {
 
 test('desktop screenshots for review', async ({ page }) => {
   await loginAs(page, 'student');
+  await checkPage(page, 'home @1366');
+  await checkHome(page, 'home @1366');
   await page.screenshot({ path: 'test-results/screens/home-desktop.png', fullPage: true });
   await page.goto('/portal/#/assignments');
   await page.screenshot({ path: 'test-results/screens/assignments-desktop.png', fullPage: true });

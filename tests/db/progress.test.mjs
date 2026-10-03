@@ -12,7 +12,7 @@ before(async () => {
   await h.service(`select enroll_student($1, 'bs-aiml', '2026-10-05')`, [a]);
   await h.service(`select enroll_student($1, 'bs-aiml', '2026-10-05')`, [b]);
   const row = (await h.sql(`select l.id, l.duration_seconds from lessons l join modules m on m.id = l.module_id
-                           where m.program_id = 'bs-aiml' and l.code = 'ML-210'`)).rows[0];
+                           where m.program_id = 'bs-aiml' and l.code = 'PRG-120'`)).rows[0];
   lesson = row.id; dur = row.duration_seconds;
   otherLesson = await h.one(h.sql, `select l.id from lessons l join modules m on m.id = l.module_id where m.program_id = 'ms-ds' limit 1`);
 });
@@ -66,7 +66,7 @@ test('students cannot record progress for lessons outside their program', async 
 test('the dashboard reflects completed lessons and "continue watching"', async () => {
   const dash = await h.one(h.as(a), `select my_dashboard()`);
   assert.equal(dash.batches[0].lessons_completed, 1);
-  assert.equal(dash.batches[0].lessons_total, 16);
+  assert.equal(dash.batches[0].lessons_total, 4, 'the lessons of the batch\'s term');
   assert.deepEqual(dash.continue_watching, [], 'finished lessons leave the list');
 
   await h.as(b)(`select record_progress($1, 0, 30, 30)`, [lesson]);

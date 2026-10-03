@@ -36,50 +36,224 @@ function wireDownloads(root) {
   }
 }
 
-function notEnrolledView(nextStart) {
+// Between terms: the next term's seat is held, but opens only once the enrollment is confirmed.
+function reservedView(reserved) {
+  return html`<header class="band"><div><h1>Your next term</h1><p class="sub">You finished your last term. Your seat in the next one is reserved.</p></div></header>
+  <div class="content">${reserved.map((r) => html`<section class="card empty" aria-labelledby="r-${r.id}">
+    <b id="r-${r.id}">Term ${r.term}: ${r.term_title} starts ${fmtDate(r.starts_on)}</b>
+    <p>${r.program} · <span class="mono">${r.code}</span></p>
+    <p class="small" style="margin-top:10px">Your seat is reserved. Lessons and live classes open here as soon as your enrollment for the term is confirmed.</p>
+  </section>`)}</div>`;
+}
+
+function notEnrolledView(nextStart, reserved = []) {
+  if (reserved.length) return reservedView(reserved);
   return html`<header class="band"><div><h1>Welcome to Nuvora</h1><p class="sub">You’re signed in, but not enrolled in a batch yet.</p></div></header>
   <div class="content"><section class="card empty">
     <b>You’re not enrolled in a batch yet</b>
     <p>New batches of every program start on the first Monday of each month.${nextStart ? html` The next one starts on <b>${fmtDate(nextStart)}</b>.` : ''}</p>
-    <p class="row" style="justify-content:center;margin-top:14px"><a class="btn primary" href="/#programs">Explore programs</a><a class="btn ghost" href="/#admissions">How admission works</a></p>
+    <p class="row" style="justify-content:center;margin-top:14px"><a class="btn primary" href="/programs/">Explore programs</a><a class="btn ghost" href="/admissions/">How admission works</a></p>
     <p class="small" style="margin-top:14px">Already paid? Your batch appears here within a few minutes. If it doesn’t, reply to your payment email.</p>
   </section></div>`;
 }
 
 async function requireBatch(ctx) {
-  await ctx.dashboard();
+  const d = await ctx.dashboard();
   const b = ctx.batch();
-  if (!b && !ctx.stale()) ctx.render(notEnrolledView(await rpc('next_start_date').catch(() => null)));
+  if (!b && !ctx.stale()) ctx.render(notEnrolledView(await rpc('next_start_date').catch(() => null), d.reserved));
   return b;
 }
 
 // ---------------------------------------------------------------- home
+// The home page: learning path, next step, today's targets, streak, achievements, skill badges and the
+// competency gaps for the student's goal. All of it comes from one database call, my_home().
+//
+// GUARDRAILS for everything on this page that recognises progress (the same list is at the top of
+// supabase/migrations/20261002000007_learning_path.sql; keep the two in sync):
+//   * Recognise only verified learning: watched video slices, completed lessons, graded projects, attended
+//     live classes. Never sign-ins, clicks or time on a page. The database derives every number shown.
+//   * No currencies to collect, no comparison tables, no public ordering of students: a student only
+//     ever sees their own data.
+//   * No loss-aversion wording ("don't lose your streak"). Streaks forgive single rest days and can be
+//     switched off in Profile; when off, the server does not even send the number.
+//   * Status is never shown by colour alone: every state has an icon and words.
+//   * Never invent outcomes, reviews or statistics. Goals describe the skills a role uses, not a promised job.
+//   * Motion is small (ring fill, badge pop) and off for anyone who prefers reduced motion.
+const greeting = (d = new Date()) => {
+  const h = d.getHours();
+  return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : 'Good evening';
+};
+const percent = (n, total) => (total ? Math.round((100 * n) / total) : 0);
+const ring = (value, label, cls = '') => html`<div class="ring ${cls}" role="img" aria-label="${label} ${value}% complete" style="--v:${value}"><b aria-hidden="true">${value}%</b></div>`;
+const ymdLocal = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dayBefore = (ymd) => { const [y, m, d] = ymd.split('-').map(Number); return ymdLocal(new Date(y, m - 1, d - 1)); };
+
+// The one main button of the page: where the next best action leads.
+const NEXT = {
+  resubmit: { tag: 'Revision requested', label: 'Revise and resubmit', href: () => '#/assignments' },
+  overdue: { tag: 'Past its due date', label: 'Submit your work', href: () => '#/assignments' },
+  session: { tag: 'Live class', label: 'Go to live classes', href: () => '#/live' },
+  continue: { tag: 'Keep going', label: 'Continue the lesson', href: (n) => `#/lesson/${n.id}` },
+  start: { tag: 'Next lesson', label: 'Start the lesson', href: (n) => `#/lesson/${n.id}` },
+  due_soon: { tag: 'Due this week', label: 'Open the assignment', href: () => '#/assignments' },
+  gap: { tag: 'For your goal', label: 'Open the lesson', href: (n) => `#/lesson/${n.id}` },
+  caught_up: { tag: 'All caught up', label: 'Review your course', href: () => '#/course' },
+};
+const GAP = {
+  mastered: ['checkc', 'Mastered', 'good'],
+  needs_work: ['alert', 'Needs work', 'warn'],
+  in_progress: ['half', 'In progress', 'info'],
+  not_started: ['circle', 'Not started', ''],
+  not_in_program: ['ext', 'Not in your program', ''],
+};
+const TERM_STATUS = {
+  completed: ['checkc', 'Completed'],
+  current: ['half', 'Current term'],
+  reserved: ['calendar', 'Seat reserved'],
+  upcoming: ['circle', 'Upcoming'],
+};
+
+function nextStepCard(h) {
+  const n = h.next_action;
+  const how = NEXT[n.kind] ?? NEXT.caught_up;
+  const session = n.kind === 'session' ? h.batch.next_sessions.find((s) => s.id === n.id) : null;
+  const join = session?.join_url && safeUrl(session.join_url);
+  const when = n.starts_at ? ` Starts ${fmtDateTime(n.starts_at)}.` : n.due_at ? ` Due ${fmtDateTime(n.due_at)}.` : '';
+  return html`<section class="card nextstep" aria-labelledby="h-next" data-home-card>
+    <div class="cardhead"><h2 id="h-next">Your next step</h2><span class="pill info">${icon('target')} ${how.tag}</span></div>
+    <p class="nexttitle">${n.title}</p>
+    <p class="muted">${n.reason}${when}</p>
+    <p class="row" style="margin-top:16px">${join
+      ? html`<a class="btn gold" href="${join}" target="_blank" rel="noopener noreferrer" data-next="${n.kind}">${icon('live')} Join class</a>`
+      : html`<a class="btn gold" href="${how.href(n)}" data-next="${n.kind}">${how.label} ${icon('next')}</a>`}</p>
+  </section>`;
+}
+
+function pathCard(h) {
+  const p = h.path;
+  const b = h.batch;
+  const all = percent(p.lessons_completed, p.lessons_total);
+  const term = percent(b.lessons_completed, b.lessons_total);
+  return html`<section class="card" aria-labelledby="h-path" data-home-card>
+    <div class="cardhead"><h2 id="h-path">Your learning path</h2><a href="#/course">Open course →</a></div>
+    <div class="rings">
+      <figure class="ringfig">${ring(all, 'Learning path')}<figcaption><b>Learning path</b><span>${p.lessons_completed} of ${p.lessons_total} lessons in ${p.terms.length} ${p.terms.length === 1 ? 'term' : 'terms'}</span></figcaption></figure>
+      <figure class="ringfig">${ring(term, `Term ${b.term}`, 'term')}<figcaption><b>Term ${b.term}: ${b.term_title}</b><span>${b.lessons_completed} of ${b.lessons_total} lessons</span></figcaption></figure>
+    </div>
+    <p class="goalline">${icon('route')}<span>Current goal: <b>${h.goal.title}</b>${h.goal.suggested ? html` <span class="muted">(suggested for your program)</span>` : ''} · <a href="#/profile">Change</a></span></p>
+  </section>`;
+}
+
+function targetsCard(h) {
+  const extra = (t) => (t.kind === 'session' ? ` · ${fmtTime(t.starts_at)}` : t.kind === 'assignment' ? ` · due ${fmtRelative(t.due_at)}` : t.percent ? ` · ${t.percent}% watched` : '');
+  const href = (t) => (t.kind === 'lesson' ? `#/lesson/${t.id}` : t.kind === 'session' ? '#/live' : '#/assignments');
+  return html`<section class="card" aria-labelledby="h-today" data-home-card>
+    <div class="cardhead"><h2 id="h-today">Today’s targets</h2></div>
+    ${h.targets.length ? html`<ul class="checklist">${h.targets.map((t) => html`
+      <li class="${t.done ? 'done' : ''}"><span class="tick" aria-hidden="true">${icon(t.done ? 'checkc' : 'circle')}</span>
+        <span class="meta"><a href="${href(t)}">${t.title}</a><small>${t.done ? 'Done' : 'To do'}${extra(t)}</small></span></li>`)}</ul>`
+    : html`<p class="empty"><b>Nothing planned for today</b>Rest days are part of learning.</p>`}
+  </section>`;
+}
+
+function streakCard(h) {
+  const s = h.streak;
+  if (!s) return '';
+  const today = h.today;
+  const last = s.last_active === today ? 'You learned today.' : s.last_active === dayBefore(today) ? 'You last learned yesterday.'
+    : s.last_active ? `You last learned on ${fmtDate(s.last_active)}.` : 'No learning days recorded yet.';
+  return html`<section class="card streak" aria-labelledby="h-streak" data-streak data-home-card>
+    <div class="cardhead"><h2 id="h-streak">Learning streak</h2><a href="#/profile">Settings</a></div>
+    <p class="streakline">${icon('flame')}${s.current ? html`<span><b>${s.current}-day</b> learning streak</span>` : html`<span>No streak running right now</span>`}</p>
+    <p class="small muted">${last}${s.longest > s.current ? ` Your longest run: ${s.longest} days.` : ''}</p>
+    <p class="small muted" style="margin-top:8px">Counts days with real learning: watching or finishing lessons, submitting projects, attending class. A single rest day never breaks it.</p>
+  </section>`;
+}
+
+function achievementsCard(h) {
+  return html`<section class="card" aria-labelledby="h-ach" data-home-card>
+    <div class="cardhead"><h2 id="h-ach">Achievements</h2><span class="small muted">${h.achievements.filter((a) => a.earned).length} of ${h.achievements.length} earned</span></div>
+    <ul class="achv">${h.achievements.map((a) => html`
+      <li class="${a.earned ? 'earned' : 'locked'}"><span class="mark" aria-hidden="true">${icon(a.earned ? 'award' : 'lock')}</span>
+        <span class="meta"><b>${a.title}</b><small>${a.earned ? `Earned ${fmtDate(a.earned_on)}` : 'Not yet earned'} · ${a.description}</small></span></li>`)}</ul>
+  </section>`;
+}
+
+function badgesCard(h) {
+  return html`<section class="card" aria-labelledby="h-badges" data-home-card>
+    <div class="cardhead"><h2 id="h-badges">Skill badges</h2><span class="small muted">One for each term you master</span></div>
+    <ul class="badges">${h.badges.map((b, i) => html`
+      <li class="badge ${b.earned ? 'earned' : 'locked'}" title="${b.description}"><span class="medal" aria-hidden="true" style="animation-delay:${i * 60}ms">${icon(b.earned ? 'medal' : 'lock')}</span>
+        <b>${b.title}</b><small>Term ${b.term} · ${b.earned ? 'Earned' : 'Locked'}</small></li>`)}</ul>
+  </section>`;
+}
+
+function gapsCard(h) {
+  const g = h.goal;
+  const where = (s) => (s.status === 'not_in_program'
+    ? html`Not taught in your program. Taught in ${s.programs.map((p) => p.name).join(', ')}.`
+    : s.available ? html`<a href="#/lesson/${s.lesson_id}">Term ${s.term} · ${s.lesson_title}</a>` : html`Term ${s.term} · ${s.lesson_title}`);
+  return html`<section class="card" aria-labelledby="h-gaps" data-home-card>
+    <div class="cardhead"><div><h2 id="h-gaps">Skills for ${g.title}</h2>
+      <p class="sub">${g.suggested ? 'A goal suggested for your program' : 'Your goal'} · <a href="#/profile">Change goal</a></p></div></div>
+    <ul class="gaps">${g.skills.map((s) => {
+      const [ic, label, tone] = GAP[s.status];
+      return html`<li><span class="meta"><b>${s.skill}</b><small>${where(s)}</small></span><span class="pill ${tone}">${icon(ic)} ${label}</span></li>`;
+    })}</ul>
+    <p class="small muted" style="margin-top:12px">Skills that roles of this kind typically use. A goal guides what to practise; it is not a promise of a job.</p>
+  </section>`;
+}
+
+function termsCard(h) {
+  return html`<section class="card" aria-labelledby="h-terms" data-home-card>
+    <div class="cardhead"><h2 id="h-terms">Term by term</h2><span class="small muted">${h.path.terms.length} ${h.path.terms.length === 1 ? 'term' : 'terms'} of 12 weeks</span></div>
+    <ol class="terms">${h.path.terms.map((t) => {
+      const [ic, label] = TERM_STATUS[t.status];
+      const dates = t.starts_on ? ` · ${fmtDate(t.starts_on)}${t.ends_on && t.status !== 'reserved' ? ` – ${fmtDate(t.ends_on)}` : ''}` : '';
+      return html`<li class="t-${t.status}"${t.status === 'current' ? ' aria-current="step"' : ''}><span class="mark" aria-hidden="true">${icon(ic)}</span>
+        <span class="meta"><b>Term ${t.term}: ${t.title}</b><small>${label}${dates}${t.status === 'current' || t.status === 'completed' ? ` · ${t.lessons_completed}/${t.lessons_total} lessons` : ''}</small></span></li>`;
+    })}</ol>
+  </section>`;
+}
+
 export async function home(ctx) {
   const d = await ctx.dashboard(true);
   if (ctx.stale()) return;
   if (!d.batches.length) {
     const next = await rpc('next_start_date').catch(() => null);
-    return ctx.render(notEnrolledView(next));
+    return ctx.render(notEnrolledView(next, d.reserved));
   }
-  const b = ctx.batch();
-  const pct = b.lessons_total ? Math.round((100 * b.lessons_completed) / b.lessons_total) : 0;
+  const h = await rpc('my_home', { p_batch: ctx.batch().id });
+  if (ctx.stale()) return;
+  const b = h.batch;
   const passed = b.assignments.filter((a) => a.status === 'graded').length;
   const open = b.next_sessions.find((s) => s.join_url);
   const next = b.next_sessions[0];
   const due = b.assignments.filter((a) => a.status !== 'graded').slice(0, 4);
+  const termPct = percent(b.lessons_completed, b.lessons_total);
 
   ctx.render(html`
-    <header class="band">
-      <div><p class="eyebrow">${b.code} · ${weekLabel(b)}</p><h1>Welcome back, ${firstName(d.profile.name, d.profile.email)}</h1><p class="sub">${b.program}</p></div>
-      ${next ? html`<div aria-label="Time until your next live class"><p class="small muted" style="text-align:right">Next live class in</p><div class="count3" data-countdown="${next.starts_at}"></div></div>` : ''}
+    <header class="band dark">
+      <div><p class="eyebrow">${b.code} · Term ${b.term} of ${b.terms} · ${weekLabel(b)}</p>
+        <h1>${greeting()}, <span class="serif">${firstName(h.profile.name, h.profile.email)}</span> <span class="wave" aria-hidden="true">👋</span></h1>
+        <p class="sub">${b.program}</p></div>
+      ${next ? html`<div aria-label="Time until your next live class"><p class="small" style="text-align:right">Next live class in</p><div class="count3" data-countdown="${next.starts_at}"></div></div>` : ''}
     </header>
     <div class="content">
-      ${open ? html`<div class="announce" role="status"><span class="row">${icon('live')} ${open.title} is open now</span>${joinButton(open, 'btn gold sm')}</div>` : ''}
+      ${open ? html`<div class="announce" role="status"><span class="row">${icon('live')} ${open.title} is open now</span>${joinButton(open, 'btn ghost sm')}</div>` : ''}
+      <div class="grid2">${nextStepCard(h)}${pathCard(h)}</div>
+      <div class="grid3">${targetsCard(h)}${streakCard(h)}
+        <section class="card" aria-labelledby="h-upcoming" data-home-card>
+          <div class="cardhead"><h2 id="h-upcoming">Upcoming live classes</h2><a href="#/live">All classes →</a></div>
+          ${b.next_sessions.length ? html`<div class="list">${b.next_sessions.map((s) => html`
+            <div class="item">${dateBox(s.starts_at)}<div class="meta"><b>${s.title}</b><span>${fmtDateTime(s.starts_at)} – ${fmtTime(s.ends_at)}</span></div>${joinButton(s, 'btn ghost sm')}</div>`)}</div>`
+          : html`<p class="empty">No more classes scheduled in this batch.</p>`}
+        </section></div>
       <div class="grid2">
-        <section class="card" aria-labelledby="h-progress">
-          <div class="cardhead"><h2 id="h-progress">Your progress</h2><a href="#/course">Open course →</a></div>
-          <div class="spread small muted" style="margin-bottom:8px"><span>${b.lessons_completed} of ${b.lessons_total} lessons complete</span><span>${pct}%</span></div>
-          ${progressBar(pct, pct === 100, 'Lessons completed')}
+        <section class="card" aria-labelledby="h-progress" data-home-card>
+          <div class="cardhead"><h2 id="h-progress">This term</h2><a href="#/course">Open course →</a></div>
+          <div class="spread small muted" style="margin-bottom:8px"><span>${b.lessons_completed} of ${b.lessons_total} lessons complete</span><span>${termPct}%</span></div>
+          ${progressBar(termPct, termPct === 100, 'Lessons completed this term')}
           <div class="tiles">
             <div class="tile"><b>${b.lessons_completed}<small>/${b.lessons_total}</small></b><span>Lessons</span></div>
             <div class="tile"><b>${b.attendance.attended}<small>/${b.attendance.held}</small></b><span>Classes attended</span></div>
@@ -87,29 +261,26 @@ export async function home(ctx) {
             <div class="tile"><b>${b.recordings}</b><span>Recordings</span></div>
           </div>
         </section>
-        <section class="card" aria-labelledby="h-upcoming">
-          <div class="cardhead"><h2 id="h-upcoming">Upcoming live classes</h2><a href="#/live">All classes →</a></div>
-          ${b.next_sessions.length ? html`<div class="list">${b.next_sessions.map((s) => html`
-            <div class="item">${dateBox(s.starts_at)}<div class="meta"><b>${s.title}</b><span>${fmtDateTime(s.starts_at)} – ${fmtTime(s.ends_at)}</span></div>${joinButton(s)}</div>`)}</div>`
-          : html`<p class="empty">No more classes scheduled in this batch.</p>`}
-        </section>
+        ${termsCard(h)}
       </div>
       <div class="grid2 even">
-        <section class="card" aria-labelledby="h-cw">
+        <section class="card" aria-labelledby="h-cw" data-home-card>
           <div class="cardhead"><h2 id="h-cw">Continue watching</h2><a href="#/course">All lessons →</a></div>
-          ${d.continue_watching.length ? html`<div class="list">${d.continue_watching.slice(0, 4).map((c) => html`
+          ${h.continue_watching.length ? html`<div class="list">${h.continue_watching.map((c) => html`
             <a class="item" href="#/lesson/${c.lesson_id}" style="text-decoration:none;color:inherit">
               <div class="meta"><b>${c.title}</b><span>${c.code} · stopped at ${fmtClock(c.last_position)} of ${fmtClock(c.duration)}</span>${progressBar(c.percent ?? 0)}</div>
               <span class="btn ghost sm">${icon('play')} Resume</span></a>`)}</div>`
-          : html`<p class="empty"><b>You’re all caught up</b>Start your next lesson from the course page.</p>`}
+          : html`<p class="empty"><b>Nothing half-watched</b>Start your next lesson from the course page.</p>`}
         </section>
-        <section class="card" aria-labelledby="h-due">
+        <section class="card" aria-labelledby="h-due" data-home-card>
           <div class="cardhead"><h2 id="h-due">Assignments</h2><a href="#/assignments">All assignments →</a></div>
           ${due.length ? html`<div class="list">${due.map((a) => html`
             <div class="item"><div class="meta"><b>${a.title}</b><span>Due ${fmtDateTime(a.due_at)} · ${fmtRelative(a.due_at)}</span></div>${statusPill(a.status)}</div>`)}</div>`
           : html`<p class="empty"><b>Every assignment passed</b>Great work.</p>`}
         </section>
       </div>
+      <div class="grid2 even">${achievementsCard(h)}${badgesCard(h)}</div>
+      ${gapsCard(h)}
     </div>`);
 
   const el = $('[data-countdown]', ctx.main);
@@ -131,18 +302,20 @@ export async function course(ctx) {
   if (!b || ctx.stale()) return;
   const c = await rpc('my_course', { p_batch: b.id });
   if (ctx.stale()) return;
-  const all = c.modules.flatMap((m) => m.lessons);
+  // The batch's own term, plus earlier terms the student completed (kept for review).
+  const termModules = c.modules.filter((m) => m.current);
+  const all = termModules.flatMap((m) => m.lessons);
   const done = all.filter((l) => l.completed).length;
-  const current = c.modules.find((m) => m.lessons.some((l) => !l.completed)) ?? c.modules[0];
+  const current = termModules.find((m) => m.lessons.some((l) => !l.completed)) ?? termModules[0];
   ctx.setTitle(c.batch.program);
   ctx.render(html`
     <header class="band"><div><p class="eyebrow">${c.batch.code} · ${weekLabel(c.batch)}</p><h1>${c.batch.program}</h1>
-      <p class="sub">${done} of ${all.length} lessons complete · lessons count as complete at 90% watched</p></div></header>
+      <p class="sub">Term ${c.batch.term} of ${c.batch.terms}: ${c.batch.term_title} · ${done} of ${all.length} lessons complete · lessons count as complete at 90% watched</p></div></header>
     <div class="content">
       ${c.modules.map((m) => {
         const mDone = m.lessons.filter((l) => l.completed).length;
         return html`<details class="mod"${m.id === current?.id ? ' open' : ''}>
-          <summary><h2>Module ${m.position} · ${m.title}</h2><span class="row"><span class="pill ${mDone === m.lessons.length ? 'good' : ''}">${mDone}/${m.lessons.length} complete</span><span class="chev">${icon('next')}</span></span></summary>
+          <summary><h2>Term ${m.term} · ${m.title}</h2><span class="row">${m.current ? '' : html`<span class="pill good">${icon('check')} Completed term</span>`}<span class="pill ${mDone === m.lessons.length ? 'good' : ''}">${mDone}/${m.lessons.length} complete</span><span class="chev">${icon('next')}</span></span></summary>
           <div class="lessons">${m.lessons.map((l) => html`
             <a class="lesson" href="#/lesson/${l.id}">
               <span class="st ${l.completed ? 'done' : l.percent > 0 ? 'prog' : ''}" aria-hidden="true">${icon(l.completed ? 'checkc' : l.percent > 0 ? 'half' : 'circle')}</span>
@@ -162,7 +335,7 @@ export async function lesson(ctx) {
   ctx.setTitle(l.title);
   const resumeAt = !l.completed && l.last_position > 5 && l.last_position < l.duration - 5 ? l.last_position : 0;
   ctx.render(html`
-    <header class="band"><div><p class="eyebrow"><a href="#/course">My course</a> · Module ${l.module.position}: ${l.module.title}</p><h1>${l.title}</h1>
+    <header class="band"><div><p class="eyebrow"><a href="#/course">My course</a> · Term ${l.term.no}: ${l.term.title}</p><h1>${l.title}</h1>
       <p class="sub">${l.code} · Lesson ${l.index} of ${l.total} · ${l.kind === 'reading' ? 'Reading' : fmtMinutes(l.duration)}</p></div></header>
     <div class="content">
       ${l.can_track ? '' : html`<p class="okmsg" role="note">Preview mode: staff viewing isn’t recorded as progress.</p>`}
@@ -197,7 +370,7 @@ export async function lesson(ctx) {
   }
 
   const player = new DemoPlayer($('[data-player]', ctx.main), {
-    duration: l.duration, title: l.title, eyebrow: `${l.code} · Module ${l.module.position}`,
+    duration: l.duration, title: l.title, eyebrow: `${l.code} · Term ${l.term.no}`,
     start: resumeAt, watermark: ctx.me?.email ?? '',
   });
   let tracker = null;
@@ -351,7 +524,7 @@ export async function assignments(ctx) {
 }
 
 // ---------------------------------------------------------------- notifications
-const KIND_TARGET = { welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past' };
+const KIND_TARGET = { welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past', achievement: '#/home', badge: '#/home', term_reserved: '#/home' };
 export async function notifications(ctx) {
   const n = await rpc('my_notifications', { p_limit: 50 });
   if (ctx.stale()) return;
@@ -391,13 +564,17 @@ export async function profile(ctx) {
   const d = await ctx.dashboard();
   if (ctx.stale()) return;
   const me = d.profile;
+  // Goal and streak settings belong to a student's learning, so they appear once there is a batch.
+  const b = ['instructor', 'admin'].includes(me.role) ? null : ctx.batch();
+  const h = b ? await rpc('my_home', { p_batch: b.id }) : null;
+  if (ctx.stale()) return;
   ctx.render(html`
     <header class="band"><div><h1>Your profile</h1><p class="sub">${me.email}</p></div></header>
     <div class="content"><div class="grid2 even">
       <section class="card"><h2>Personal details</h2>
         <form class="stack" novalidate data-form="name" style="margin-top:14px">
           <p class="formerr" role="alert" hidden></p>
-          <div class="field"><label for="fullname">Full name</label><input id="fullname" type="text" autocomplete="name" maxlength="80" value="${me.name}"><span class="hint">Shown to your instructors and on your certificate.</span></div>
+          <div class="field"><label for="fullname">Full name</label><input id="fullname" type="text" autocomplete="name" maxlength="80" value="${me.name}"><span class="hint">Shown to your instructors.</span></div>
           <div class="field"><label for="em">Email address</label><input id="em" type="email" value="${me.email}" readonly aria-describedby="em-hint"><span class="hint" id="em-hint">To change your email, contact support.</span></div>
           <p><button class="btn primary" type="submit">Save name</button></p>
         </form></section>
@@ -409,6 +586,7 @@ export async function profile(ctx) {
           <p><button class="btn primary" type="submit">Change password</button></p>
         </form></section>
     </div>
+    ${h ? learningSettings(h) : ''}
     <section class="card spread"><div><h2>Sign out</h2><p class="sub">Sign out of Nuvora on this device.</p></div><button class="btn ghost" type="button" data-signout-page>${icon('logout')} Sign out</button></section>
     </div>`);
 
@@ -443,4 +621,50 @@ export async function profile(ctx) {
   });
 
   $('[data-signout-page]', ctx.main).addEventListener('click', () => ctx.signOut());
+  if (h) wireLearningSettings(ctx);
+}
+
+// Career goal (it shapes the skills card on the home page) and the streak switch.
+function learningSettings(h) {
+  const suggested = h.roles.find((r) => r.for_program);
+  const option = (r) => html`<option value="${r.id}"${h.profile.goal_role === r.id ? ' selected' : ''}>${r.title}</option>`;
+  return html`<section class="card" aria-labelledby="h-learning"><h2 id="h-learning">Your goal and streak</h2>
+    <div class="grid2 even" style="margin-top:14px">
+      <form class="stack" novalidate data-form="goal">
+        <p class="formerr" role="alert" hidden></p>
+        <div class="field"><label for="goal">Career goal</label>
+          <select id="goal" aria-describedby="goal-hint">
+            <option value=""${h.profile.goal_role ? '' : ' selected'}>Suggested for my program${suggested ? ` (${suggested.title})` : ''}</option>
+            <optgroup label="Roles your program prepares for">${h.roles.filter((r) => r.for_program).map(option)}</optgroup>
+            <optgroup label="Other roles">${h.roles.filter((r) => !r.for_program).map(option)}</optgroup>
+          </select>
+          <span class="hint" id="goal-hint">Your home page lists the skills this role typically uses and where your program teaches them. It is a direction for practice, not a promise of a job.</span></div>
+        <p><button class="btn primary" type="submit">Save goal</button></p>
+      </form>
+      <div class="stack" style="align-content:start">
+        <label class="switch" for="streak"><input id="streak" type="checkbox" role="switch"${h.profile.show_streak ? ' checked' : ''}><span>Show my learning streak</span></label>
+        <span class="hint">It counts days with real learning. When it’s off, no streak is shown anywhere. It never affects your grades.</span>
+      </div>
+    </div></section>`;
+}
+
+function wireLearningSettings(ctx) {
+  const goalForm = $('[data-form="goal"]', ctx.main);
+  goalForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('.formerr', goalForm);
+    try {
+      const r = await rpc('set_my_goal', { p_role: $('#goal', goalForm).value || null });
+      err.hidden = true;
+      toast(r.title ? `Goal saved: ${r.title}.` : 'Goal set back to the suggestion for your program.');
+    } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+  });
+  const sw = $('#streak', ctx.main);
+  sw.addEventListener('change', async () => {
+    sw.disabled = true;
+    try {
+      await rpc('set_streak_visibility', { p_on: sw.checked });
+      toast(sw.checked ? 'Your streak is shown on your home page.' : 'Your streak is hidden.');
+    } catch (ex) { sw.checked = !sw.checked; toast(ex.message); } finally { sw.disabled = false; }
+  });
 }

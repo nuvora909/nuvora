@@ -78,7 +78,7 @@ test('roster shows each student\'s progress; another instructor cannot open it',
   await page.getByRole('link', { name: /Roster/ }).first().click();
   const rows = page.locator('table.data tbody tr');
   await expect(rows).toHaveCount(2);
-  await expect(rows.filter({ hasText: 'Maya Patel' })).toContainText('3/16');
+  await expect(rows.filter({ hasText: 'Maya Patel' })).toContainText('2/4');
   await expect(rows.filter({ hasText: 'Leo Martins' }).locator('.pill.warn')).toContainText('days ago');
 
   await page.getByRole('button', { name: /Elena Ruiz/ }).click();

@@ -43,7 +43,7 @@ test('a new account lands on a friendly "not enrolled yet" page', async ({ page 
   await expect(page).toHaveURL(/#\/home$/);
   await expect(page.getByText('You’re not enrolled in a batch yet')).toBeVisible();
   await expect(page.getByText(/The next one starts on/)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Explore programs' })).toHaveAttribute('href', '/#programs');
+  await expect(page.getByRole('link', { name: 'Explore programs' })).toHaveAttribute('href', '/programs/');
   expect(errors).toEqual([]);
 });
 
@@ -95,7 +95,7 @@ test('signing out clears the session; the back button shows nothing private', as
   await expect(page.getByRole('status')).toContainText('You’ve signed out');
   await page.goBack();
   await expect(page).toHaveURL(/#\/login$/);
-  await expect(page.getByText('Welcome back, Maya')).toHaveCount(0);
+  await expect(page.getByText(/Good (morning|afternoon|evening), Maya/)).toHaveCount(0);
 });
 
 test('an invalid or revoked session sends you back to sign in', async ({ page, request }) => {
@@ -120,7 +120,7 @@ test('an expired access token is refreshed silently', async ({ page }) => {
   });
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('nuvora.session')).refresh_token);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Welcome back, Maya' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Good (morning|afternoon|evening), Maya/ })).toBeVisible();
   const after = await page.evaluate(() => JSON.parse(localStorage.getItem('nuvora.session')).refresh_token);
   expect(after).not.toBe(before);
 });

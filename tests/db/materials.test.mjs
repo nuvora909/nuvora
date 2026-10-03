@@ -24,7 +24,7 @@ before(async () => {
 
   aimlLesson = await h.one(h.sql, `select l.id from lessons l join modules m on m.id = l.module_id where m.program_id = 'bs-aiml' order by m.position, l.position limit 1`);
   msLesson = await h.one(h.sql, `select l.id from lessons l join modules m on m.id = l.module_id where m.program_id = 'ms-ds' order by m.position, l.position limit 1`);
-  aimlTemplate = await h.one(h.sql, `select id from assignment_templates where program_id = 'bs-aiml' order by due_offset_days limit 1`);
+  aimlTemplate = await h.one(h.sql, `select id from assignment_templates where program_id = 'bs-aiml' and term_no = 1 order by due_offset_days limit 1`);
   await h.service(`insert into materials (program_id, lesson_id, title, file_path, size_bytes) values
                    ('bs-aiml', $1, 'Lecture notes', 'bs-aiml/lessons/mth-110/notes.pdf', 120000),
                    ('bs-aiml', $1, 'Exercise sheet', 'bs-aiml/lessons/mth-110/exercises.pdf', 40000),
