@@ -9,9 +9,9 @@ function layout(card) {
   return html`${envBanner(config.environment)}
   <div class="auth">
     <div class="auth-l">
-      <div class="auth-head"><div class="brand">${wordmark('/')}<small>Student portal</small></div><a class="small" href="/">Back to nuvora.com</a></div>
+      <div class="auth-head"><div class="brand">${wordmark('/')}<small>Student portal</small></div><a class="small" href="/">Back to the website</a></div>
       <div class="auth-body">${card}</div>
-      <div class="auth-foot"><span>© ${new Date().getFullYear()} Nuvora</span><nav class="row"><a href="/#privacy">Privacy</a><a href="/#terms">Terms</a><a href="/#programs">Programs</a></nav></div>
+      <div class="auth-foot"><span>© ${new Date().getFullYear()} Nuvora</span><nav class="row"><a href="/legal/privacy/">Privacy</a><a href="/legal/terms/">Terms</a><a href="/programs/">Programs</a></nav></div>
     </div>
     <div class="auth-r">
       <img src="../img/login-pro.jpg" alt="A professional woman in a blazer and glasses working on her laptop outside a modern office building" decoding="async">
@@ -98,7 +98,7 @@ export function signup(ctx) {
       ${passwordField('password', 'Password', 'new-password')}
       <p class="small muted" style="margin-top:-10px">At least ${MIN_PASSWORD} characters.</p>
       ${passwordField('confirm', 'Confirm password', 'new-password')}
-      <label class="remember"><input type="checkbox" id="agree"> <span>I agree to the <a href="/#terms" target="_blank" rel="noopener">Terms</a> and <a href="/#privacy" target="_blank" rel="noopener">Privacy Policy</a></span></label>
+      <label class="remember"><input type="checkbox" id="agree"> <span>I agree to the <a href="/legal/terms/" target="_blank" rel="noopener">Terms</a> and <a href="/legal/privacy/" target="_blank" rel="noopener">Privacy Policy</a></span></label>
       <button class="btn primary big" type="submit">Create account</button>
       <div class="auth-links"><span class="muted">Already have an account? <a href="#/login">Log in</a></span></div>
     </form>`));

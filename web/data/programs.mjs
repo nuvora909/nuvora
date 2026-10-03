@@ -46,7 +46,7 @@ const EXTRA = {
     slug: 'ms-applied-machine-learning', topics: ['Machine Learning', 'MLOps'], track: 'engineering-to-ai',
     tagline: 'Production machine learning, deep learning architectures and responsible deployment, for working engineers.',
     audience: ['Software engineers and analysts who already use Python', 'ML practitioners moving into production ML'],
-    required: ['A bachelor’s degree in any field', 'Python programming', 'Linear algebra and probability'],
+    required: ['A bachelor’s degree in any field', 'Python programming', 'Linear algebra and probability'], requiresCoding: true,
     helpful: ['Experience training a machine learning model'],
     roles: ['ml-engineer', 'ai-engineer', 'ai-product-lead'],
     tools: ['PyTorch', 'Ray', 'Kubernetes', 'MLflow', 'Spark'],
@@ -56,7 +56,7 @@ const EXTRA = {
     slug: 'ms-data-science-analytics', topics: ['Data Science'], track: 'data-science',
     tagline: 'Advanced statistics, experimentation and data strategy for people who lead analytics work.',
     audience: ['Analysts and data scientists stepping into senior or lead roles', 'Managers who make decisions with data'],
-    required: ['A bachelor’s degree in any field', 'SQL and Python or R', 'Introductory statistics'],
+    required: ['A bachelor’s degree in any field', 'SQL and Python or R', 'Introductory statistics'], requiresCoding: true,
     helpful: ['Experience running analyses for stakeholders'],
     roles: ['data-scientist', 'analytics-manager', 'ai-product-lead'],
     tools: ['Python', 'R', 'SQL', 'Spark', 'Stan', 'Looker'],
@@ -76,7 +76,7 @@ const EXTRA = {
     slug: 'certificate-generative-ai-llm-apps', topics: ['Generative AI'], track: 'engineering-to-ai',
     tagline: 'Prompting, retrieval, agents and evaluation for developers building with large language models.',
     audience: ['Developers building features with LLMs', 'Product engineers exploring AI'],
-    required: ['Python programming', 'Using web APIs'],
+    required: ['Python programming', 'Using web APIs'], requiresCoding: true,
     helpful: ['Some experience shipping software'],
     roles: ['ai-engineer'],
     tools: ['Python', 'LLM APIs', 'Vector databases', 'Evaluation tools'],
@@ -86,12 +86,23 @@ const EXTRA = {
     slug: 'certificate-mlops-data-engineering', topics: ['MLOps'], track: 'engineering-to-ai', weekly: '10–12',
     tagline: 'Pipelines, orchestration, model serving and monitoring: the skills that get models into production.',
     audience: ['Data engineers and backend developers', 'Data scientists who deploy their own models'],
-    required: ['Python', 'The command line and Git', 'Basic cloud concepts'],
+    required: ['Python', 'The command line and Git', 'Basic cloud concepts'], requiresCoding: true,
     helpful: ['Docker'],
     roles: ['mlops-engineer', 'ml-engineer'],
     tools: ['Airflow', 'dbt', 'Docker', 'Kubernetes', 'MLflow', 'Terraform'],
     capstone: 'Deploy a monitored, retrainable model pipeline in the cloud.',
   },
+};
+
+// Card colours (start and end of the thumbnail gradient) and short names for tight spaces.
+const LOOK = {
+  'bs-ds': { colors: ['#0B5ED7', '#22D3EE'], short: 'B.S. Data Science' },
+  'bs-aiml': { colors: ['#1E1B7B', '#6D5DF6'], short: 'B.S. AI & ML' },
+  'ms-aml': { colors: ['#0A1A3F', '#1D6BF2'], short: 'M.S. Applied ML' },
+  'ms-ds': { colors: ['#0E7490', '#2DD4BF'], short: 'M.S. Data Science' },
+  'c-py': { colors: ['#1D4ED8', '#38BDF8'], short: 'Python & Data Analysis' },
+  'c-genai': { colors: ['#4C1D95', '#C026D3'], short: 'Generative AI & LLM Apps' },
+  'c-mlops': { colors: ['#0F172A', '#14B8A6'], short: 'MLOps & Data Engineering' },
 };
 
 export const PROGRAMS = CORE.map((p) => {
@@ -101,11 +112,14 @@ export const PROGRAMS = CORE.map((p) => {
   const lvl = LEVEL[p.level];
   return {
     id: p.id, name: p.name, level: p.level, credits: p.credits,
+    short: LOOK[p.id].short, colors: LOOK[p.id].colors,
     levelLabel: lvl.label,
     slug: x.slug, url: `/programs/${x.slug}/`, topics: x.topics, track: x.track,
     tagline: x.tagline, audience: x.audience, required: x.required, helpful: x.helpful,
     roles: x.roles, tools: x.tools, capstone: x.capstone,
     weeklyHours: x.weekly ?? lvl.weekly,
+    weeklyMin: Number((x.weekly ?? lvl.weekly).split('–')[0]),
+    requiresCoding: Boolean(x.requiresCoding),
     duration: lvl.length,
     terms,
     termCount: terms.length,
@@ -119,30 +133,8 @@ export const PROGRAMS = CORE.map((p) => {
 
 export const P = (id) => PROGRAMS.find((p) => p.id === id);
 export const TOPICS = ['Data Science', 'Machine Learning', 'Generative AI', 'MLOps'];
+export const LEVELS = [['Certificate', 'Certificates'], ['Bachelor', 'Bachelor’s-level'], ['Master', 'Master’s-level']];
 
 export const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
+export { nextStarts, todayInKolkata, termDates, fmtDay, fmtLong, isoDay } from '../assets/js/dates.mjs';
 
-// Start dates: the first Monday of each month; applications close 7 days before (inclusive, matching the
-// database function next_start_date). Dates are calendar dates in the batch time zone (Asia/Kolkata).
-export function firstMonday(year, month) {
-  const d = new Date(Date.UTC(year, month, 1));
-  while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() + 1);
-  return d;
-}
-export function nextStarts(count, today = todayInKolkata()) {
-  const out = [];
-  let y = today.getUTCFullYear(), m = today.getUTCMonth();
-  while (out.length < count) {
-    const start = firstMonday(y, m);
-    const applyBy = new Date(start.getTime() - 7 * 86400000);
-    if (applyBy >= today) out.push({ start, applyBy });
-    m += 1; if (m > 11) { m = 0; y += 1; }
-  }
-  return out;
-}
-export function todayInKolkata(now = new Date()) {
-  const s = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  return new Date(`${s}T00:00:00Z`);
-}
-export const fmtDay = (d) => d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
-export const isoDay = (d) => d.toISOString().slice(0, 10);

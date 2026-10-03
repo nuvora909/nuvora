@@ -1,22 +1,27 @@
 // Local development server for Nuvora.
-// Serves the public site at / and the portal at /portal/, and stands in for Supabase's Auth API (/auth/v1),
+// Serves the public site at / (built from web/ into dist/ on start) and the portal at /portal/, and stands in for
+// Supabase's Auth API (/auth/v1),
 // REST API (/rest/v1/rpc) and Storage signed downloads (/storage/v1) on top of an in-memory PostgreSQL
 // loaded with the real migrations.
 // The portal speaks the same HTTP protocol to this server as it will to Supabase in production.
 //
 //   npm run dev        then open http://127.0.0.1:5173/portal/
 import http from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
-import { extname, resolve, sep } from 'node:path';
+import { watch as watchFiles } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { readFile, stat, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createDb, closeDb, runAs } from './localdb.mjs';
 import { signJwt, verifyJwt, hashPassword, checkPassword, randomToken } from './auth.mjs';
 import { loadDemo } from './demo.mjs';
 import { placeholderPdf } from './pdf.mjs';
+import { buildSite, DIST } from '../scripts/build-site.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const STATIC_ROOTS = [['/portal/', resolve(ROOT, 'portal')], ['/', resolve(ROOT, 'site')]];
+const MEDIA_ROOTS = ['img', 'video', 'fonts'].map((m) => [`/${m}/`, resolve(ROOT, 'web/static', m)]);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
@@ -35,7 +40,21 @@ class HttpError extends Error {
 const authError = (status, error_code, msg) => new HttpError(status, { code: status, error_code, msg });
 const restError = (status, code, message, details = null, hint = null) => new HttpError(status, { code, message, details, hint });
 
-export async function startServer({ port = 5173, host = '127.0.0.1', testApi = false, demo = true, accessTtl = 3600, quiet = false } = {}) {
+export async function startServer({ port = 5173, host = '127.0.0.1', testApi = false, demo = true, accessTtl = 3600, quiet = false, build = true, watch = false } = {}) {
+  // Each server builds the website into its own temporary folder, so a preview server and a test server can run
+  // side by side. Photos, video and fonts are served straight from web/static.
+  const siteDir = build ? await mkdtemp(join(tmpdir(), 'nuvora-site-')) : DIST;
+  if (build) await buildSite({ outDir: siteDir, quiet: true, media: false });
+  const STATIC_ROOTS = [['/portal/', resolve(ROOT, 'portal')], ...MEDIA_ROOTS, ['/', siteDir]];
+  // --watch: rebuild the website in a fresh process (so edited modules are re-read) when web/ or the catalog changes.
+  const watchers = [];
+  if (build && watch) {
+    let timer = null;
+    const rebuild = () => execFile(process.execPath, [resolve(ROOT, 'scripts/build-site.mjs'), '--out', siteDir, '--no-media', '--quiet'],
+      (err, _out, stderr) => (err ? console.error(stderr || err) : log('Website rebuilt')));
+    const onChange = () => { clearTimeout(timer); timer = setTimeout(rebuild, 150); };
+    watchers.push(watchFiles(resolve(ROOT, 'web'), { recursive: true }, onChange), watchFiles(resolve(ROOT, 'scripts/catalog.mjs'), onChange));
+  }
   const secret = randomBytes(32).toString('hex');
   const issued = Math.floor(Date.now() / 1000);
   const tenYears = 10 * 365 * 86400;
@@ -334,15 +353,20 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     let file = resolve(dir, rel || 'index.html');
     if (file !== dir && !file.startsWith(dir + sep)) return notFound(res);
     let info = await stat(file).catch(() => null);
-    if (info?.isDirectory()) { file = resolve(file, 'index.html'); info = await stat(file).catch(() => null); }
-    if (!info?.isFile()) return notFound(res);
+    if (info?.isDirectory()) {
+      // Clean URLs: /programs -> /programs/ (the page's relative links and canonical use the trailing slash).
+      if (!decoded.endsWith('/')) { res.writeHead(301, { Location: `${u.pathname}/${u.search}` }); return res.end(); }
+      file = resolve(file, 'index.html'); info = await stat(file).catch(() => null);
+    }
+    if (!info?.isFile()) return prefix === '/' ? sitePage(res, resolve(siteDir, '404.html'), 404) : notFound(res);
 
     const headers = {
       'Content-Type': TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
       'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Accept-Ranges': 'bytes',
     };
-    if (prefix === '/portal/') headers['X-Frame-Options'] = 'DENY';
+    if (prefix === '/portal/') { headers['X-Frame-Options'] = 'DENY'; headers['X-Robots-Tag'] = 'noindex, nofollow'; }
+    else if (file.endsWith('.html')) headers['X-Frame-Options'] = 'SAMEORIGIN';
     const data = await readFile(file);
     const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
     if (range && (range[1] || range[2])) {
@@ -357,6 +381,12 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
   }
 
   const notFound = (res) => { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Not found'); };
+  async function sitePage(res, file, status) {
+    const data = await readFile(file).catch(() => null);
+    if (!data) return notFound(res);
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+    return res.end(data);
+  }
 
   // ---------------------------------------------------------------- dispatch
   let actualPort = port;
@@ -394,6 +424,8 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     async close() {
       await new Promise((ok) => { server.close(ok); server.closeAllConnections(); });
       await closeDb(state.db);
+      watchers.forEach((w) => w.close());
+      if (build) await rm(siteDir, { recursive: true, force: true });
     },
   };
 }
@@ -407,7 +439,7 @@ export function pgStatus(code, role) {
   return 500;
 }
 
-// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo]
+// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo] [--watch]
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const argv = process.argv.slice(2);
   const opt = (name, fallback) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : fallback; };
@@ -415,6 +447,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     port: Number(opt('--port', process.env.PORT ?? 5173)),
     testApi: argv.includes('--test-api'),
     demo: !argv.includes('--no-demo'),
+    watch: argv.includes('--watch'),
   });
   console.log('Demo accounts (local only): see server/demo-accounts.mjs');
   const stop = async () => { await s.close(); process.exit(0); };

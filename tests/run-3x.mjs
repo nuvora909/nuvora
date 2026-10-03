@@ -1,10 +1,11 @@
 // Runs every test suite three times in a row and fails if any run fails, to catch flaky or order-dependent
-// tests. Usage: node tests/run-3x.mjs [db|server|e2e ...]   (default: all suites)
+// tests. Usage: node tests/run-3x.mjs [db|server|site|e2e ...]   (default: all suites)
 import { spawnSync } from 'node:child_process';
 
 const SUITES = {
   db: { label: 'database', args: ['--test', '--test-reporter=spec', 'tests/db/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
   server: { label: 'server', args: ['--test', '--test-reporter=spec', 'tests/server/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
+  site: { label: 'website', args: ['--test', '--test-reporter=spec', 'tests/site/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
   e2e: { label: 'browser', args: ['node_modules/@playwright/test/cli.js', 'test', '--reporter=line'], count: /^\s+(\d+) (passed|failed|flaky)/gm },
 };
 

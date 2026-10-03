@@ -1,0 +1,223 @@
+/* Topic guides and the sample lesson (/learn/, /learn/<topic>/, /learn/sample-lesson/). Every class is prefixed
+   "lrn-" so it cannot collide with the shared stylesheet or other pages. Colours come from the site.css variables,
+   so dark mode follows. */
+
+/* ---------- page head extras ---------- */
+.lrn-headlinks,.lrn-chips{margin-top:22px}
+.lrn-chips .chip{white-space:normal;line-height:1.35}
+.lrn-jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.lrn-jump a{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border-radius:999px;color:#E3F0FF;font-weight:600;font-size:.9rem;text-decoration:none;background:rgb(255 255 255 / .1);border:1px solid rgb(255 255 255 / .22)}
+.lrn-jump a:hover{background:rgb(255 255 255 / .18);border-color:rgb(255 255 255 / .4)}
+.pagehead .eyebrow .ic{width:16px;height:16px}
+
+/* ---------- hub: topic cards ---------- */
+.lrn-topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:18px}
+.lrn-topic{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;transition:box-shadow .25s,transform .25s,border-color .25s;min-width:0}
+.lrn-topic:hover{transform:translateY(-4px);box-shadow:0 26px 50px -22px rgb(79 70 229 / .45)}
+.lrn-topic:focus-within{outline:3px solid var(--accent);outline-offset:3px}
+.lrn-topic:focus-within a:focus-visible{outline:none}
+.lrn-thumb{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-height:108px;padding:18px;color:#fff;background:radial-gradient(240px 140px at 100% 0%,rgb(255 255 255 / .22),transparent 70%),linear-gradient(135deg,var(--a),var(--b));overflow:hidden}
+.lrn-thumb::after{content:"";position:absolute;right:-46px;bottom:-66px;width:170px;height:170px;border-radius:50%;border:22px solid rgb(255 255 255 / .1)}
+.lrn-thumb>.ic{width:40px;height:40px;stroke-width:1.6}
+.lrn-thumb .chip{position:relative;z-index:1;background:rgb(4 11 31 / .38)}
+.lrn-tbody{display:flex;flex-direction:column;gap:12px;padding:18px 18px 20px;flex:1}
+.lrn-topic h3{font-size:1.3rem}
+.lrn-topic h3 a{color:var(--ink);text-decoration:none}
+.lrn-topic h3 a::after{content:"";position:absolute;inset:0;z-index:1}
+.lrn-topic p{color:var(--muted);font-size:.93rem;line-height:1.5}
+.lrn-codes{list-style:none;padding:0;display:grid;gap:6px;font-size:.86rem}
+.lrn-codes li{display:flex;gap:8px;align-items:baseline}
+.lrn-codes .mono{flex:none;color:var(--accent-ink);font-weight:600}
+.lrn-more{margin-top:auto;display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--accent-ink)}
+.lrn-more .ic{width:18px;height:18px;transition:transform .2s}
+.lrn-topic:hover .lrn-more .ic{transform:translateX(3px)}
+
+/* ---------- hub: how the topics fit together ---------- */
+.lrn-chain-title{margin:40px 0 14px;font-size:1.25rem}
+.lrn-chain{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;counter-reset:lrn}
+.lrn-chain li{position:relative;counter-increment:lrn;min-width:0}
+.lrn-chain li:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:10px;height:10px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);transform:translate(-2px,-50%) rotate(45deg)}
+.lrn-chain a{display:grid;gap:4px;height:100%;padding:14px 16px 14px 52px;border-radius:16px;border:1px solid var(--line);background:var(--sunk);color:var(--ink);text-decoration:none;min-height:44px;position:relative}
+.lrn-chain a::before{content:counter(lrn);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 .8rem var(--body);background:var(--grad-blue);color:#fff}
+.lrn-chain a:hover{border-color:var(--accent)}
+.lrn-chain b{font:500 1.02rem var(--display)}
+.lrn-chain span{font-size:.86rem;color:var(--muted);line-height:1.45}
+@media (max-width:900px){
+  .lrn-chain{grid-template-columns:1fr;gap:12px}
+  .lrn-chain li:not(:last-child)::after{right:auto;left:26px;top:auto;bottom:-11px;transform:translateX(-50%) rotate(135deg)}
+}
+
+/* ---------- hub: sample lesson promo, where next ---------- */
+.lrn-promo .lede{color:#D3E2F8}
+.lrn-ticks li{color:#E3F0FF}
+.lrn-ticks li .ic{color:var(--gold-2)}
+.lrn-chartcard{margin:0;padding:18px 18px 14px;border-radius:24px;background:var(--surface);color:var(--ink);box-shadow:0 40px 80px -30px rgb(0 0 0 / .65);display:grid;gap:8px;min-width:0}
+.lrn-chartcard figcaption{font-size:.84rem;color:var(--muted)}
+.lrn-next{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.lrn-nextcard{display:grid;gap:8px;align-content:start;padding:22px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;transition:border-color .2s,transform .2s,box-shadow .2s}
+.lrn-nextcard:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 18px 36px -20px rgb(11 107 245 / .5)}
+.lrn-nextcard b{font:500 1.2rem var(--display)}
+.lrn-nextcard>span:not(.link):not(.lrn-nico){color:var(--muted);font-size:.92rem}
+.lrn-nextcard .link{margin-top:6px}
+.lrn-nico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ---------- topic page ---------- */
+.lrn-what{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:900px){ .lrn-what{grid-template-columns:1fr;gap:28px} }
+.lrn-prose{display:grid;gap:16px}
+.lrn-prose h2{margin-bottom:4px}
+.lrn-prose p{font-size:1.05rem;line-height:1.72;max-width:68ch}
+.lrn-prose a{font-weight:600}
+.lrn-glance{position:sticky;top:calc(var(--hh) + 20px);gap:14px}
+@media (max-width:900px){ .lrn-glance{position:static} }
+.lrn-glance dl{margin:0;display:grid;gap:14px}
+.lrn-glance dl>div{display:grid;gap:6px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.lrn-glance dl>div:last-child{border-bottom:0;padding-bottom:0}
+.lrn-glance dt{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lrn-glance dd{margin:0;font-weight:600;font-size:.94rem;line-height:1.55}
+.lrn-glance .lrn-tools{gap:6px}
+.lrn-concepts{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.lrn-concept{display:grid;gap:10px;align-content:start;padding:20px;border-radius:18px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.lrn-code{justify-self:start;padding:3px 9px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+.lrn-concept h3{font-size:1.12rem}
+.lrn-concept p{color:var(--muted);font-size:.93rem;line-height:1.55}
+.lrn-concept p a{font-weight:600}
+.lrn-where{display:grid;gap:4px;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.lrn-k{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lrn-where ul{list-style:none;padding:0;display:grid;gap:0}
+.lrn-where a{display:inline-flex;align-items:center;min-height:44px;padding:4px 0;font-size:.88rem;font-weight:600;text-decoration:none}
+.lrn-where a:hover{text-decoration:underline}
+.lrn-note{margin-top:16px}
+.lrn-faqwrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:40px;align-items:start}
+@media (max-width:960px){ .lrn-faqwrap{grid-template-columns:1fr} }
+.lrn-h-sm{font-size:1.35rem;margin-bottom:14px}
+.lrn-related ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.lrn-related a{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;transition:border-color .2s,transform .2s}
+.lrn-related a:hover{border-color:var(--accent);transform:translateY(-2px)}
+.lrn-related a>span:last-child{display:grid;gap:2px}
+.lrn-related b{font:500 1.02rem var(--display)}
+.lrn-related a>span:last-child>span{font-size:.85rem;color:var(--muted);line-height:1.45}
+.lrn-rico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--a),var(--b))}
+
+/* ---------- sample lesson: the idea ---------- */
+.lrn-steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:none}
+@media (max-width:860px){ .lrn-steps{grid-template-columns:1fr} }
+.lrn-steps li{position:relative;display:grid;gap:8px;align-content:start;padding:22px 20px 20px;border-radius:20px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.lrn-sn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font:600 1rem var(--display);color:#fff;background:var(--grad-blue)}
+.lrn-steps p{color:var(--muted);font-size:.94rem}
+.lrn-steps b{color:var(--ink)}
+.lrn-formula{margin-top:22px;padding:26px;border-radius:22px;display:grid;grid-template-columns:auto 1fr;gap:20px 36px;align-items:center;color:#fff;background:radial-gradient(500px 240px at 100% 0%,rgb(109 93 246 / .4),transparent 65%),radial-gradient(400px 220px at 0% 100%,rgb(56 189 248 / .3),transparent 65%),#0A1A3F}
+@media (max-width:760px){ .lrn-formula{grid-template-columns:1fr;padding:22px} }
+.lrn-eq{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3em;font:500 clamp(1.7rem,4.4vw,2.5rem)/1.2 var(--mono);color:#fff;white-space:nowrap}
+.lrn-op{color:var(--gold-2)}
+.lrn-eta{color:#7DD3FC}
+.lrn-formula dl{margin:0;display:grid;gap:10px}
+.lrn-formula dl>div{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:baseline}
+.lrn-formula dt{color:#7DD3FC;font-weight:700;font-size:1rem}
+.lrn-formula dd{margin:0;color:#D6E4FA;font-size:.92rem}
+.lrn-worked{margin-top:18px}
+.lrn-worked p{color:var(--muted);max-width:80ch}
+
+/* ---------- sample lesson: interactive chart ---------- */
+.lrn-gd{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);grid-template-areas:"ctl fig" "read read" "tbl tbl";gap:18px 28px;padding:24px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.lrn-gd-controls{grid-area:ctl;display:grid;gap:18px;align-content:start}
+.lrn-gd-fig{grid-area:fig;margin:0;display:grid;gap:10px;min-width:0;width:100%;max-width:680px;justify-self:center}
+.lrn-gd-read{grid-area:read;margin:0;padding:14px 16px;border-radius:14px;background:var(--accent-soft);color:var(--ink);font-weight:500;min-height:3.4em}
+.lrn-gd-table{grid-area:tbl}
+/* Without JavaScript the controls stay hidden, so the chart takes the full width. */
+.lrn-gd:has(>.lrn-gd-controls[hidden]){grid-template-columns:1fr;grid-template-areas:"fig" "read" "tbl"}
+@media (max-width:860px){ .lrn-gd{grid-template-columns:1fr;grid-template-areas:"fig" "ctl" "read" "tbl";padding:16px} }
+.lrn-gd-lr{display:grid;gap:8px}
+.lrn-gd-lr label{font-weight:700}
+.lrn-gd-lr output{display:inline-block;min-width:3.2em;padding:2px 8px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+.lrn-gd-lr input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--accent);cursor:pointer;background:transparent}
+.lrn-gd-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.lrn-gd-presets button{display:grid;gap:0;justify-items:start;min-height:52px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .2s,background .2s}
+.lrn-gd-presets button:hover{border-color:var(--accent)}
+.lrn-gd-presets button b{font-size:.95rem}
+.lrn-gd-presets button span{font-size:.78rem;color:var(--muted);line-height:1.3}
+.lrn-gd-presets button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.lrn-gd-presets button[aria-pressed="true"] span{color:var(--accent-ink)}
+.lrn-gd-actions{display:flex;flex-wrap:wrap;gap:8px}
+.lrn-gd-actions .btn{min-height:44px}
+.lrn-gd-actions .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+
+/* The chart itself (inline SVG drawn by sample-lesson.js; the same markup is rendered at build time). */
+.lrn-gd-svg{display:block;width:100%;height:auto;overflow:visible}
+.lrn-gd-svg text{font:12px var(--mono);fill:var(--muted)}
+.lrn-gd-svg .lrn-gd-label{font:600 12px var(--body);fill:var(--ink)}
+.lrn-gd-svg .lrn-gd-note{font:600 11px var(--body);fill:var(--warn)}
+.lrn-gd-svg .lrn-gd-warn{font:700 12px var(--body);fill:var(--bad)}
+/* On phones the chart is drawn at about 70% scale, so its text is set larger to stay readable. */
+@media (max-width:600px){
+  .lrn-gd-svg text{font-size:15px}
+  .lrn-gd-svg .lrn-gd-label,.lrn-gd-svg .lrn-gd-note,.lrn-gd-svg .lrn-gd-warn{font-size:15px}
+}
+.lrn-gd-grid{stroke:var(--line);stroke-width:1}
+.lrn-gd-axis{stroke:var(--muted);stroke-width:1.5}
+.lrn-gd-curve{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.lrn-gd-tangent{stroke:var(--warn);stroke-width:2;stroke-dasharray:5 4}
+.lrn-gd-step{stroke:var(--ink);stroke-width:1.8;stroke-dasharray:5 3;opacity:.8}
+.lrn-gd-off{stroke:var(--bad);opacity:1}
+.lrn-gd-head{fill:var(--ink)}
+.lrn-gd-start{fill:var(--gold);stroke:var(--surface);stroke-width:2.5}
+.lrn-gd-pt{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.lrn-gd-end{fill:var(--violet);stroke:var(--surface);stroke-width:3}
+.lrn-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--muted)}
+.lrn-legend span{display:inline-flex;align-items:center;gap:6px}
+.lrn-dot{display:inline-block;border-radius:50%;flex:none}
+.lrn-dot-start{width:13px;height:13px;background:var(--gold)}
+.lrn-dot-pt{width:9px;height:9px;background:var(--accent)}
+.lrn-dot-end{width:15px;height:15px;background:var(--violet)}
+.lrn-gd-table summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:700;color:var(--accent-ink);cursor:pointer;list-style:none}
+.lrn-gd-table summary::-webkit-details-marker{display:none}
+.lrn-gd-table summary .ic{width:18px;height:18px;transition:transform .2s}
+.lrn-gd-table[open] summary .ic{transform:rotate(180deg)}
+.lrn-gd-table .tablewrap{margin-top:8px}
+.lrn-gd-table table{min-width:0;font-variant-numeric:tabular-nums}
+.lrn-gd-table td{font-family:var(--mono);font-size:.86rem}
+.lrn-gd-table th,.lrn-gd-table td{padding:8px 14px}
+
+/* ---------- sample lesson: what to notice ---------- */
+.lrn-regimes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.lrn-regimes .chip{justify-self:start}
+.lrn-regimes p{color:var(--muted);font-size:.94rem}
+.lrn-real{margin-top:18px;padding:22px;border-radius:18px;background:var(--sunk);display:grid;gap:8px}
+.lrn-real h3{display:flex;gap:10px;align-items:center}
+.lrn-real h3 .ic{color:var(--accent)}
+.lrn-real p{color:var(--muted);max-width:80ch}
+
+/* ---------- sample lesson: practice check ---------- */
+.lrn-quiz{display:grid;gap:16px;max-width:860px}
+.lrn-q{margin:0;padding:20px;border-radius:20px;border:1px solid var(--line);background:var(--surface);display:grid;gap:14px;min-width:0}
+.lrn-q legend{float:left;width:100%;display:flex;gap:12px;align-items:flex-start;padding:0;margin:0 0 14px;font:500 1.1rem/1.4 var(--display)}
+.lrn-q legend+*{clear:both}
+.lrn-qn{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font:600 .95rem var(--display);color:#fff;background:var(--grad-blue)}
+.lrn-q .f-opts.lrn-opts-long{grid-template-columns:1fr}
+.lrn-q .f-opt.lrn-right span{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--surface))}
+.lrn-q .f-opt.lrn-wrong span{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--surface))}
+.lrn-q .f-opt.lrn-answer span{border-color:var(--good);border-style:dashed}
+.lrn-fb{margin:0;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;font-size:.93rem;line-height:1.5}
+.lrn-fb .ic{flex:none;margin-top:2px}
+.lrn-fb.ok{background:color-mix(in srgb,var(--good) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 35%,transparent)}
+.lrn-fb.ok .ic,.lrn-fb.ok b{color:var(--good)}
+.lrn-fb.no{background:color-mix(in srgb,var(--bad) 7%,var(--surface));border:1px solid color-mix(in srgb,var(--bad) 30%,transparent)}
+.lrn-fb.no .ic,.lrn-fb.no b{color:var(--bad)}
+.lrn-quiz-actions{display:flex;flex-wrap:wrap;gap:10px}
+.lrn-quiz-out:empty{display:none}
+.lrn-score{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:20px;border-radius:20px;border:1.5px solid var(--accent);background:var(--surface);box-shadow:0 18px 40px -26px rgb(11 107 245 / .5)}
+.lrn-score:focus{outline:none}
+.lrn-score:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.lrn-score h3{font-size:1.25rem}
+.lrn-score p{color:var(--ink)}
+.lrn-score p.muted{color:var(--muted)}
+@media (max-width:420px){ .lrn-score{grid-template-columns:1fr} }
+.lrn-key{padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--surface)}
+.lrn-key summary{font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.lrn-key ol{margin-top:10px;padding-left:20px;display:grid;gap:8px;color:var(--muted)}
+.lrn-key b{color:var(--ink)}
+
+/* ---------- sample lesson: where it is taught ---------- */
+.lrn-taught{align-items:start}
+.lrn-taught .lede{font-size:1.06rem}
+.lrn-onecard{grid-template-columns:1fr}

@@ -11,3 +11,7 @@ coverage/
 .DS_Store
 Thumbs.db
 .vscode/
+# Built website (npm run build:site)
+dist/
+# Temporary agent working copies
+.claude/worktrees/
