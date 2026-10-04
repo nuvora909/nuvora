@@ -127,6 +127,23 @@ const advisor = () => html`
 <button class="advisor-pill" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-label>Ask Nuvora</span><span class="more" data-advisor-more>· catalog answers</span></button>
 <button class="askbar-m" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-mlabel>Ask Nuvora</span></button>`;
 
+// The logo intro: a white overlay that plays the wordmark once per visit (web/assets/css/intro.css). Decorative and
+// aria-hidden, with nothing focusable. It is display:none until intro.css shows it, so without that stylesheet, with
+// reduced motion or on a later page of the visit (js/intro-gate.js) it never appears. js/intro.js skips it on a
+// click or key, removes it, and fires "nuvora:intro-done" on document for scripts that should wait for it.
+const introLetters = (text, from) => [...text].map((c, i) => `<span class="intro-l" style="--i:${from + i}">${c}</span>`).join('');
+// Data points that gather toward the mark: [x offset, y offset, delay ms], spread around the frame.
+const INTRO_DOTS = [[-42, -30, 0], [38, -34, 60], [-48, 8, 120], [46, 12, 40], [-30, 34, 160], [28, 36, 100], [-12, -40, 200],
+  [14, -42, 140], [-50, -12, 240], [50, -6, 180], [-20, 42, 260], [22, -24, 300]];
+const introDots = INTRO_DOTS.map(([x, y, d]) => `<i style="--x:${x}vw;--y:${y}vh;--d:${d}"></i>`).join('');
+export const intro = () => raw(`<div class="intro" data-intro aria-hidden="true" style="display:none">`
+  + `<span class="intro-bar top"></span><span class="intro-bar bottom"></span><span class="intro-dots">${introDots}</span><span class="intro-flare"></span>`
+  + `<div class="intro-stage"><div class="intro-mark"><span class="wm">${introLetters('nuv', 0)}`
+  + '<svg class="intro-o" style="--i:3" viewBox="0 0 40 40" focusable="false"><defs><linearGradient id="intro-g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0064E0"/><stop offset="1" stop-color="#0082FB"/></linearGradient></defs>'
+  + '<circle class="intro-ring" cx="19" cy="23" r="13.5" pathLength="1" transform="rotate(-47 19 23)" fill="none" stroke="url(#intro-g)" stroke-width="6.5"/><circle class="intro-dot" cx="34" cy="7" r="4.5" fill="#0082FB"/></svg>'
+  + `${introLetters('ra', 4)}</span></div>`
+  + '<p class="intro-tag">Build the skills your next career demands</p></div></div>');
+
 /**
  * @param o.path         URL path, e.g. "/programs/"
  * @param o.title        unique page title (the site name is appended)
@@ -163,19 +180,23 @@ ${status === 200 ? raw(`<link rel="canonical" href="${canonical}">`) : ''}
 <meta property="og:image" content="${SITE.origin}${image}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script src="/js/intro-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&amp;family=Source+Serif+4:ital,opsz,wght@1,8..60,500&amp;family=Outfit:wght@600&amp;display=swap">
 <link rel="preload" href="/fonts/ClashGrotesk-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
 <link rel="stylesheet" href="/css/showcase.css">
+<link rel="stylesheet" href="/css/intro.css">
 ${styles.map((s) => `<link rel="stylesheet" href="${s}">`).join('')}
+<script type="module" src="/js/intro.js"></script>
 <script type="module" src="/js/site.js"></script>
 <script type="module" src="/js/showcase.js"></script>
 ${scripts.map((s) => `<script type="module" src="${s}"></script>`).join('\n')}
 ${ld.map((o) => `<script type="application/ld+json">${jsonBlock(o)}</script>`).join('\n')}
 </head>
 <body class="${bodyClass}">
+${intro()}
 <a class="skip" href="#main">Skip to content</a>
 <div class="topstrip" data-strip><div class="wrap"><span><b>${SITE.status}</b> · Next start ${liveDate('start', 0, today)} · Seat requests close ${liveDate('applyBy', 0, today)}</span><a href="/admissions/">How joining works →</a></div></div>
 ${header(path)}

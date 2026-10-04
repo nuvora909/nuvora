@@ -11,14 +11,23 @@ import { test as base, expect } from '@playwright/test';
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 const isLocal = (url) => LOCAL_HOSTS.has(url.hostname) || url.protocol === 'data:' || url.protocol === 'blob:';
 
+// A returning visitor: the logo intro has already played in this browser session (web/assets/js/intro-gate.js).
+// Behaviour tests run like this; a spec that tests the first visit sets test.use({ firstVisit: true }). A context
+// made with browser.newContext() does not get it automatically: add it with context.addInitScript(returningVisitor).
+export function returningVisitor() {
+  try { sessionStorage.setItem('nuvora.intro', '1'); } catch { /* no storage on this page (about:blank) */ }
+}
+
 export const test = base.extend({
-  context: async ({ context }, use) => {
+  firstVisit: [false, { option: true }],
+  context: async ({ context, firstVisit }, use) => {
     await context.route((url) => !isLocal(url), (route) => {
       const { hostname } = new URL(route.request().url());
       if (hostname === 'fonts.googleapis.com') return route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', body: '' });
       if (hostname === 'fonts.gstatic.com') return route.fulfill({ status: 204, body: '' });
       return route.abort('blockedbyclient');
     });
+    if (!firstVisit) await context.addInitScript(returningVisitor);
     await use(context);
   },
 });

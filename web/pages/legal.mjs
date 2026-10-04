@@ -117,6 +117,12 @@ const PRIVACY = [
         ['What', 'Your answers, so you can move between pages without losing them'],
         ['How long', 'Until you close the tab. “Forget my plan” also removes it.'],
       ])}
+      ${card('The logo intro has played', 'nuvora.intro', [
+        ['Where', 'sessionStorage, for this tab only'],
+        ['When', 'On the first page you open in a visit'],
+        ['What', 'Only the fact that the short Nuvora logo intro has already played, so it is not shown again on every page'],
+        ['How long', 'Until you close the tab'],
+      ])}
       ${card('Your portal sign-in session', 'nuvora.session', [
         ['Where', 'localStorage if you tick “Keep me signed in on this device”, otherwise sessionStorage for that tab'],
         ['What', 'The sign-in session that proves who you are when the portal talks to our database provider'],

@@ -1,7 +1,7 @@
 // The cinematic layer of the website (site.css "cinema" and web/assets/js/cinema.js) in the browser: it may add
 // motion and depth, but never hide content, shift the layout, widen the page or throw errors. Pages are read from
 // /sitemap.xml, so new pages and sections from any part of the site are covered automatically.
-import { test, expect } from './fixtures.mjs';
+import { test, expect, returningVisitor } from './fixtures.mjs';
 
 test.describe.configure({ timeout: 600_000 });   // some tests walk through every page
 test.use({ reducedMotion: 'no-preference' });      // the rest of the suite runs with reduced motion (playwright.config.mjs)
@@ -189,6 +189,7 @@ test('home with motion: headings wipe in, photos drift, light sections glow and 
 test('the spotlight follows a mouse over a dark chapter, and stays off with reduced motion', async ({ browser }) => {
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const context = await browser.newContext({ reducedMotion, viewport: { width: 1280, height: 860 } });
+    await context.addInitScript(returningVisitor);   // no logo intro over the page (site-intro.spec.mjs tests it)
     const page = await context.newPage();
     await page.goto('/how-it-works/');
     const head = page.locator('main .pagehead').first();

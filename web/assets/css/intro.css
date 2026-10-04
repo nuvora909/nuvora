@@ -1,0 +1,76 @@
+/* The cinematic logo intro. On the first page of a browser session a short title sequence plays on a white overlay
+   for about 3.2 s, then fades away to reveal the page, which has painted underneath from the start (so the hero
+   headline is not delayed and nothing shifts). It stays white in dark mode too, as the owner chose.
+     0.00–0.55 s  navy letterbox bars slide in; a soft blue light blooms in the centre
+     0.10–1.40 s  small blue data points drift in and gather toward the mark
+     0.30–1.30 s  "nuvora" comes into focus from a blur as its letters close in from wide spacing, with a slow push-in
+     0.75–1.35 s  the ring of the "o" draws in the Meta gradient · 1.30 s the dot pops with a glow
+     1.25–2.05 s  an anamorphic light flare streaks across the frame behind the mark
+     1.50–2.30 s  the tagline fades up under the mark
+     2.40–3.20 s  the camera pushes in, the bars pull away and the white overlay fades out to the website
+   The overlay is display:none in its own style attribute and only this stylesheet, inside the motion guard, shows
+   it: with reduced motion, without this stylesheet, or on a later page of the visit (intro-gate.js sets
+   html.intro-off before the first paint) it never appears. The animation ends hidden on its own (visibility hidden,
+   pointer-events none), so it needs no JavaScript; intro.js only adds skipping and removes it when it is done. */
+@media (prefers-reduced-motion:no-preference){
+  .intro{display:grid!important;place-items:center;position:fixed;inset:0;z-index:1000;background:#FFFFFF;color:#0B1733;
+    color-scheme:light;overflow:hidden;contain:strict;-webkit-tap-highlight-color:transparent;
+    animation:intro-out .8s cubic-bezier(.4,0,.2,1) 2.4s both}
+  html.intro-off .intro{display:none!important}
+  .intro.is-skipped{animation:intro-skip .25s ease-out both}
+
+  /* Light: a bloom behind the mark that breathes up, then a film-grain-free soft vignette at the edges. */
+  .intro::before{content:"";position:absolute;inset:0;margin:auto;width:min(96vw,980px);height:min(60vw,520px);border-radius:50%;
+    background:radial-gradient(closest-side,rgb(0 130 251 / .16),rgb(0 130 251 / .06) 55%,rgb(0 130 251 / 0));
+    animation:intro-bloom 1.6s cubic-bezier(.2,.7,.2,1) 0s both}
+  .intro::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 55%,rgb(10 26 63 / .07) 100%)}
+
+  /* Letterbox bars: the frame of a film, in the site's navy. */
+  .intro-bar{position:absolute;left:0;right:0;height:9vh;background:#0A1A3F;z-index:2}
+  .intro-bar.top{top:0;animation:intro-bar-top 2.4s cubic-bezier(.65,0,.35,1) both}
+  .intro-bar.bottom{bottom:0;animation:intro-bar-bottom 2.4s cubic-bezier(.65,0,.35,1) both}
+
+  /* Data points that gather toward the mark. Each starts at its own offset (--x, --y) and delay (--d). */
+  .intro-dots{position:absolute;inset:0;pointer-events:none}
+  .intro-dots i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;
+    background:#0082FB;box-shadow:0 0 12px rgb(0 130 251 / .6);
+    animation:intro-gather 1.3s cubic-bezier(.3,.6,.2,1) calc(var(--d) * 1ms + 100ms) both}
+
+  /* The mark: the header wordmark (.wm in site.css) at display size, letter by letter. */
+  .intro-stage{position:relative;display:grid;justify-items:center;gap:.9rem;z-index:1}
+  .intro-mark{position:relative;padding:.12em .3em .2em;font-size:clamp(3.4rem,14vw,7rem)}
+  .intro .wm{font-size:1em}
+  .intro-l,.intro-o{display:inline-block;animation:intro-focus .9s cubic-bezier(.16,1,.3,1) calc(var(--i) * 60ms + 300ms) both}
+  .intro-ring{stroke-linecap:round;stroke-dasharray:1;animation:intro-draw .6s cubic-bezier(.65,0,.35,1) .75s both}
+  .intro-dot{transform-box:fill-box;transform-origin:center;animation:intro-pop .5s cubic-bezier(.34,1.56,.64,1) 1.3s both}
+
+  /* An anamorphic flare: a thin horizontal streak of light across the frame. */
+  .intro-flare{position:absolute;left:50%;top:50%;width:140vw;height:2px;margin:-1px 0 0 -70vw;pointer-events:none;z-index:1;
+    background:linear-gradient(90deg,rgb(0 130 251 / 0),rgb(0 130 251 / .55) 35%,rgb(190 222 255 / 1) 50%,rgb(0 130 251 / .55) 65%,rgb(0 130 251 / 0));
+    box-shadow:0 0 18px 2px rgb(0 130 251 / .35);
+    animation:intro-flare .8s cubic-bezier(.3,0,.2,1) 1.25s both}
+
+  .intro-tag{margin:0;font:600 clamp(.72rem,2.4vw,.95rem)/1.4 var(--body);letter-spacing:.22em;text-transform:uppercase;
+    color:#33405C;text-align:center;padding-inline:16px;animation:intro-tag .8s cubic-bezier(.2,.7,.2,1) 1.5s both}
+
+  @keyframes intro-bloom{from{opacity:0;scale:.55}to{opacity:1;scale:1}}
+  @keyframes intro-bar-top{0%{translate:0 -100%}22%,80%{translate:0 0}to{translate:0 -100%}}
+  @keyframes intro-bar-bottom{0%{translate:0 100%}22%,80%{translate:0 0}to{translate:0 100%}}
+  @keyframes intro-gather{0%{opacity:0;translate:var(--x) var(--y);scale:.4}25%{opacity:.9}85%{opacity:.8}
+    to{opacity:0;translate:calc(var(--x) * .06) calc(var(--y) * .06);scale:1}}
+  @keyframes intro-push{from{scale:1.06}to{scale:1}}
+  @keyframes intro-focus{from{opacity:0;filter:blur(12px);translate:calc((var(--i) - 2.5) * .22em) .18em}to{opacity:1;filter:blur(0);translate:0 0}}
+  @keyframes intro-draw{from{stroke-dashoffset:1;opacity:0}12%{opacity:1}to{stroke-dashoffset:0;opacity:1}}
+  @keyframes intro-pop{0%{opacity:0;scale:0;filter:drop-shadow(0 0 0 rgb(0 130 251 / 0))}60%{opacity:1;scale:1.25;filter:drop-shadow(0 0 6px rgb(0 130 251 / .9))}
+    to{opacity:1;scale:1;filter:drop-shadow(0 0 2px rgb(0 130 251 / .4))}}
+  @keyframes intro-flare{0%{opacity:0;scale:.05 1}35%{opacity:1}to{opacity:0;scale:1 1}}
+  @keyframes intro-tag{from{opacity:0;translate:0 .6em;filter:blur(4px)}to{opacity:1;translate:0 0;filter:blur(0)}}
+  @keyframes intro-out{0%{opacity:1}to{opacity:0;visibility:hidden;pointer-events:none}}
+  @keyframes intro-skip{from{opacity:var(--intro-from,1)}to{opacity:0;visibility:hidden;pointer-events:none}}
+
+  /* While the overlay fades, the stage keeps moving toward the viewer, so the title dissolves into the page. */
+  .intro .intro-stage{animation:intro-push 2.4s cubic-bezier(.25,.1,.25,1) both,intro-exit .8s cubic-bezier(.4,0,.2,1) 2.4s forwards}
+  @keyframes intro-exit{to{scale:1.14;filter:blur(6px);opacity:0}}
+}
+@media print{ html .intro{display:none!important} }
