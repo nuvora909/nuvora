@@ -1,9 +1,10 @@
 // The page shell shared by every public page: document head (SEO, social, schema), skip link, status strip,
-// header with the programs menu and phone menu, footer, and the AI advisor entry points.
+// header with the programs menu and phone menu, footer, and the advisor entry points.
 import { html, raw, jsonBlock } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
-import { SITE, NAV, PHOTOS } from '../data/site.mjs';
-import { PROGRAMS, LEVELS, nextStarts, fmtDay, isoDay } from '../data/programs.mjs';
+import { SITE, NAV, PHOTOS, OWNER } from '../data/site.mjs';
+import { PROGRAMS, TOPICS, LEVELS, nextStarts, fmtDay, isoDay } from '../data/programs.mjs';
+import { ROLES } from '../data/careers.mjs';
 import { organization, website } from './schema.mjs';
 
 const CSP = [
@@ -67,37 +68,64 @@ function header(path) {
 </header>`;
 }
 
-function footer() {
+// ---------------------------------------------------------------- footer
+// Headed link columns, then a bottom bar with the year, the credential line and round icons for the social accounts
+// the owner has configured. The column headings are plain headings; on phones showcase.js turns each into a button
+// that opens and closes its list (without the script every list stays open).
+const topicUrl = (t) => `/learn/${t.toLowerCase().replace(/\s+/g, '-')}/`;
+export const FOOTER_COLUMNS = [
+  ['Programs', [...PROGRAMS.map((p) => [p.url, p.short]), ['/programs/#compare', 'Compare programs']]],
+  ['Topics', [...TOPICS.map((t) => [topicUrl(t), t]), ['/learn/sample-lesson/', 'Sample lesson'], ['/learn/', 'All topics']]],
+  ['Careers', [...Object.entries(ROLES).map(([id, r]) => [`/careers/${id}/`, r.title]), ['/careers/', 'All career paths']]],
+  ['Resources', [['/find-your-program/', 'Find my program'], ['/how-it-works/', 'How it works'], ['/tuition/', 'Tuition'], ['/admissions/', 'Admissions'], ['/#faq', 'FAQ']]],
+  ['Nuvora', [['/about/', 'About'], ['/contact/', 'Contact'], ['/portal/', 'Student login'], ['/admissions/#request', 'Request a seat']]],
+  ['Legal', [['/legal/privacy/', 'Privacy'], ['/legal/terms/', 'Terms'], ['/legal/credits/', 'Media credits'], ['/legal/accessibility/', 'Accessibility']]],
+];
+
+// Simple line glyphs (24×24, stroke), drawn for this site, for the round social buttons.
+const SOCIAL = {
+  linkedin: ['LinkedIn', 'M7 10.5V17 M7 7.2v.1 M11 17v-6.5 M11 13.2a2.6 2.6 0 0 1 5.2 0V17'],
+  youtube: ['YouTube', 'M4 9.2C4 7.4 5.2 6.4 7 6.3c3.3-.2 6.7-.2 10 0 1.8.1 3 1.1 3 2.9v5.6c0 1.8-1.2 2.8-3 2.9-3.3.2-6.7.2-10 0-1.8-.1-3-1.1-3-2.9z M10.4 9.6l4.6 2.4-4.6 2.4z'],
+  instagram: ['Instagram', 'M8 4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z M16.6 7.3v.1'],
+  x: ['X', 'M5.5 5h3.6l9.4 14h-3.6z M18.4 5l-5.3 6 M5.7 19l5.4-6'],
+  facebook: ['Facebook', 'M14.5 20v-7h2.4l.4-3h-2.8V8.4c0-.9.3-1.4 1.5-1.4h1.4V4.3c-.3 0-1.1-.1-2.1-.1-2.2 0-3.6 1.3-3.6 3.8V10H9.3v3h2.4v7'],
+};
+
+/** The configured social accounts, in display order: [key, name, url]. Only full https:// URLs count. */
+export const socialLinks = (social = OWNER.social ?? {}) => Object.keys(SOCIAL)
+  .filter((k) => typeof social[k] === 'string' && /^https:\/\/[^\s"<>]+$/.test(social[k]))
+  .map((k) => [k, SOCIAL[k][0], social[k]]);
+
+export function footer({ social = OWNER.social } = {}) {
+  const links = socialLinks(social ?? {});
   return html`
-<footer class="sitefoot on-dark">
+<footer class="sitefoot">
   <div class="wrap">
-    <div class="fgrid">
-      <div class="fbrand">
-        <a class="logo" href="/" aria-label="Nuvora home">${wordmark({ light: true })}</a>
-        <p>Online data science and AI programs taught in 12-week terms, with live classes every week and projects graded by instructors.</p>
-      </div>
-      <div><h2>Programs</h2><ul>${PROGRAMS.map((p) => html`<li><a href="${p.url}">${p.short}</a></li>`)}</ul></div>
-      <div><h2>Explore</h2><ul>
-        <li><a href="/find-your-program/">Find my program</a></li><li><a href="/careers/">Career paths</a></li>
-        <li><a href="/learn/">Topics</a></li><li><a href="/how-it-works/">How it works</a></li><li><a href="/learn/sample-lesson/">Sample lesson</a></li></ul></div>
-      <div><h2>Join</h2><ul>
-        <li><a href="/admissions/">Admissions and start dates</a></li><li><a href="/tuition/">Tuition</a></li>
-        <li><a href="/admissions/#request">Request a seat</a></li><li><a href="/portal/">Student login</a></li></ul></div>
-      <div><h2>About</h2><ul>
-        <li><a href="/about/">About Nuvora</a></li><li><a href="/contact/">Contact</a></li><li><a href="/legal/privacy/">Privacy</a></li>
-        <li><a href="/legal/terms/">Terms</a></li><li><a href="/legal/credits/">Media credits</a></li></ul></div>
+    <div class="sitefoot-top">
+      <a class="logo" href="/" aria-label="Nuvora home">${wordmark({ light: true })}</a>
+      <p>Online data science and AI programs taught in 12-week terms, with live classes every week and projects graded by instructors.</p>
+      <p class="sitefoot-pre">Pre-launch: Nuvora has no graduates, reviews or job outcomes yet. Photos and video on this site show stock models, not Nuvora students.</p>
     </div>
-    <div class="fbottom">
-      <span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span>
-      <p>Pre-launch: Nuvora has no graduates, reviews or job outcomes yet. Programs lead to a Nuvora certificate of completion, not an accredited degree. Photos and video show stock models, not Nuvora students.</p>
+    <nav class="sitefoot-cols" aria-label="Footer">${FOOTER_COLUMNS.map(([title, items], i) => html`
+      <div class="sitefoot-col" data-foot-col>
+        <h2>${title}</h2>
+        <ul id="foot-col-${i + 1}">${items.map(([href, label]) => html`<li><a href="${href}">${label}</a></li>`)}</ul>
+      </div>`)}
+    </nav>
+    <div class="sitefoot-bar">
+      <p class="sitefoot-legal"><span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span>Nuvora certificate of completion · not an accredited degree</span></p>
+      ${links.length ? html`<ul class="sitefoot-social">${links.map(([k, name, url]) => html`
+        <li><a href="${url}" rel="noopener noreferrer me" aria-label="Nuvora on ${name}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${SOCIAL[k][1]}"/></svg></a></li>`)}</ul>` : ''}
     </div>
   </div>
 </footer>`;
 }
 
+// The advisor answers from the published catalog unless an AI model is connected, so its labels start honest;
+// site.js switches to the AI labels only when a model is present.
 const advisor = () => html`
-<button class="advisor-pill" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-label>AI Advisor</span><span class="more" data-advisor-more>· Ask Nuvora AI</span></button>
-<button class="askbar-m" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-mlabel>Ask AI</span></button>`;
+<button class="advisor-pill" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-label>Ask Nuvora</span><span class="more" data-advisor-more>· catalog answers</span></button>
+<button class="askbar-m" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-mlabel>Ask Nuvora</span></button>`;
 
 /**
  * @param o.path         URL path, e.g. "/programs/"
@@ -106,7 +134,7 @@ const advisor = () => html`
  * @param o.body         main content (html)
  * @param o.schema       extra JSON-LD objects
  * @param o.scripts      extra module scripts (paths)
- * @param o.styles       extra stylesheets (paths), after site.css
+ * @param o.styles       extra stylesheets (paths), after site.css and showcase.css
  * @param o.image        social image path
  * @param o.status       404 pages skip canonical
  */
@@ -140,8 +168,10 @@ ${status === 200 ? raw(`<link rel="canonical" href="${canonical}">`) : ''}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&amp;family=Source+Serif+4:ital,opsz,wght@1,8..60,500&amp;family=Outfit:wght@600&amp;display=swap">
 <link rel="preload" href="/fonts/ClashGrotesk-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
+<link rel="stylesheet" href="/css/showcase.css">
 ${styles.map((s) => `<link rel="stylesheet" href="${s}">`).join('')}
 <script type="module" src="/js/site.js"></script>
+<script type="module" src="/js/showcase.js"></script>
 ${scripts.map((s) => `<script type="module" src="${s}"></script>`).join('\n')}
 ${ld.map((o) => `<script type="application/ld+json">${jsonBlock(o)}</script>`).join('\n')}
 </head>

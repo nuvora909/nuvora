@@ -1,6 +1,7 @@
 // How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
 // assessment, the credential and support. Every fact comes from the data modules; nothing here describes
-// outcomes, and the dashboard that is still being built is described as such.
+// outcomes. Features are described as current only when they exist in the portal today; anything still being set
+// up (the streaming service, the real course PDFs, mentoring) says so.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead, liveDate } from '../lib/layout.mjs';
@@ -44,7 +45,7 @@ const FAQ = [
   ['How many hours a week should I plan for?',
     `Between ${HOURS[0]} and ${HOURS[1]} hours, depending on the program: the two live sessions plus lessons and project work at your own time. Each program page lists its weekly hours.`],
   ['What if I fall behind?',
-    `Watch the recordings, bring questions to ${SCHEDULE.officeDay} office hours, and use mentoring and success coaching to plan your weeks. If you have not been active for 14 days, you appear on your instructor’s check-in list.`],
+    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.`],
   ['Is the certificate an accredited degree?',
     `No. You receive a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
 ];
@@ -62,7 +63,7 @@ const PILLARS = [
     lede: `Competency is shown, not assumed. Every term has ${NUM[PROJECTS]} projects, graded by instructors on a four-level rubric.`,
     points: [`Projects due in weeks ${DUE_WEEKS}`, 'Written feedback on every submission', 'Proficient or better passes; below that, revise and resubmit'] },
   { n: '03', title: 'Stay *supported*',
-    lede: 'Instructors teach live and grade your work, office hours run every week, and mentoring and success coaching help you plan your weeks.',
+    lede: 'Instructors teach live and grade your work, office hours run every week, and your instructor sees when you go quiet.',
     points: [`Live class on ${CLASS}, office hours on ${OFFICE}`, 'Instructors who teach your classes and grade your projects', 'Inactive for 14 days? You appear on your instructor’s check-in list'] },
 ];
 
@@ -143,8 +144,8 @@ const term = (today) => html`
 const PORTAL = [
   ['route', 'Your learning path', 'Every term of your program with its dates, lessons and project deadlines, and how far through it you are.'],
   ['play', 'Lessons that track progress', 'Pick up where you left off. A lesson counts as complete once you have watched 90% of it.'],
-  ['shield', 'Protected streaming', 'Lessons and recordings stream in the portal and can never be downloaded. A faint watermark with your email moves across the video while you watch.'],
-  ['doc', 'PDF notes and briefs', 'Lesson notes, exercise sheets and project briefs download as PDFs you can keep.'],
+  ['shield', 'Protected streaming', 'Lessons and recordings stream in the portal and can never be downloaded, with a faint watermark of your email moving across the video. Until the streaming service is connected, the portal plays them in a placeholder player.'],
+  ['doc', 'PDF notes and briefs', 'Lesson notes, exercise sheets and project briefs download as PDFs you can keep. The course PDFs in the portal today are placeholders while the real ones are written.'],
   ['live', 'Live session links', `Join links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours open 15 minutes before each session, with times in your time zone.`],
   ['video', 'Recordings', 'Every live session is recorded and streams in the portal, so you can catch up or watch again.'],
   ['folder', 'Assignments and feedback', 'Submit projects, see your rubric level and your instructor’s written feedback, and resubmit when a project needs more work.'],
@@ -154,7 +155,7 @@ const PORTAL = [
 const DASHBOARD = [
   ['pulse', 'Progress rings', 'How far you are through your term and your program, at a glance.'],
   ['spark', 'Learning streaks', 'Days in a row with real learning activity. You can switch streaks off.'],
-  ['cert', 'Achievements and skill badges', 'Earned only from graded work, never from clicks.'],
+  ['cert', 'Achievements and skill badges', 'Achievements for real milestones, such as your first project passed, and a skill badge for each term you master.'],
   ['gap', 'Skill gaps', 'The skills your career goal needs that you have not mastered yet, and the lessons that teach them.'],
   ['rocket', 'One next step', 'A single recommended action each time you sign in, worked out from your progress, with the reason shown.'],
 ];
@@ -169,9 +170,9 @@ const portal = () => html`
     </ul>
     <section class="how-dash" aria-labelledby="dash-title">
       <div>
-        <span class="chip gold how-status">${icon('info')} Being built now</span>
+        <span class="chip gold how-status">${icon('check')} Built and tested</span>
         <h3 id="dash-title">${accent('Your personal *dashboard*')}</h3>
-        <p class="muted">We are building a personalised dashboard on top of the portal. This is what it will show you, worked out from your real progress and grades.</p>
+        <p class="muted">Your home page in the portal is a personal dashboard, worked out from your real progress and grades.</p>
       </div>
       <ul>${DASHBOARD.map(([ic, t, d]) => html`<li>${icon(ic)}<span><b>${t}</b>${d}</span></li>`)}</ul>
     </section>
@@ -222,8 +223,9 @@ const support = () => html`
         <li>${icon('check')}<span><b>Instructors teach live and grade.</b> The instructors who run your ${SCHEDULE.classDay} class also grade your projects. ${OWNER.instructors.length ? '' : 'Their names and backgrounds will be published before the first batch.'}</span></li>
         <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} IST, ${SCHEDULE.officeMinutes} minutes on Zoom, for questions about lessons and projects.</span></li>
         <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.</span></li>
-        <li>${icon('check')}<span><b>Mentoring and success coaching.</b> Help to plan your weeks around work and life, and to get back on track when a week goes wrong.</span></li>
       </ul>
+      <div class="box"><h3>${icon('clock')} Planned: mentoring and success coaching</h3>
+        <p class="muted">We plan to offer mentoring and success coaching to help you plan your weeks around work and life. It is not running yet, and the details will be published before the first batch.</p></div>
       <p class="note">${supportContact()}</p>
     </div>
     ${photo('mentor')}

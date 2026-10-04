@@ -23,6 +23,9 @@ export const OWNER = {
   grievanceOfficer: null,
   refundPolicy: null,
   instructors: [],
+  // Official social accounts, as full https:// profile URLs. The footer shows a round icon only for accounts set
+  // here; none exist yet, so none are shown.
+  social: { linkedin: null, youtube: null, instagram: null, x: null, facebook: null },
 };
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

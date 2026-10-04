@@ -104,7 +104,7 @@ export function svgMarkup(value, { uid = 'gd', shown = Infinity } = {}) {
   const { xs, escaped } = descend(lr);
   const last = Math.min(shown, xs.length - 1);
   const o = [];
-  o.push(`<defs><linearGradient id="${uid}-c" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".5" stop-color="#0B6BF5"/><stop offset="1" stop-color="#6D5DF6"/></linearGradient>`
+  o.push(`<defs><linearGradient id="${uid}-c" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#22D3EE"/><stop offset=".5" stop-color="#0866FF"/><stop offset="1" stop-color="#6D5DF6"/></linearGradient>`
     + `<marker id="${uid}-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="lrn-gd-head" d="M0 1L9 5L0 9z"/></marker></defs>`);
   for (let i = -3; i <= 3; i++) {
     o.push(`<line class="lrn-gd-grid" x1="${X(i)}" x2="${X(i)}" y1="${TOP - 8}" y2="${BASE}"/><text x="${X(i)}" y="${BASE + 20}" text-anchor="middle">${minus(String(i))}</text>`);

@@ -5,9 +5,10 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { buildForTest, missingPageModules, visibleText, decode, BANNED, unnegatedAccredited, ROOT } from './helpers.mjs';
-import { SITE, OWNER } from '../../web/data/site.mjs';
+import { SITE, OWNER, SCHEDULE } from '../../web/data/site.mjs';
 import { PROGRAMS, TUITION, money, todayInKolkata } from '../../web/data/programs.mjs';
 import { fromIso } from '../../web/assets/js/dates.mjs';
+import { ACCESS_RULE } from '../../web/assets/js/access-rule.mjs';
 
 const DAY = 86400000;
 let site;
@@ -174,7 +175,9 @@ test('pages that show stock photos or clips say they are stock media', () => {
   const problems = [];
   for (const { path, html } of site.pages) {
     const body = /<main[\s\S]*<\/main>/.exec(html)?.[0] ?? '';
-    const people = [...body.matchAll(/<img\b[^>]*src="\/img\/[^"]*"[^>]*>/g)].filter(([tag]) => attr(tag, 'alt')).length
+    // Program covers (/img/covers/) are Nuvora's own drawn artwork with no people or photos (web/lib/covers.mjs),
+    // so they are not stock media. Every other image under /img/ is a stock photo.
+    const people = [...body.matchAll(/<img\b[^>]*src="\/img\/(?!covers\/)[^"]*"[^>]*>/g)].filter(([tag]) => attr(tag, 'alt')).length
       + count(body, /<video\b/g);
     if (people && !/\bstock (photo|video|clip|model|media|footage)s?\b/i.test(visibleText(`<body>${body}</body>`))) problems.push(`${path}: shows ${people} stock photo(s) or clip(s) without saying they are stock media`);
   }
@@ -196,9 +199,21 @@ test('every Course offers the next real batch, on the India-time schedule, at th
     const p = PROGRAMS.find((x) => SITE.origin + x.url === c.url);
     if (!p) { problems.push(`${path}: Course "${c.name}" does not point at a program page (${c.url})`); continue; }
     const inst = c.hasCourseInstance ?? {};
-    const sched = inst.courseSchedule ?? {};
-    if (sched.scheduleTimezone !== 'Asia/Kolkata') problems.push(`${path}: scheduleTimezone is ${sched.scheduleTimezone}`);
-    for (const [where, iso] of [['CourseInstance.startDate', inst.startDate], ['courseSchedule.startDate', sched.startDate]]) {
+    // One weekly Schedule per live session: the class and the office hours, each with its own day, time and length.
+    const scheds = [].concat(inst.courseSchedule ?? []);
+    const want = [[SCHEDULE.classDay, SCHEDULE.classTime, SCHEDULE.classMinutes], [SCHEDULE.officeDay, SCHEDULE.officeTime, SCHEDULE.officeMinutes]];
+    const got = scheds.map((x) => [String([].concat(x.byDay ?? []).join()).replace('https://schema.org/', ''), x.startTime, Number(/^PT(\d+)M$/.exec(x.duration ?? '')?.[1])]);
+    if (JSON.stringify(got) !== JSON.stringify(want)) problems.push(`${path}: courseSchedule is ${JSON.stringify(got)}, expected the class and office hours ${JSON.stringify(want)}`);
+    for (const k of ['timeRequired', 'numberOfCredits']) if (k in c) problems.push(`${path}: Course has ${k}, which cannot be stated as one true value`);
+    if ('courseWorkload' in inst) problems.push(`${path}: CourseInstance has courseWorkload, but weekly hours are a range, not a total`);
+    const dates = [['CourseInstance.startDate', inst.startDate]];
+    for (const [i, sched] of scheds.entries()) {
+      if (sched['@type'] !== 'Schedule' || sched.repeatFrequency !== 'P1W') problems.push(`${path}: courseSchedule[${i}] is not a weekly Schedule`);
+      if (sched.scheduleTimezone !== 'Asia/Kolkata') problems.push(`${path}: courseSchedule[${i}].scheduleTimezone is ${sched.scheduleTimezone}`);
+      if (sched.startDate !== inst.startDate || sched.endDate !== inst.endDate) problems.push(`${path}: courseSchedule[${i}] does not run with the batch`);
+      dates.push([`courseSchedule[${i}].startDate`, sched.startDate]);
+    }
+    for (const [where, iso] of dates) {
       if (!iso) { problems.push(`${path}: no ${where}`); continue; }
       const d = fromIso(iso);
       if (d.getUTCDay() !== 1 || d.getUTCDate() > 7) problems.push(`${path}: ${where} ${iso} is not the first Monday of a month`);
@@ -303,6 +318,90 @@ test('every program page shows its key facts and says it is not an accredited de
       if (!facts.includes(want)) problems.push(`${p.url}: key facts do not show "${want}"`);
     }
     if (!/not an accredited degree/i.test(visibleText(pg.html))) problems.push(`${p.url}: does not say "not an accredited degree"`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+const flat = (html) => visibleText(html).replace(/\s+/g, ' ');
+const pageAt = (path) => site.pages.find((x) => x.path === path);
+
+test('the access rule for unpaid terms is published in the same words wherever it appears', () => {
+  const problems = [];
+  for (const path of ['/tuition/', '/admissions/', '/legal/terms/']) {
+    const pg = pageAt(path);
+    if (!pg) { problems.push(`${path}: not built`); continue; }
+    if (!flat(pg.html).includes(ACCESS_RULE)) problems.push(`${path}: does not show the access rule word for word`);
+  }
+  // Anything that talks about the 30 days must be the published sentence, not a paraphrase.
+  for (const { path, html } of site.pages) {
+    const text = flat(html).split(ACCESS_RULE).join(' ');
+    const m = /[^.]*\b30 days\b[^.]*\./i.exec(text);
+    if (m) problems.push(`${path}: a different wording of the access rule: "${m[0].trim()}"`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('the accessibility statement is honest and reachable from the other legal pages', () => {
+  const pg = pageAt('/legal/accessibility/');
+  assert.ok(pg, '/legal/accessibility/ is built');
+  const text = flat(pg.html);
+  for (const want of ['WCAG 2.2', 'level AA', 'We do not claim full conformance', 'no independent accessibility audit', 'Known limits',
+    'screen readers', '320, 360, 390, 768 and 1280 pixels', 'Escape', 'reduced motion', 'Report a problem', 'October 3, 2026']) {
+    assert.ok(text.includes(want), `the statement says "${want}"`);
+  }
+  assert.match(pg.html, /href="\/contact\/"/, 'problems are reported through the contact page');
+  assert.doesNotMatch(text, /fully (accessible|conformant)|conforms to WCAG|100% accessible/i);
+  for (const path of ['/legal/privacy/', '/legal/terms/', '/legal/credits/', '/contact/']) {
+    assert.match(pageAt(path).html, /href="\/legal\/accessibility\/"/, `${path} links to the accessibility statement`);
+  }
+});
+
+test('seat requests: one generic confirmation, no reference, and the saved plan is opt-in', () => {
+  const html = pageAt('/admissions/').html;
+  const text = flat(html);
+  assert.doesNotMatch(html, /data-r="reference"|Keep your reference|already requested/i);
+  assert.match(html, /data-result-title>Request received</);
+  assert.ok(text.includes('Nuvora will reply by email to the address you gave'));
+  const box = /<input type="checkbox" name="include_plan"[^>]*>/.exec(html)?.[0] ?? '';
+  assert.ok(box, 'the include-plan box is on the page');
+  assert.doesNotMatch(box, /\schecked\b/, 'the include-plan box starts unticked');
+  for (const want of ['background, goal, weekly time and coding', 'bachelor’s degree', 'best match and its score']) {
+    assert.ok(text.includes(want), `the plan hint says it sends "${want}"`);
+  }
+  const privacy = flat(pageAt('/legal/privacy/').html);
+  assert.ok(privacy.includes('A request can only be confirmed through the email address given in it'));
+});
+
+test('the privacy notice names every Google font and what administrators can see', () => {
+  const text = flat(pageAt('/legal/privacy/').html);
+  for (const font of ['Plus Jakarta Sans', 'Source Serif 4', 'Outfit', 'JetBrains Mono']) assert.ok(text.includes(font), `names ${font}`);
+  assert.ok(text.includes('payment records and access history'), 'says administrators can see payment records and access history');
+});
+
+test('heading levels never skip on any page (an h2 before an h3, an h3 before an h4)', () => {
+  const problems = [];
+  for (const { path, html } of site.pages) {
+    let prev = 0;
+    for (const m of html.matchAll(/<h([1-6])[\s>][\s\S]*?<\/h\1>/g)) {
+      const level = Number(m[1]);
+      if (prev && level > prev + 1) problems.push(`${path}: h${prev} then h${level} "${visibleText(m[0]).trim().slice(0, 40)}"`);
+      prev = level;
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('the Meta-logo blues lead: none of the replaced blues, and no magenta or teal topic colours, are left', async () => {
+  // Replaced on 2026-10-03 (owner request): the old blues, plus the off-palette topic and program colours.
+  const OLD = ['#0B6BF5', '#0A4FC4', '#2B8CFF', '#2A45D8', '#123C9C', '#4DA8FF', '#9CD0FF', '#E6F3FF', '#10284D',
+    '#4338CA', '#4C1D95', '#C026D3', '#14B8A6', '#0E7490', '#2DD4BF', '#1E1B7B', 'rgb(11 107 245', 'rgb(67 56 202'];
+  const { readdir } = await import('node:fs/promises');
+  const files = async (dir) => (await readdir(dir, { withFileTypes: true, recursive: true }))
+    .filter((e) => e.isFile() && /\.(css|m?js)$/.test(e.name)).map((e) => join(e.parentPath ?? e.path, e.name));
+  const problems = [];
+  for (const f of await files(resolve(ROOT, 'web'))) {
+    const text = (await readFile(f, 'utf8')).toUpperCase();
+    for (const c of OLD) if (text.includes(c.toUpperCase())) problems.push(`${f.slice(ROOT.length)}: ${c}`);
   }
   assert.deepEqual(problems, []);
 });

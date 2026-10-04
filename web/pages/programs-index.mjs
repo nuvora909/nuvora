@@ -1,7 +1,7 @@
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead, liveDate } from '../lib/layout.mjs';
-import { programGrid, sectionHead, ctaBand } from '../lib/components.mjs';
+import { programCatalog, sectionHead, ctaBand } from '../lib/components.mjs';
 import { itemList, breadcrumbList } from '../lib/schema.mjs';
 import { PROGRAMS, PACE, CREDENTIAL, TOPICS, money } from '../data/programs.mjs';
 import { ROLES } from '../data/careers.mjs';
@@ -30,19 +30,20 @@ const LEVEL_CARDS = [
 
 const body = () => html`
 ${pageHead({ eyebrow: 'Programs', title: accent('Programs in data science and *AI*'), lede: 'Seven programs, all taught in 12-week terms with lessons on demand, two live Zoom sessions a week and instructor-graded projects. Compare them on the facts that matter.', crumbs: [['/', 'Home'], ['/programs/', 'Programs']] })}
-<section class="sec">
+<section class="sec" aria-labelledby="levels-title">
   <div class="wrap">
+    <h2 class="sr-only" id="levels-title">Programs by level</h2>
     <div class="twocol" style="margin-bottom:36px">
       ${LEVEL_CARDS.map(([lvl, title, len, text]) => html`<div class="box"><span class="eyebrow">${len}</span><h3>${title}</h3><p class="muted">${text}</p>
         <p class="small"><b>${PROGRAMS.filter((p) => p.level === lvl).length}</b> ${PROGRAMS.filter((p) => p.level === lvl).length === 1 ? 'program' : 'programs'} · from ${money(PROGRAMS.find((p) => p.level === lvl).tuition.perTerm)} per term</p></div>`)}
     </div>
-    ${programGrid(PROGRAMS)}
+    ${programCatalog({ id: 'programs-catalog' })}
     <p class="row small muted" style="margin-top:22px">Browse by topic: ${TOPICS.map((t) => html`<a class="chip blue" href="/learn/${slugTopic(t)}/">${t}</a>`)}</p>
   </div>
 </section>
 <section class="sec tinted" id="compare" aria-labelledby="compare-title">
   <div class="wrap">
-    ${sectionHead({ eyebrow: 'Side by side', title: 'Compare *every* program', lede: `All programs start on the first Monday of a month. The next start is on the date shown at the top of the page.`, action: html`<a class="link" href="/find-your-program/">Not sure? Find my program ${icon('arrow')}</a>` })}
+    ${sectionHead({ id: 'compare-title', eyebrow: 'Side by side', title: 'Compare *every* program', lede: `All programs start on the first Monday of a month. The next start is on the date shown at the top of the page.`, action: html`<a class="link" href="/find-your-program/">Not sure? Find my program ${icon('arrow')}</a>` })}
     <div class="tablewrap compare" tabindex="0" role="region" aria-labelledby="compare-title">
       <table style="min-width:1100px">
         <thead><tr><th scope="col">Program</th>${PROGRAMS.map((p) => html`<th scope="col"><a href="${p.url}">${p.short}</a></th>`)}</tr></thead>
@@ -60,7 +61,7 @@ export default function programsIndex() {
     html: page({
       path: '/programs/',
       title: 'Data science and AI programs: compare all 7',
-      description: 'Compare Nuvora’s certificates, bachelor’s-level and master’s-level programs in data science, machine learning, generative AI and MLOps: duration, weekly hours, projects, tuition and career paths.',
+      description: 'Compare Nuvora’s 7 programs in data science, machine learning, generative AI and MLOps: duration, weekly hours, projects, tuition and career paths.',
       body: body(),
       schema: [itemList(PROGRAMS.map((p) => [p.url, p.name])), breadcrumbList([['/', 'Home'], ['/programs/', 'Programs']])],
     }),

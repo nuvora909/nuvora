@@ -96,13 +96,13 @@ const EXTRA = {
 
 // Card colours (start and end of the thumbnail gradient) and short names for tight spaces.
 const LOOK = {
-  'bs-ds': { colors: ['#0B5ED7', '#22D3EE'], short: 'B.S. Data Science' },
-  'bs-aiml': { colors: ['#1E1B7B', '#6D5DF6'], short: 'B.S. AI & ML' },
-  'ms-aml': { colors: ['#0A1A3F', '#1D6BF2'], short: 'M.S. Applied ML' },
-  'ms-ds': { colors: ['#0E7490', '#2DD4BF'], short: 'M.S. Data Science' },
-  'c-py': { colors: ['#1D4ED8', '#38BDF8'], short: 'Python & Data Analysis' },
-  'c-genai': { colors: ['#4C1D95', '#C026D3'], short: 'Generative AI & LLM Apps' },
-  'c-mlops': { colors: ['#0F172A', '#14B8A6'], short: 'MLOps & Data Engineering' },
+  'bs-ds': { colors: ['#0064E0', '#0082FB'], short: 'B.S. Data Science' },
+  'bs-aiml': { colors: ['#0A1A3F', '#0866FF'], short: 'B.S. AI & ML' },
+  'ms-aml': { colors: ['#0047B3', '#0082FB'], short: 'M.S. Applied ML' },
+  'ms-ds': { colors: ['#0047B3', '#22D3EE'], short: 'M.S. Data Science' },
+  'c-py': { colors: ['#0866FF', '#22D3EE'], short: 'Python & Data Analysis' },
+  'c-genai': { colors: ['#0047B3', '#6D5DF6'], short: 'Generative AI & LLM Apps' },
+  'c-mlops': { colors: ['#0A1A3F', '#22D3EE'], short: 'MLOps & Data Engineering' },
 };
 
 export const PROGRAMS = CORE.map((p) => {

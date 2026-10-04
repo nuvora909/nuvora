@@ -20,7 +20,7 @@ const DETAILS = [
   ['mail', 'Support email', OWNER.supportEmail && html`<a href="mailto:${OWNER.supportEmail}">${OWNER.supportEmail}</a>`,
     html`Until then, use the <a href="/admissions/#request">seat request form</a> and we reply by email.`],
   ['chat', 'Phone or WhatsApp', OWNER.phone && html`<a href="tel:${OWNER.phone.replace(/[^\d+]/g, '')}">${OWNER.phone}</a>`,
-    'There is no Nuvora phone or WhatsApp number yet.'],
+    'A phone or WhatsApp number, if there is one, will be published here before the first batch.'],
   ['clock', 'Support hours', OWNER.supportHours && html`<span>${OWNER.supportHours}</span>`,
     'Support hours and reply times will be listed here.'],
   ['brief', 'Registered legal entity', OWNER.legalEntity && html`<span>${OWNER.legalEntity}</span>`,
@@ -78,6 +78,7 @@ const details = () => html`
     <div class="abt-links" style="margin-top:22px">
       <a class="link" href="/legal/privacy/">Privacy notice ${icon('arrow')}</a>
       <a class="link" href="/legal/terms/">Terms of use ${icon('arrow')}</a>
+      <a class="link" href="/legal/accessibility/">Accessibility statement ${icon('arrow')}</a>
       <a class="link" href="/about/">About Nuvora ${icon('arrow')}</a>
     </div>
   </div>

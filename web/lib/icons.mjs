@@ -44,14 +44,14 @@ const PATHS = {
 
 export const icon = (name, cls = 'ic') => raw(`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${PATHS[name]}"/></svg>`);
 
-// The "nuv◯ra" wordmark: the o is a ring with a small orbiting dot.
+// The "nuv◯ra" wordmark: the o is a ring with a small orbiting dot. The ring carries the Meta logo gradient
+// (#0064E0 to #0082FB, bottom left to top right); on dark backgrounds a lighter pair of the same blues.
 let ringId = 0;
 export function wordmark({ light = false } = {}) {
   const id = `wmg${++ringId}`;
-  const ring = light
-    ? `<circle cx="19" cy="23" r="13.5" fill="none" stroke="#7DD3FC" stroke-width="6.5"/><circle cx="34" cy="7" r="4.5" fill="#FFFFFF"/>`
-    : `<defs><linearGradient id="${id}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#123C9C"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs><circle cx="19" cy="23" r="13.5" fill="none" stroke="url(#${id})" stroke-width="6.5"/><circle cx="34" cy="7" r="4.5" fill="#38BDF8"/>`;
+  const [from, to, dot] = light ? ['#4C9DFF', '#BFD9FF', '#FFFFFF'] : ['#0064E0', '#0082FB', '#0082FB'];
+  const ring = `<defs><linearGradient id="${id}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><circle cx="19" cy="23" r="13.5" fill="none" stroke="url(#${id})" stroke-width="6.5"/><circle cx="34" cy="7" r="4.5" fill="${dot}"/>`;
   return raw(`<span class="wm">nuv<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">${ring}</svg>ra</span>`);
 }
 
-export const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#123C9C"/><stop offset="1" stop-color="#0A1A3F"/></linearGradient></defs><rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g)"/><circle cx="47" cy="55" r="22" fill="none" stroke="#38BDF8" stroke-width="10"/><circle cx="71" cy="29" r="8" fill="#FFD66B"/></svg>`;
+export const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0082FB"/><stop offset="1" stop-color="#0064E0"/></linearGradient></defs><rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g)"/><circle cx="47" cy="55" r="22" fill="none" stroke="#FFFFFF" stroke-width="10"/><circle cx="71" cy="29" r="8" fill="#FFD66B"/></svg>`;

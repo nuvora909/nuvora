@@ -1,5 +1,5 @@
 // Builds the public website from web/ into dist/: one index.html per clean URL, plus CSS, browser modules,
-// media, a browser copy of the catalog, sitemap.xml, robots.txt and 404.html.
+// media, the program cover art (covers/), a browser copy of the catalog, sitemap.xml, robots.txt and 404.html.
 //
 //   node scripts/build-site.mjs            (the dev server also runs this on start)
 //   NUVORA_SITE_ORIGIN=https://example.org NUVORA_INDEXABLE=1 node scripts/build-site.mjs   (production)
@@ -56,11 +56,12 @@ function catalogModule(PROGRAMS, ROLES, TRACKS, extra) {
 
 export async function buildSite({ outDir = DIST, quiet = false, media = true, artifact = false } = {}) {
   const t0 = Date.now();
-  const [{ PROGRAMS }, { ROLES, TRACKS, CAREER_NOTE }, site, { FAVICON }] = await Promise.all([
+  const [{ PROGRAMS }, { ROLES, TRACKS, CAREER_NOTE }, site, { FAVICON }, { coverSvg, coverUrl }] = await Promise.all([
     import(pathToFileURL(resolve(WEB, 'data/programs.mjs')).href),
     import(pathToFileURL(resolve(WEB, 'data/careers.mjs')).href),
     import(pathToFileURL(resolve(WEB, 'data/site.mjs')).href),
     import(pathToFileURL(resolve(WEB, 'lib/icons.mjs')).href),
+    import(pathToFileURL(resolve(WEB, 'lib/covers.mjs')).href),
   ]);
 
   // Fresh output, except media folders, which are synced incrementally.
@@ -72,6 +73,9 @@ export async function buildSite({ outDir = DIST, quiet = false, media = true, ar
   await copyTree(resolve(WEB, 'assets/css'), join(outDir, 'css'));
   await copyTree(resolve(WEB, 'assets/js'), join(outDir, 'js'));
   await writeFile(join(outDir, 'favicon.svg'), FAVICON);
+  // Program covers are drawn from code (web/lib/covers.mjs), so they are written on every build, media or not.
+  await mkdir(join(outDir, 'covers'), { recursive: true });
+  for (const p of PROGRAMS) await writeFile(join(outDir, ...coverUrl(p).split('/').filter(Boolean)), coverSvg(p));
   await writeFile(join(outDir, 'js/catalog.mjs'), catalogModule(PROGRAMS, ROLES, TRACKS, {
     careerNote: CAREER_NOTE, faq: site.FAQ, schedule: site.SCHEDULE, consentVersion: site.SITE.consentVersion,
   }));

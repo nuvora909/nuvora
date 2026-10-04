@@ -6,9 +6,11 @@
 // Contract: POST {supabaseUrl}/rest/v1/rpc/request_seat
 //   { p_program, p_start, p_full_name, p_email, p_country, p_consent, p_consent_version, p_phone?, p_details?, p_source }
 //   p_details is a flat object of short values (the saved plan's answers, match and score). It is sent only when a
-//   plan was saved on this device and the visitor keeps "include" ticked.
-//   200 -> { reference, program, program_name, start_date, apply_by, duplicate }
+//   plan was saved on this device and the visitor ticks "include" (it starts unticked).
+//   200 -> { ok: true } for every accepted request, new or a repeat of an earlier one
 //   400 -> { code: "22023", message: "<friendly message>" }
+// Every accepted request gets the same "Request received" message, built only from what this visitor typed: the
+// page never shows a reference or anything else that could reveal whether the same request was sent before.
 import { CATALOG } from './catalog.mjs';
 import { nextStarts, termDates, fmtDay, fmtLong, isoDay, fromIso } from './dates.mjs';
 import { savedPlan } from './site.js';
@@ -313,30 +315,19 @@ function mount(form) {
     }
   }
 
-  function showResult(r, body) {
-    const p = P(r.program) ?? P(body.p_program);
-    const startIso = ISO.test(String(r.start_date ?? '').slice(0, 10)) ? String(r.start_date).slice(0, 10) : body.p_start;
-    const applyIso = ISO.test(String(r.apply_by ?? '').slice(0, 10)) ? String(r.apply_by).slice(0, 10) : null;
-    const start = fromIso(startIso);
-    const applyBy = applyIso ? fromIso(applyIso) : new Date(start.getTime() - 7 * 86400000);
+  // The same confirmation for every accepted request, from the form's own values only.
+  function showResult(body) {
+    const p = P(body.p_program);
+    const start = fromIso(body.p_start);
+    const applyBy = new Date(start.getTime() - 7 * 86400000);
     const set = (key, text) => { result.querySelector(`[data-r="${key}"]`).textContent = text; };
-    set('reference', String(r.reference));
-    set('program', r.program_name || p?.name || body.p_program);
+    set('program', p?.name ?? body.p_program);
     set('start', fmtLong(start));
     set('applyBy', fmtDay(applyBy));
     set('email', body.p_email);
     const link = result.querySelector('[data-r-link="program"]');
     if (p) { link.href = p.url; link.hidden = false; link.setAttribute('aria-label', `View program: ${p.name}`); } else link.hidden = true;
     const title = result.querySelector('[data-result-title]');
-    const lede = result.querySelector('[data-result-lede]');
-    result.classList.toggle('is-duplicate', Boolean(r.duplicate));
-    if (r.duplicate) {
-      title.textContent = 'You already requested this seat';
-      lede.textContent = 'Nuvora already has your request for this program and start date, so nothing new was added. Here is your reference. Nothing has been charged.';
-    } else {
-      title.textContent = 'Your seat request is in';
-      lede.textContent = 'Keep your reference. Nuvora will reply by email with next steps. Nothing has been charged.';
-    }
     form.hidden = true;
     result.hidden = false;
     title.focus({ preventScroll: true });
@@ -361,9 +352,10 @@ function mount(form) {
     setSending(false);
 
     const r = Array.isArray(res.data) ? res.data[0] : res.data;
-    if (res.ok && r && r.reference) {
+    // Any 2xx answer means the database accepted the request (validation problems come back as 400).
+    if (res.ok && r && typeof r === 'object') {
       setStatus('');
-      showResult(r, body);
+      showResult(body);
       return;
     }
     if (res.status === 400 && r && r.code === '22023' && r.message) {

@@ -1,7 +1,7 @@
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page } from '../lib/layout.mjs';
-import { sectionHead, programGrid, careerLadder, finder, factsBand, schedule, weekView, faqList, ctaBand, foundingPanel, photo } from '../lib/components.mjs';
+import { sectionHead, programCatalog, proofSection, careerLadder, finder, factsBand, schedule, weekView, faqList, ctaBand, foundingPanel, photo } from '../lib/components.mjs';
 import { faqPage, itemList } from '../lib/schema.mjs';
 import { PROGRAMS, TOPICS, TUITION, money } from '../data/programs.mjs';
 import { SITE, FAQ, CLIPS, PHOTOS, SCHEDULE } from '../data/site.mjs';
@@ -10,7 +10,7 @@ const slugTopic = (t) => t.toLowerCase().replace(/\s+/g, '-');
 
 const hero = () => html`
 <section class="hero on-dark" aria-labelledby="hero-title">
-  <div class="vstage" data-video data-clips="${JSON.stringify(CLIPS.map(({ src, from, dur }) => ({ src, from, dur })))}">
+  <div class="vstage" aria-hidden="true" data-video data-clips="${JSON.stringify(CLIPS.map(({ src, from, dur }) => ({ src, from, dur })))}">
     <img class="on" src="${PHOTOS.group.src}" alt="" fetchpriority="high" decoding="async" style="object-position:${PHOTOS.group.pos}">
   </div>
   <div class="wrap hero-in">
@@ -24,11 +24,11 @@ const hero = () => html`
         <span class="chip frost">${icon('coin')} From ${money(TUITION.perTerm.Certificate)} per term</span>
       </div>
       <div class="hero-ctas">
+        <a class="btn primary" href="#find" data-cta="hero-find">Find my program ${icon('down')}</a>
         <a class="btn ghost" href="/programs/" data-cta="hero-programs">Browse programs</a>
         <a class="btn ghost" href="/learn/sample-lesson/" data-cta="hero-sample">${icon('play')} Try a sample lesson</a>
       </div>
     </div>
-    ${finder({ id: 'hero-finder', compact: true })}
   </div>
   <div class="vbar">
     <button class="vbtn" type="button" data-video-toggle aria-pressed="false" hidden>${icon('pause')}<span>Pause video</span></button>
@@ -36,17 +36,28 @@ const hero = () => html`
   </div>
 </section>`;
 
+// The catalog, after the owner's reference: an intro column, topic tabs, picture cards and "Show N more".
 const programs = () => html`
 <section class="sec" id="programs" aria-labelledby="programs-title">
   <div class="wrap">
-    <div class="shead">
-      <div><span class="eyebrow">Programs</span><h2 id="programs-title">${accent('Choose a program built for your *next step*')}</h2>
-        <p class="lede">Everything you need to decide, on every card: how long it takes, how many hours a week, what you build, what it costs and where it can lead.</p></div>
-      <a class="link" href="/programs/#compare">Compare all programs ${icon('arrow')}</a>
-    </div>
-    ${programGrid(PROGRAMS)}
-    <p class="row small muted" style="margin-top:22px">Browse by topic:
+    ${programCatalog({ id: 'home-catalog', limit: 3, intro: {
+      id: 'programs-title', eyebrow: 'Programs', title: 'Build the skills employers *hire for*',
+      text: `${PROGRAMS.length} programs in data science, machine learning, generative AI and MLOps, each mapped to the skills data and AI roles use. All of them run in 12-week terms, with lessons you watch any time, two live Zoom sessions a week and projects graded by instructors.`,
+    } })}
+    <p class="row small muted ccat-topics">Browse by topic:
       ${TOPICS.map((t) => html`<a class="chip blue" href="/learn/${slugTopic(t)}/">${t}</a>`)}</p>
+  </div>
+</section>`;
+
+// Find my program, right after the certificates: four questions, then the match with its reasons.
+const find = () => html`
+<section class="sec tinted" id="find" aria-labelledby="find-title">
+  <div class="wrap find-split">
+    <div class="find-copy">
+      ${sectionHead({ id: 'find-title', eyebrow: html`${icon('target')} Find my program`, title: 'Not sure which program *fits*?', lede: 'Answer four quick questions about your background, your goal and the time you have each week. You get your best match with the reasons, then your term-by-term learning path with dates and costs.' })}
+      <a class="link" href="/find-your-program/">Open the full planner ${icon('arrow')}</a>
+    </div>
+    ${finder({ id: 'home-finder', compact: true })}
   </div>
 </section>`;
 
@@ -63,7 +74,7 @@ const careers = () => html`
 </section>`;
 
 const pillar = ({ n, title, lede, points, photoKey, glass }) => html`
-<article class="pillar">
+<article class="pillar on-dark">
   <div class="copy">
     <span class="pk">${n}</span>
     <h3>${accent(title)}</h3>
@@ -80,17 +91,17 @@ const learningSystem = () => html`
       <p class="lede">Three ideas shape every program: learning that adapts to you, mastery you prove with real work, and people who keep you moving.</p></div></div>
     <div class="pillars">
       ${pillar({ n: '01', title: 'Learn *smarter*', photoKey: 'home',
-        lede: 'Personalized from day one. Your learning path lays out every term and date, tracks what you have actually watched and submitted, and points you to the one thing to do next.',
-        points: ['A learning path with every term, date and project', 'Progress measured from real watch time, not clicks', 'Skill gaps for your career goal, with the lessons that close them'],
-        glass: html`<div class="floatcard g1"><span class="ex">Example screen</span><b>Your learning path</b><div class="mini-bar"><i style="width:18%"></i></div><span>Term 2 of 12 · 18% complete</span></div>
-          <div class="floatcard g2"><span class="ex">Next step</span><b>Finish “Model evaluation &amp; validation”</b><span>12 minutes left · then Project 2</span></div>` })}
+        lede: 'Your portal home is built around you: your learning path term by term with its dates, progress counted from what you have actually watched and submitted, and one next step with the reason for it.',
+        points: ['A learning path with every term and its dates', 'Progress measured from real watch time, not clicks', 'Skill gaps for your career goal, with the lessons that close them'],
+        glass: html`<div class="floatcard g1"><span class="ex">Example screen</span><b>Your learning path</b><div class="mini-bar"><i style="width:18%"></i></div><span>Term 2 of 12 · 18% of lessons complete</span></div>
+          <div class="floatcard g2"><span class="ex">Next step</span><b>Model evaluation &amp; validation</b><span>Keep going: you are 60% of the way through this lesson.</span></div>` })}
       ${pillar({ n: '02', title: 'Prove *mastery*', photoKey: 'duo',
         lede: 'Competency is shown, not assumed. Every term has three projects assessed by instructors against a four-level rubric. Proficient or better passes; below that you get written feedback and resubmit.',
-        points: ['Three graded projects every term, plus a capstone', 'Skill badges earned only from graded work', 'Written feedback on every submission'],
+        points: ['Three graded projects every term, ending in a capstone', 'A skill badge for each term you master: every lesson complete and all three projects passed', 'Written feedback on every submission'],
         glass: html`<div class="floatcard g1"><span class="ex">Mastery rubric</span><div class="rub"><div><span>Distinguished</span><i style="width:100%"></i></div><div><span>Proficient</span><i style="width:78%"></i></div><div><span>Basic</span><i style="width:46%"></i></div><div><span>Not yet</span><i style="width:20%"></i></div></div></div>` })}
       ${pillar({ n: '03', title: 'Stay *supported*', photoKey: 'mentor',
-        lede: 'You are never learning alone. Instructors teach live and grade your work, office hours are there every week, and mentoring and success coaching help you plan your weeks and get back on track.',
-        points: [`Live class every ${SCHEDULE.classDay} and office hours every ${SCHEDULE.officeDay}`, 'Instructors who teach your classes and grade your projects', 'If you go quiet for two weeks, you appear on your instructor’s check-in list'],
+        lede: 'Instructors teach live and grade your work, and office hours run every week. Mentoring and success coaching are planned; what they include will be published before the first batch.',
+        points: [`Live class every ${SCHEDULE.classDay} and office hours every ${SCHEDULE.officeDay}`, 'Instructors who teach your classes and grade your projects', 'After 14 days without activity, you appear on your instructor’s check-in list'],
         glass: html`<div class="floatcard g2"><span class="ex">This week</span><b>Office hours · ${SCHEDULE.officeDay}</b><span>${SCHEDULE.officeTime} IST · ${SCHEDULE.officeMinutes} min on Zoom</span></div>` })}
     </div>
   </div>
@@ -118,11 +129,11 @@ const connected = () => html`
         <b>Your learning path</b><div class="row"><span class="ring-sm" style="--v:18" role="img" aria-label="18% of the program complete"><b>18%</b></span><span>Term 2 of 12<br>Goal: ML Engineer</span></div>
         <p class="hs-tip" id="hs1" hidden>The share of all lessons in your program you have completed. A lesson counts once you have watched 90% of it.</p></div>
       <div class="hs-card"><button class="hs" type="button" aria-expanded="false" aria-controls="hs2" aria-label="How do streaks work?">2</button>
-        <b>Learning streak</b><span>${icon('spark')} 6 days · a rest day never breaks it</span><span class="muted" style="color:var(--on-deep-muted)">You can turn streaks off at any time.</span>
-        <p class="hs-tip" id="hs2" hidden>Days with real learning activity in a row. One rest day between active days keeps the streak going, and streaks can be switched off in your profile.</p></div>
+        <b>Learning streak</b><span>${icon('spark')} 6 days · a single rest day never breaks it</span><span class="muted" style="color:var(--on-deep-muted)">You can turn streaks off at any time.</span>
+        <p class="hs-tip" id="hs2" hidden>Days with real learning activity in a row: watching lessons, submitting projects or attending class. One rest day between active days keeps the streak going, and streaks can be switched off in your profile.</p></div>
       <div class="hs-card"><button class="hs" type="button" aria-expanded="false" aria-controls="hs3" aria-label="What is the next step?">3</button>
-        <b>Next step</b><span>Resubmit Project 2 · feedback ready</span><span class="muted" style="color:var(--on-deep-muted)">Then: Lesson ML-240 Feature engineering</span>
-        <p class="hs-tip" id="hs3" hidden>One recommended action, chosen in a fixed order: work to resubmit, a live session starting soon, the lesson you are in, then the next lesson or skill gap.</p></div>
+        <b>Next step</b><span>Revise and resubmit Project 2</span><span class="muted" style="color:var(--on-deep-muted)">Your instructor reviewed it and asked for a revision.</span>
+        <p class="hs-tip" id="hs3" hidden>One recommended action, chosen in a fixed order: work to revise or past its due date, a live class within 24 hours, the lesson you are in, the next lesson, a project due this week, then a lesson for your goal.</p></div>
     </div>
   </div>
 </section>`;
@@ -130,7 +141,7 @@ const connected = () => html`
 const batch = () => html`
 <section class="sec" id="how" aria-labelledby="how-title">
   <div class="wrap stack" style="gap:24px">
-    ${sectionHead({ eyebrow: 'How a term runs', title: 'Flexible lessons, *live* every week', lede: `Each term is a 12-week batch that starts on the first Monday of a month. Here is a typical week, with times shown in India time (IST) and your own time zone.`, action: html`<a class="link" href="/how-it-works/">How it works ${icon('arrow')}</a>` })}
+    ${sectionHead({ id: 'how-title', eyebrow: 'How a term runs', title: 'Flexible lessons, *live* every week', lede: `Each term is a 12-week batch that starts on the first Monday of a month. Here is a typical week, with times shown in India time (IST) and your own time zone.`, action: html`<a class="link" href="/how-it-works/">How it works ${icon('arrow')}</a>` })}
     ${weekView()}
     ${schedule()}
   </div>
@@ -140,13 +151,15 @@ const body = () => html`
 ${hero()}
 ${factsBand()}
 ${programs()}
+${proofSection()}
+${find()}
 ${careers()}
 ${learningSystem()}
 ${connected()}
 ${batch()}
 <section class="sec tight"><div class="wrap">${foundingPanel()}</div></section>
 <section class="sec" id="faq" aria-labelledby="faq-title"><div class="wrap">
-  ${sectionHead({ eyebrow: 'Questions', title: 'Straight *answers*' })}
+  ${sectionHead({ id: 'faq-title', eyebrow: 'Questions', title: 'Straight *answers*' })}
   ${faqList(FAQ)}
 </div></section>
 ${ctaBand()}`;

@@ -56,7 +56,7 @@ const toolsFor = (topic) => [...new Set(programsFor(topic).flatMap((p) => p.tool
 // catalog facts for anything about Nuvora.
 const TOPIC_INFO = {
   'Data Science': {
-    icon: 'chart', colors: ['#0B5ED7', '#22D3EE'], lower: 'data science',
+    icon: 'chart', colors: ['#0064E0', '#0082FB'], lower: 'data science',
     title: 'What is data science? Concepts, roles, programs',
     description: 'What data science is, in plain English: key concepts from statistics to A/B tests, the roles that use them, and the Nuvora programs that teach each one.',
     h1: 'What is *data science*?',
@@ -94,7 +94,7 @@ const TOPIC_INFO = {
     },
   },
   'Machine Learning': {
-    icon: 'pulse', colors: ['#0A1A3F', '#1D6BF2'], lower: 'machine learning',
+    icon: 'pulse', colors: ['#0A1A3F', '#0866FF'], lower: 'machine learning',
     title: 'What is machine learning? Concepts, roles, programs',
     description: 'Machine learning explained in plain English: models, loss and gradient descent, evaluation, the roles that use it and the Nuvora programs that teach it.',
     h1: 'What is *machine learning*?',
@@ -102,7 +102,7 @@ const TOPIC_INFO = {
     summary: 'Teach software to learn from examples: models, loss functions, optimization and honest evaluation.',
     chain: 'Learns patterns from examples to make predictions.',
     what: [
-      'Machine learning is a way of building software that learns patterns from examples instead of following rules a programmer wrote by hand. Show a model thousands of past loan applications together with how each one turned out, and it learns to estimate the outcome of a new application.',
+      'Machine learning is a way of building software that learns patterns from examples instead of following rules a programmer wrote by hand. Show a model many past loan applications together with how each one turned out, and it learns to estimate the outcome of a new application.',
       raw(`Most machine learning comes down to three parts: a model with adjustable numbers called parameters, a loss function that measures how wrong its predictions are, and an optimizer that adjusts the parameters to make the loss smaller. Gradient descent, which you can try in our <a href="${SAMPLE}">free sample lesson</a>, is the idea behind the optimizers used to train most modern models.`),
       'The main families are supervised learning (learning from labelled examples to predict a label or a number), unsupervised learning (finding structure, such as groups, in data without labels) and reinforcement learning (learning by trial and reward). Deep learning uses neural networks with many layers and powers image recognition, speech and language models.',
       'The hard part is rarely training a model. It is framing the problem well, preparing good data and evaluating honestly: a model that scores well on the data it was trained on can still fail on new data. Careful validation is what separates a demo from a model people can rely on.',
@@ -132,7 +132,7 @@ const TOPIC_INFO = {
     },
   },
   'Generative AI': {
-    icon: 'spark', colors: ['#4C1D95', '#C026D3'], lower: 'generative AI',
+    icon: 'spark', colors: ['#0047B3', '#6D5DF6'], lower: 'generative AI',
     title: 'What is generative AI? Concepts, roles, programs',
     description: 'Generative AI explained in plain English: LLMs, retrieval-augmented generation, tool use and evaluation, related roles and the Nuvora programs that teach it.',
     h1: 'What is *generative AI*?',
@@ -168,7 +168,7 @@ const TOPIC_INFO = {
     },
   },
   MLOps: {
-    icon: 'layers', colors: ['#0F172A', '#14B8A6'], lower: 'MLOps',
+    icon: 'layers', colors: ['#0A1A3F', '#22D3EE'], lower: 'MLOps',
     title: 'What is MLOps? Concepts, roles and programs',
     description: 'MLOps explained in plain English: pipelines, serving, monitoring and continuous training, the roles that do this work and the Nuvora programs that teach it.',
     h1: 'What is *MLOps*?',
@@ -385,7 +385,7 @@ ${pageHead({ eyebrow: html`${icon(t.icon)} Topic guide`, title: accent(t.h1), le
       <h2 id="lrn-related-title" class="lrn-h-sm">Keep exploring</h2>
       <ul>
         ${related.map((r) => html`<li><a href="${r.url}" style="--a:${r.colors[0]};--b:${r.colors[1]}"><span class="lrn-rico" aria-hidden="true">${icon(r.icon)}</span><span><b>${r.name}</b><span>${r.summary}</span></span></a></li>`)}
-        <li><a href="${SAMPLE}" style="--a:#0B6BF5;--b:#6D5DF6"><span class="lrn-rico" aria-hidden="true">${icon('play')}</span><span><b>Sample lesson</b><span>Gradient descent, with an interactive chart and a practice check.</span></span></a></li>
+        <li><a href="${SAMPLE}" style="--a:#0866FF;--b:#6D5DF6"><span class="lrn-rico" aria-hidden="true">${icon('play')}</span><span><b>Sample lesson</b><span>Gradient descent, with an interactive chart and a practice check.</span></span></a></li>
       </ul>
     </aside>
   </div>

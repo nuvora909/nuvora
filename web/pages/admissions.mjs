@@ -1,6 +1,7 @@
 // /admissions/: how joining works before launch, who can join, the next start dates and the seat request form.
 // The form is sent by web/assets/js/lead.js to the request_seat database function. Without JavaScript the submit
-// button stays disabled, so personal details can never end up in a URL or be posted anywhere else.
+// button stays disabled, so personal details can never end up in a URL or be posted anywhere else. Every accepted
+// request gets the same message, so the page never reveals whether the same request was sent before.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead, liveDate } from '../lib/layout.mjs';
@@ -8,6 +9,7 @@ import { faqList, ctaBand } from '../lib/components.mjs';
 import { breadcrumbList, faqPage } from '../lib/schema.mjs';
 import { PROGRAMS, LEVELS, TUITION, CREDENTIAL, money, nextStarts, termDates, fmtDay, fmtLong, isoDay } from '../data/programs.mjs';
 import { OWNER } from '../data/site.mjs';
+import { ACCESS_RULE } from '../assets/js/access-rule.mjs';
 
 const PATH = '/admissions/';
 const CRUMBS = [['/', 'Home'], [PATH, 'Admissions']];
@@ -48,7 +50,11 @@ const FAQ = [
   ['Who can join?',
     `Master’s-level programs need a bachelor’s degree in any field. Certificates and bachelor’s-level programs need no degree, and the beginner programs teach Python from the start.${codingCerts.length ? ` ${codingCerts.length === 1 ? 'One certificate expects' : 'Some certificates expect'} you to code already; each program lists what you need.` : ''}`],
   ['What happens to the details I send?',
-    'The form sends them only to Nuvora’s database, and Nuvora uses them to reply to your request, as described in the privacy notice. If you saved a plan in Find my program, you choose whether to include it.'],
+    'The form sends them only to Nuvora’s database, and Nuvora uses them to reply to your request, as described in the privacy notice. If you saved a plan in Find my program, it is sent only if you tick the box to include it.'],
+  ['How do I know my request arrived?',
+    'The page says “Request received” as soon as Nuvora’s database accepts it, and Nuvora replies by email to the address you gave. The page shows the same message every time, so a request can only be confirmed through that email address.'],
+  ['What happens if I don’t pay for a term?',
+    ACCESS_RULE],
   ['Will I receive a degree?',
     `No. Programs lead to a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
 ];
@@ -222,9 +228,9 @@ function form(today) {
     ${field({ id: 'sr-phone', name: 'phone', label: 'Phone', type: 'tel', auto: 'tel', optional: true, max: 24, hint: 'Include your country code.' })}
   </div>
   <div class="adm-plan" data-plan-box hidden>
-    <label class="check"><input type="checkbox" name="include_plan" data-include-plan checked>
-      <span>Include the answers from my saved plan. Best match: <b data-plan-name></b> <span class="adm-planmeta" data-plan-meta></span></span></label>
-    <p class="hint adm-planhint">Your answers about background, goal, weekly time and coding are sent with the request, so the reply can fit your plan. Untick to leave them out.</p>
+    <label class="check"><input type="checkbox" name="include_plan" data-include-plan aria-describedby="sr-plan-hint">
+      <span>Include my saved plan. Best match: <b data-plan-name></b> <span class="adm-planmeta" data-plan-meta></span></span></label>
+    <p class="hint adm-planhint" id="sr-plan-hint">If you tick this, the request also sends your Find my program answers about your background, goal, weekly time and coding, your answer about a bachelor’s degree (if you gave one), and your best match and its score, so the reply can fit your plan. Nothing from the plan is sent unless you tick it.</p>
   </div>
   <div class="field adm-field" data-field="consent">
     <label class="check adm-consent"><input type="checkbox" id="sr-consent" name="consent" required>
@@ -243,10 +249,9 @@ function form(today) {
 const result = () => html`
 <div class="adm-result" data-seat-result hidden>
   <span class="adm-resultic">${icon('check')}</span>
-  <h3 tabindex="-1" data-result-title>Your seat request is in</h3>
-  <p data-result-lede>Keep your reference. Nuvora will reply by email with next steps. Nothing has been charged.</p>
+  <h3 tabindex="-1" data-result-title>Request received</h3>
+  <p data-result-lede>Nuvora will reply by email to the address you gave, with next steps. Nothing has been charged.</p>
   <dl class="adm-ref">
-    <div><dt>Reference</dt><dd class="mono" data-r="reference"></dd></div>
     <div><dt>Program</dt><dd data-r="program"></dd></div>
     <div><dt>Start date</dt><dd data-r="start"></dd></div>
     <div><dt>Requests close</dt><dd data-r="applyBy"></dd></div>
@@ -272,9 +277,9 @@ const request = (today) => html`
       <h2 id="request-title">${accent('Request a *seat*')}</h2>
       <p class="lede">Tell us the program and start date you want, and Nuvora replies by email with next steps. This is not an application or a payment.</p>
       <ul class="adm-reqfacts">
-        <li>${icon('doc')}<span><b>What you send:</b> the program and start date, your name, email and country, and a phone number if you want to add one.</span></li>
+        <li>${icon('doc')}<span><b>What you send:</b> the program and start date, your name, email and country, a phone number if you want to add one, and your saved Find my program plan only if you tick the box to include it.</span></li>
         <li>${icon('lock')}<span><b>Where it goes:</b> only to Nuvora’s database, so that Nuvora can reply to you.</span></li>
-        <li>${icon('mail')}<span><b>What comes back:</b> a reference on this page straight away, then an email from Nuvora with next steps.</span></li>
+        <li>${icon('mail')}<span><b>What comes back:</b> “Request received” on this page, then an email from Nuvora with next steps to the address you gave.</span></li>
       </ul>
       <p class="small adm-reqmore">Questions first? <a href="/contact/">Contact Nuvora</a> or <a href="#faq">read the answers below</a>.</p>
     </div>

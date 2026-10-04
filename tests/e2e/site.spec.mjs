@@ -1,6 +1,6 @@
 // The public website in the browser: the home page, Find my program, the saved plan, the career ladder, the
 // advisor, old links, clean URLs, live dates and local class times, and the seat request form.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, one } from './helpers.mjs';
 import { QUESTIONS, BACHELOR_Q } from '../../web/assets/js/match.mjs';
 import { nextStarts, todayInKolkata, weeklyTimeIn, termDates, fmtDay, isoDay, fromIso } from '../../web/assets/js/dates.mjs';
@@ -54,9 +54,15 @@ test('the header’s Find my program button opens the finder page', async ({ pag
   await expect(page.locator('form#finder legend')).toHaveText(QUESTIONS[0].q);
 });
 
-test('the hero finder gives an explained match and leads to the learning path with dates', async ({ page }) => {
+test('the home page finder, below the certificates, gives an explained match and leads to the learning path with dates', async ({ page }) => {
   await page.goto('/');
-  const finder = page.locator('form#hero-finder');
+  // The hero's main button jumps to the finder, which sits right after the certificates section.
+  await page.locator('.hero').getByRole('link', { name: /Find my program/ }).click();
+  await expect(page).toHaveURL(/#find$/);
+  expect(await page.locator('#certificates + #find').count()).toBe(1);
+  await expect(page.locator('.hero form[data-finder]')).toHaveCount(0);
+  const finder = page.locator('form#home-finder');
+  await expect(finder).toBeInViewport();
   await answer(finder, TECH_AI);
   const result = finder.locator('.f-result');
   await expect(result).toBeVisible();
@@ -169,7 +175,13 @@ test('the career ladder: tabs switch by click and arrow keys, and roles expand',
   await expect(steps.nth(0)).toHaveAttribute('aria-expanded', 'false');
   await expect(await detailOf(steps.nth(1))).toBeVisible();
   await expect(await detailOf(steps.nth(0))).toBeHidden();
-  await expect(await detailOf(steps.nth(1))).toContainText('Programs that teach these skills');
+  // The open role lists the programs for it, each linking to its program page and saying how many skills it teaches.
+  const detail = await detailOf(steps.nth(1));
+  const programs = detail.locator('a[href^="/programs/"]');
+  expect(await programs.count()).toBeGreaterThanOrEqual(1);
+  await expect(programs.first()).toBeVisible();
+  await expect(programs.first()).toContainText(/Teaches (all \d+|\d+ of the \d+) skills listed|Teaches related skills/);
+  await expect(detail.getByRole('link', { name: /Skills and tools for this role/ })).toHaveAttribute('href', /^\/careers\/[a-z-]+\/$/);
 });
 
 test('the advisor answers from the catalog, and Escape closes it and returns focus', async ({ page, baseURL }) => {
@@ -281,22 +293,74 @@ test.describe('with reduced motion', () => {
 });
 
 test.describe('seat requests', () => {
-  test('a complete request gets a reference', async ({ page, request }) => {
-    const n = await one(request, "select count(*)::int as n from pg_proc where proname = 'request_seat'");
-    test.skip(!n, 'The request_seat() database function is not in supabase/migrations yet, so the form has nothing to send to.');
-    await reset(request);
-    await page.goto('/admissions/?program=c-genai');
-    const form = page.locator('form[data-seat-form]');
-    await expect(form.getByLabel('Program')).toHaveValue('c-genai');
+  const seatBodies = (page) => {
+    const bodies = [];
+    page.on('request', (r) => { if (/\/rest\/v1\/rpc\/request_seat/.test(r.url())) bodies.push(r.postDataJSON()); });
+    return bodies;
+  };
+  async function fillAndSend(form) {
     await form.getByLabel('Full name').fill('Asha Rao');
     await form.getByLabel('Email').fill('asha.rao@nuvora.test');
     await form.getByLabel('Country you live in').fill('India');
     await form.getByLabel(/I agree/).check();
     await form.getByRole('button', { name: 'Send seat request' }).click();
+  }
+
+  test('a new request and a repeat of it get the same generic confirmation, with no reference', async ({ page, request }) => {
+    const n = await one(request, "select count(*)::int as n from pg_proc where proname = 'request_seat'");
+    test.skip(!n, 'The request_seat() database function is not in supabase/migrations yet, so the form has nothing to send to.');
+    await reset(request);
+    const sent = seatBodies(page);
+    await page.goto('/admissions/?program=c-genai');
+    const form = page.locator('form[data-seat-form]');
     const result = page.locator('[data-seat-result]');
-    await expect(result).toBeVisible();
-    await expect(result.locator('[data-r="reference"]')).toHaveText(/\S{4,}/);
-    await expect(result.locator('[data-r="program"]')).toContainText(P('c-genai').name);
+    await expect(form.getByLabel('Program')).toHaveValue('c-genai');
+    const seen = [];
+    for (let i = 0; i < 2; i++) {
+      if (i) {
+        await result.getByRole('button', { name: 'Request another seat' }).click();
+        await expect(form).toBeVisible();
+      }
+      await fillAndSend(form);
+      await expect(result).toBeVisible();
+      await expect(result.getByRole('heading', { name: 'Request received' })).toBeFocused();
+      await expect(result).toContainText('Nuvora will reply by email to the address you gave');
+      await expect(result.locator('[data-r="program"]')).toHaveText(P('c-genai').name);
+      await expect(result.locator('[data-r="email"]')).toHaveText('asha.rao@nuvora.test');
+      await expect(result).not.toContainText(/reference|already/i);
+      seen.push(await result.innerText());
+    }
+    expect(seen[1], 'a repeated request looks exactly like a new one').toBe(seen[0]);
+    expect(sent).toHaveLength(2);
+    expect(await one(request, "select count(*)::int from public.seat_requests where email = 'asha.rao@nuvora.test'")).toBe(1);
+  });
+
+  test('a saved plan is sent only when the visitor ticks the box', async ({ page, request }) => {
+    const n = await one(request, "select count(*)::int as n from pg_proc where proname = 'request_seat'");
+    test.skip(!n, 'The request_seat() database function is not in supabase/migrations yet, so the form has nothing to send to.');
+    await reset(request);
+    const sent = seatBodies(page);
+    await page.goto('/find-your-program/');
+    await page.evaluate(() => localStorage.setItem('nuvora.plan', JSON.stringify({
+      v: 1, savedAt: Date.now(), answers: { role: 'tech', goal: 'ai', hours: '10+', coding: 'regular', bachelor: 'yes' }, match: 'c-genai', matchName: 'x', score: 87,
+    })));
+    await page.goto('/admissions/');
+    const form = page.locator('form[data-seat-form]');
+    const include = form.getByLabel(/Include my saved plan/);
+    await expect(include).toBeVisible();
+    await expect(include).not.toBeChecked();
+    await expect(form.locator('#sr-plan-hint')).toContainText('bachelor’s degree');
+    await fillAndSend(form);
+    await expect(page.locator('[data-seat-result]')).toBeVisible();
+    expect(sent[0].p_details, 'nothing from the plan without the tick').toBeUndefined();
+
+    await page.locator('[data-seat-result]').getByRole('button', { name: 'Request another seat' }).click();
+    await form.getByLabel('Start date').selectOption({ index: 1 });
+    await include.check();
+    await form.getByLabel(/I agree/).check();
+    await form.getByRole('button', { name: 'Send seat request' }).click();
+    await expect(page.locator('[data-seat-result]')).toBeVisible();
+    expect(sent[1].p_details).toEqual({ role: 'tech', goal: 'ai', hours: '10+', coding: 'regular', has_bachelor: 'yes', match: 'c-genai', score: 87 });
   });
 
   // Runs with or without the database function: a request without consent must never leave the browser.

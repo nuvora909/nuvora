@@ -85,15 +85,25 @@ const team = () => html`
   </div>
 </section>`;
 
+// Three honest statuses. "Built and tested" means it works in the portal today and the test suite checks it;
+// "In progress" means it exists only in part, or is being built now; "Not yet" means it does not exist.
 const BUILT = [
   ['The program and term plans', `${PROGRAMS.length} programs, each planned term by term: lessons, live sessions and ${PROJECTS_PER_TERM} graded projects per term.`],
-  ['Streamed lessons in the student portal', 'Lessons and recordings stream in the portal and cannot be downloaded. The protected streaming service will be named before lessons go live.'],
-  ['PDF materials', 'Lesson notes, exercise sheets and project briefs, downloadable as PDFs.'],
-  ['Live session links', `The Zoom links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours, in the portal.`],
+  ['Live session links', `The Zoom links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours appear in the portal from 15 minutes before each session until it ends, timed by the server’s clock.`],
   ['Assignments and grading', 'Project submission, instructor grading on the four-level rubric, written feedback and resubmission.'],
-  ['Progress tracking', 'Lesson progress (a lesson completes at 90% watched), live attendance and grades in one place.'],
+  ['Lesson progress', 'A lesson completes at 90% watched, measured from the time really watched, not from clicks.'],
+  ['Learning path and next step', 'Your program term by term with its dates, one recommended next step with the reason shown, and the skills your career goal still needs.'],
+  ['Streaks and skill badges', 'A learning streak you can switch off, and skill badges earned only from graded work.'],
+  ['Notifications', 'New grades, recordings and achievements, listed in the portal.'],
+  ['Staff admin area', 'Nuvora staff enrol students, record tuition payments by hand and pause or restore a student’s portal access in the portal. Every admin action is written to an audit log.'],
+  ['Access rule for unpaid terms', 'The database applies the published rule on every request, using its own clock. The hourly job that records each pause and sends the reminders before one is built and tested, and is switched on at go-live.', ['/tuition/#access', 'The published rule']],
+];
+const IN_PROGRESS = [
+  ['Lesson streaming', 'Lessons and recordings play in a placeholder player while the protected streaming service is set up. Videos stream only and are never downloadable; the service will be named before lessons go live.'],
+  ['Course PDFs', 'Downloading PDFs works in the portal, but the course PDFs there today are generated placeholders. The real lesson notes, exercise sheets and project briefs are being written.'],
 ];
 const NOT_YET = [
+  ['Attendance from Zoom', 'The portal can record and show live attendance, but the automatic import from Zoom is not connected yet.', null],
   ['Graduates', 'No batch has run yet.', null],
   ['Reviews and ratings', 'There is nobody to review us yet, so we show none.', null],
   ['Outcome data', 'Completion, pass and attendance rates come after the first batch.', ['#outcomes', 'How we will report them']],
@@ -105,15 +115,18 @@ const NOT_YET = [
 const real = () => html`
 <section class="sec tinted" id="real-today">
   <div class="wrap">
-    ${sectionHead({ eyebrow: 'Status', title: 'What’s *real* today', lede: 'A plain list of what exists and has been tested, and what does not exist yet. We will update it as things change.' })}
+    ${sectionHead({ eyebrow: 'Status', title: 'What’s *real* today', lede: 'A plain list of what exists and has been tested, what is in progress, and what does not exist yet. We will update it as things change.' })}
     <div class="tablewrap abt-real">
       <table>
-        <caption class="sr-only">What Nuvora has built and tested, and what does not exist yet</caption>
+        <caption class="sr-only">What Nuvora has built and tested, what is in progress, and what does not exist yet</caption>
         <thead><tr><th scope="col">What</th><th scope="col">Status</th></tr></thead>
         <tbody>
           <tr class="abt-group"><th scope="colgroup" colspan="2">Built and tested now</th></tr>
-          ${BUILT.map(([what, detail]) => html`<tr><th scope="row">${what}<span>${detail}</span></th>
+          ${BUILT.map(([what, detail, link]) => html`<tr><th scope="row">${what}<span>${detail}${link && html` <a href="${link[0]}">${link[1]}</a>`}</span></th>
             <td><span class="abt-status yes">${icon('check')} Built and tested</span></td></tr>`)}
+          <tr class="abt-group"><th scope="colgroup" colspan="2">In progress</th></tr>
+          ${IN_PROGRESS.map(([what, detail, link]) => html`<tr><th scope="row">${what}<span>${detail}${link && html` <a href="${link[0]}">${link[1]}</a>`}</span></th>
+            <td><span class="abt-status wip">${icon('pulse')} In progress</span></td></tr>`)}
           <tr class="abt-group"><th scope="colgroup" colspan="2">Not yet</th></tr>
           ${NOT_YET.map(([what, detail, link, status = 'Not yet']) => html`<tr><th scope="row">${what}<span>${detail}${link && html` <a href="${link[0]}">${link[1]}</a>`}</span></th>
             <td><span class="abt-status no">${icon(status === 'Not yet' ? 'clock' : 'x')} ${status}</span></td></tr>`)}
@@ -124,7 +137,7 @@ const real = () => html`
 </section>`;
 
 const PRINCIPLES = [
-  ['spark', 'No made-up proof', 'No invented testimonials, ratings, numbers, logos or popularity claims. Stock photos are labelled, and the people in them are models.', ['/legal/credits/', 'Media credits']],
+  ['spark', 'No made-up proof', 'No invented reviews, quotes, ratings, numbers, logos or popularity claims. Stock photos are labelled, and the people in them are models.', ['/legal/credits/', 'Media credits']],
   ['chart', 'Publish results with methods', 'Every figure we publish will come with its definition, the dates it covers and how many learners it counts.', ['#outcomes', 'Reporting methods']],
   ['video', 'Protect instructors’ work', 'Lessons and recordings stream in the portal and can never be downloaded. Lesson notes and project briefs are PDFs you keep.', ['/legal/terms/#content', 'Course content rules']],
   ['lock', 'Privacy by default', 'No cookies, analytics or ad trackers on this website. Your Find my program answers stay in your browser unless you choose to send them.', ['/legal/privacy/', 'Privacy notice']],
@@ -159,8 +172,7 @@ const outcomes = () => html`
     <div class="abt-defs">${MEASURES.map(([title, text, calc]) => html`
       <div class="abt-def"><h3>${title}</h3><p>${text}</p><p class="abt-calc">${calc}</p></div>`)}</div>
     <div class="abt-rules">
-      <div class="abt-rule"><span class="big" aria-hidden="true">20</span><div><b>No figure from fewer than 20 learners</b><p>A smaller group swings too much to mean anything, so we will say the group was too small instead.</p></div></div>
-      <div class="abt-rule"><span class="big" aria-hidden="true">30</span><div><b>No median from fewer than 30 learners</b><p>Medians wait until at least 30 learners are counted.</p></div></div>
+      <div class="abt-rule">${icon('users')}<div><b>Every figure says who it covers</b><p>We will say how many learners each figure covers, so you can judge how much a small group can tell you.</p></div></div>
       <div class="abt-rule">${icon('cal')}<div><b>Published after each batch</b><p>Every report gives the dates the batch ran and the number of learners it covers, next to the definitions above.</p></div></div>
     </div>
   </div>

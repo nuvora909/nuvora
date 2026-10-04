@@ -1,6 +1,7 @@
 // Tuition (/tuition/): launch pricing per level and per program, the application fee, paying one term at a time,
 // what tuition includes, financing, currency, taxes and the refund and deferral policy. Every price comes from
 // TUITION and PROGRAMS; nothing that the owner has not decided (refunds, financing) is described as if it were.
+// The access rule for unpaid terms is the owner's public wording, shared with the other pages (access-rule.mjs).
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead } from '../lib/layout.mjs';
@@ -8,6 +9,7 @@ import { faqList, ctaBand } from '../lib/components.mjs';
 import { breadcrumbList, faqPage } from '../lib/schema.mjs';
 import { PROGRAMS, LEVELS, TUITION, CREDENTIAL, money } from '../data/programs.mjs';
 import { SCHEDULE, OWNER } from '../data/site.mjs';
+import { ACCESS_RULE } from '../assets/js/access-rule.mjs';
 
 const PATH = '/tuition/';
 const CRUMBS = [['/', 'Home'], [PATH, 'Tuition']];
@@ -34,7 +36,7 @@ const BY_LEVEL = LEVELS.map(([lvl]) => {
     terms: span(programs.map((p) => p.termCount)), termCounts: programs.map((p) => p.termCount),
     total: span(programs.map((p) => p.tuition.total), money),
     duration: [...new Set(programs.map((p) => p.duration))].join(' or '),
-    colors: programs[0]?.colors ?? ['#38BDF8', '#0B6BF5'],
+    colors: programs[0]?.colors ?? ['#0082FB', '#0866FF'],
   };
 }).filter((l) => l.programs.length);
 
@@ -65,6 +67,8 @@ const FAQ = [
     `Multiply the price per term by the number of terms, then add the one-time ${FEE} application fee. ${PROGRAMS.map((p) => `${p.name}: ${termsText(p.termCount)}, ${money(p.tuition.total)} in tuition`).join('. ')}.`],
   ['Do I pay for the whole program up front?',
     `No. You pay tuition one ${WEEKS}-week term at a time, so you never pay for more than one term in advance.`],
+  ['What happens if a term isn’t paid?',
+    ACCESS_RULE],
   ['What is the application fee?',
     `A one-time ${FEE} fee, paid once when you apply. It is not charged again for later terms.`],
   ['Does requesting a seat cost anything?',
@@ -176,6 +180,10 @@ const paying = () => html`
         <p>Prices are <b>launch pricing in ${CURRENCY}</b>.</p></div>
       <div class="box"><h3>${icon('doc')} Taxes</h3>
         <p>Whether taxes apply <b>depends on where you live</b>. The exact amount, including any tax, is shown before you pay.</p></div>
+    </div>
+    <div class="how-access" id="access">
+      ${icon('pause')}
+      <div><h3>If a term isn’t paid</h3><p>${ACCESS_RULE}</p></div>
     </div>
   </div>
 </section>`;

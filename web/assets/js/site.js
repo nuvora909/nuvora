@@ -1,6 +1,8 @@
 // Shared behaviour for every public page. Pages work without JavaScript; this adds live dates, local class
 // times, menus, filters, the career ladder, example-screen hotspots, the saved plan and the advisor entry points.
+// cinema.js adds the pointer spotlight on dark sections; the rest of the cinematic motion is CSS (site.css).
 import { nextStarts, termDates, fmtDay, isoDay, weeklyTimeIn, fromIso } from './dates.mjs';
+import './cinema.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -13,10 +15,13 @@ export const store = {
 };
 export const PLAN_KEY = 'nuvora.plan';
 const PLAN_DAYS = 90;
+// A plan that is unreadable, malformed, from another version or older than PLAN_DAYS is removed, not just ignored.
 export function savedPlan() {
   const plan = store.get(PLAN_KEY);
-  if (!plan || plan.v !== 1 || !plan.match || Date.now() - plan.savedAt > PLAN_DAYS * 86400000) return null;
-  return plan;
+  const age = Date.now() - Number(plan?.savedAt);
+  if (plan?.v === 1 && plan.match && age >= 0 && age <= PLAN_DAYS * 86400000) return plan;
+  store.del(PLAN_KEY);
+  return null;
 }
 
 // ---------- artifact preview: relative links (see scripts/build-site.mjs) ----------
@@ -108,17 +113,6 @@ function menus() {
   window.addEventListener('pageshow', () => closeAll());
 }
 
-// ---------- program grid filter ----------
-function programFilters() {
-  for (const grid of $$('[data-program-grid]')) {
-    const buttons = $$('[data-filter]', grid);
-    buttons.forEach((b) => b.addEventListener('click', () => {
-      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      for (const card of $$('.pcard', grid)) card.hidden = b.dataset.filter !== 'all' && card.dataset.level !== b.dataset.filter;
-    }));
-  }
-}
-
 // ---------- career ladder ----------
 function ladders() {
   for (const root of $$('[data-ladder]')) {
@@ -196,24 +190,25 @@ function advisorButtons() {
   const buttons = $$('[data-advisor-open]');
   if (!buttons.length) return;
   let mod;
+  // currentTarget is only set while the event is dispatched, so read it before the first await.
   const open = async (e) => {
+    const btn = e.currentTarget;
     mod ??= await import('./advisor.js');
-    mod.openAdvisor({ returnFocus: e.currentTarget, prompt: e.currentTarget.dataset.prompt });
+    mod.openAdvisor({ returnFocus: btn, prompt: btn.dataset.prompt });
   };
   buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
+  // The buttons start with honest labels ("Ask Nuvora", catalog answers). Only a connected AI model earns the AI ones.
   import('./advisor-engine.mjs').then(({ aiAvailable }) => {
-    if (aiAvailable()) return;
-    // Without a connected AI model the advisor answers from the published catalog, and says so.
-    for (const el of $$('[data-advisor-label]')) el.textContent = 'Ask Nuvora';
-    for (const el of $$('[data-advisor-more]')) el.textContent = '· catalog answers';
-    for (const el of $$('[data-advisor-mlabel]')) el.textContent = 'Ask Nuvora';
+    if (!aiAvailable()) return;
+    for (const el of $$('[data-advisor-label]')) el.textContent = 'AI Advisor';
+    for (const el of $$('[data-advisor-more]')) el.textContent = '· Ask Nuvora AI';
+    for (const el of $$('[data-advisor-mlabel]')) el.textContent = 'Ask AI';
   });
 }
 
 refreshDates();
 localTimes();
 menus();
-programFilters();
 ladders();
 hotspots();
 personalize();

@@ -63,7 +63,7 @@ const sameSubject = (p, rid) => {
 };
 
 const tracksFor = (rid) => TRACK_IDS.filter((tid) => TRACKS[tid].steps.includes(rid));
-// Links always carry the title of the role page they open (TRACKS[].last is a wider label used by the home ladder).
+// Links always carry the title of the role page they open.
 const stepLabel = (tid, n) => ROLES[TRACKS[tid].steps[n]].title;
 
 // ---------- words ----------

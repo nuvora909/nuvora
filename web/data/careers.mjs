@@ -71,7 +71,7 @@ export const ROLES = {
 
 // Ladders shown under "Where can this take you?".
 export const TRACKS = {
-  'data-to-ai': { title: 'From data into AI', steps: ['data-analyst', 'senior-data-analyst', 'ml-ai-specialist', 'ml-engineer'], last: 'AI Product / ML Engineer' },
+  'data-to-ai': { title: 'From data into AI', steps: ['data-analyst', 'senior-data-analyst', 'ml-ai-specialist', 'ml-engineer'] },
   'data-science': { title: 'Data science and analytics', steps: ['data-analyst', 'senior-data-analyst', 'data-scientist', 'analytics-manager'] },
   'engineering-to-ai': { title: 'Software engineering into AI', steps: ['ai-engineer', 'ml-engineer', 'mlops-engineer', 'ai-product-lead'] },
 };

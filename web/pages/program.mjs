@@ -2,7 +2,7 @@
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, breadcrumbs, liveDate } from '../lib/layout.mjs';
-import { schedule, rubric, faqList, ctaBand } from '../lib/components.mjs';
+import { schedule, rubric, faqList, ctaBand, certFan, programCerts } from '../lib/components.mjs';
 import { course, breadcrumbList, faqPage } from '../lib/schema.mjs';
 import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay } from '../data/programs.mjs';
 import { ROLES, CAREER_NOTE } from '../data/careers.mjs';
@@ -10,6 +10,11 @@ import { SCHEDULE } from '../data/site.mjs';
 
 const week = (day) => Math.ceil(day / 7);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+// Search-result limits (tests/site/build.test.mjs): the title gets " | Nuvora" added, so 61 characters are left.
+const TITLE_MAX = 61, DESC_MAX = 170;
+// The first candidate that fits; candidates go from the most complete to the shortest.
+const fit = (max, candidates) => candidates.find((s) => s.length <= max) ?? candidates[candidates.length - 1];
 
 const SECTIONS = [['overview', 'Overview'], ['curriculum', 'Curriculum'], ['projects', 'Projects'], ['workload', 'Duration & workload'],
   ['assessment', 'Assessment'], ['instructors', 'Instructors'], ['tuition', 'Tuition & financing'], ['credential', 'Credential & credit'],
@@ -68,11 +73,11 @@ function hero(p, today) {
 }
 
 const termBlock = (t, i, open) => html`
-<details class="term" ${open ? 'open' : ''}>
+<details class="term" id="term-${i + 1}" ${open ? 'open' : ''}>
   <summary><span class="tn">${i + 1}</span><span><b>${t.title}</b><br><span>${t.lessons.length} lessons · ${t.projects.length} projects · 12 weeks</span></span>${icon('down')}</summary>
   <div class="tbody">
-    <div><h4>Lessons</h4><ul>${t.lessons.map(([code, title]) => html`<li><span class="mono">${code}</span><span>${title}</span></li>`)}</ul></div>
-    <div><h4>Graded projects</h4><ul>${t.projects.map(([title, day]) => html`<li>${icon('folder')}<span>${title}</span><span class="due">week ${week(day)}</span></li>`)}</ul></div>
+    <div><h3>Lessons<span class="sr-only"> in term ${i + 1}</span></h3><ul>${t.lessons.map(([code, title]) => html`<li><span class="mono">${code}</span><span>${title}</span></li>`)}</ul></div>
+    <div><h3>Graded projects<span class="sr-only"> in term ${i + 1}</span></h3><ul>${t.projects.map(([title, day]) => html`<li>${icon('folder')}<span>${title}</span><span class="due">week ${week(day)}</span></li>`)}</ul></div>
   </div>
 </details>`;
 
@@ -140,7 +145,7 @@ ${hero(p, today)}
     <h2 id="h-instructors">${accent('Your *instructors*')}</h2>
     <div class="twocol">
       <div class="box"><h3>${icon('users')} Announced before each batch</h3><p class="muted">Instructors are confirmed for each batch before it starts. Their names, backgrounds and public profiles will be listed here, with their permission. We do not show placeholder people.</p></div>
-      <div class="box"><h3>${icon('live')} What instructors do</h3><ul class="ticks"><li>${icon('check')}<span>Teach the live ${SCHEDULE.classDay} class and run ${SCHEDULE.officeDay} office hours</span></li><li>${icon('check')}<span>Grade every project with written feedback</span></li><li>${icon('check')}<span>Check in when a learner has been inactive for two weeks</span></li></ul></div>
+      <div class="box"><h3>${icon('live')} What instructors do</h3><ul class="ticks"><li>${icon('check')}<span>Teach the live ${SCHEDULE.classDay} class and run ${SCHEDULE.officeDay} office hours</span></li><li>${icon('check')}<span>Grade every project with written feedback</span></li><li>${icon('check')}<span>See you on their check-in list after 14 days without activity</span></li></ul></div>
     </div>
   </section>
 
@@ -161,11 +166,18 @@ ${hero(p, today)}
 
   <section class="psec" id="credential" aria-labelledby="h-credential">
     <h2 id="h-credential">${accent('Credential and *credit*')}</h2>
+    <div class="cred-split">
+      <div class="stack">
+        <p class="lede">Your certificate names the program and is backed by the graded projects you can show. List it on your résumé under Certifications, and on LinkedIn under Licenses &amp; certifications with Nuvora as the issuing organization.</p>
+      </div>
+      ${certFan([p])}
+    </div>
     <div class="twocol">
-      <div class="box"><h3>${icon('cert')} What you receive</h3><p>A ${CREDENTIAL.short} for the ${p.name}, issued by Nuvora when you complete every term: all lessons watched and every project graded Proficient or better.</p></div>
+      <div class="box"><h3>${icon('cert')} What you receive</h3><p>A ${CREDENTIAL.short} for the ${p.name}, issued by Nuvora when you complete your program.</p></div>
       <div class="box"><h3>${icon('info')} Recognition</h3><p>Nuvora is not an accredited university and this is not an accredited degree. The ${p.credits} Nuvora credits (about ${p.creditsPerTerm} per term) describe workload; they are not academic credit and may not transfer to universities.</p></div>
       <div class="box"><h3>${icon('layers')} Transfer and test-outs</h3><p>Nuvora does not accept transfer credit or offer test-outs: every learner completes every term.${p.needsBachelor ? ' Joining needs a bachelor’s degree in any field.' : ''}</p></div>
     </div>
+    ${programCerts(p)}
   </section>
 
   <section class="psec" id="careers" aria-labelledby="h-careers">
@@ -192,8 +204,13 @@ export default function programs({ today } = {}) {
     path: p.url,
     html: page({
       path: p.url, today,
-      title: `${p.name} · online, ${p.termCount === 1 ? '12 weeks' : p.duration}`,
-      description: `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(p.tuition.perTerm)} per term. ${CREDENTIAL.short}, not an accredited degree.`,
+      title: fit(TITLE_MAX, [`${p.name} · online, ${p.termCount === 1 ? '12 weeks' : p.duration}`, `${p.name} · online`, p.name]),
+      description: fit(DESC_MAX, [
+        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(p.tuition.perTerm)} per term. ${CREDENTIAL.short}, not an accredited degree.`,
+        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(p.tuition.perTerm)} per term. Not an accredited degree.`,
+        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week. Not an accredited degree.`,
+        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week.`,
+      ]),
       body: body(p, today),
       schema: [course(p, today), breadcrumbList([['/', 'Home'], ['/programs/', 'Programs'], [p.url, p.name]]), faqPage(faqFor(p))],
       scripts: ['/js/program.js'],

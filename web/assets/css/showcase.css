@@ -1,0 +1,211 @@
+/* Nuvora showcase: the program catalog with cover art, the certificates section and the site footer.
+   Loaded on every page after site.css. Colours come from the site.css tokens only, so light and dark mode and any
+   palette change follow automatically. */
+
+/* Chapter numbers (site.css counts section-head eyebrows): the catalog intro and the certificates section are laid
+   out without a section head, so their eyebrows join the same count. */
+main .ccat-intro>.eyebrow::before,main .proof-copy>.eyebrow::before{counter-increment:chapter;content:counter(chapter,decimal-leading-zero);content:counter(chapter,decimal-leading-zero) / "";font-variant-numeric:tabular-nums;padding-right:10px;border-right:1px solid currentColor;letter-spacing:.08em}
+
+/* ---------- program catalog ---------- */
+.ccat{display:grid;gap:24px;min-width:0}
+.ccat.with-intro{padding:28px 20px;border-radius:28px;background:linear-gradient(180deg,var(--sunk),color-mix(in srgb,var(--sunk) 40%,var(--bg)));border:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+@media (min-width:1000px){ .ccat.with-intro{grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:40px;padding:40px 36px;align-items:center} }
+/* Wide screens: the home panel reaches a little past the text column, so three cards get room for their covers. */
+@media (min-width:1280px){ .ccat.with-intro{margin-inline:calc(-1 * min(80px, (100vw - 1160px) / 2))} }
+.ccat-intro{display:grid;gap:14px;align-content:center}
+.ccat-intro h2{font-size:clamp(1.7rem,1.2rem + 1.6vw,2.4rem);line-height:1.12}
+.ccat-intro p{color:var(--muted);margin:0}
+.ccat-links{display:grid;gap:4px;justify-items:start}
+.ccat-links .link{min-height:44px}
+.ccat-links .link.quiet{color:var(--ink);font-weight:600}
+.ccat-main{display:grid;gap:18px;min-width:0}
+
+.ccat-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.ccat-tabs[hidden]{display:none}
+.ccat-tabs button{min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 .92rem var(--body);cursor:pointer;transition:background-color .2s,border-color .2s,color .2s}
+.ccat-tabs button:hover{border-color:var(--accent);color:var(--accent-ink)}
+/* The selected tab is filled and also carries a tick, so the state never depends on colour alone. */
+.ccat-tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.ccat-tabs button[aria-pressed="true"]::before{content:"✓ ";content:"✓ " / ""}
+
+.ccat-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:18px}
+@media (min-width:640px){ .ccat-cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (min-width:900px){ .ccat-cards{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (min-width:1120px){ .ccat:not(.with-intro) .ccat-cards{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+/* One program card: the cover sits inside the card frame, like a framed print; the title link covers the card. */
+.ccard{position:relative;display:flex;flex-direction:column;gap:0;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgb(10 26 63 / .05);transition:box-shadow .25s,transform .25s,border-color .25s;min-width:0}
+.ccard[hidden]{display:none}
+.ccard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 26px 50px -24px rgb(0 100 224 / .5)}
+.ccard:has(.ccard-link:focus-visible){outline:3px solid var(--accent);outline-offset:3px}
+.ccard-link:focus-visible{outline:none}
+.ccard-cover{position:relative;margin:0;border-radius:13px;overflow:hidden;aspect-ratio:16/9;background:var(--deep)}
+.ccard-cover img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.ccard:hover .ccard-cover img{transform:scale(1.035)}
+.ccard-match{position:absolute;left:10px;top:10px;z-index:1}
+.ccard-match[hidden]{display:none}
+.ccard-body{display:flex;flex-direction:column;gap:8px;padding:14px 6px 6px;flex:1}
+.ccard-brand{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0;font-size:.86rem;color:var(--muted)}
+.ccard-mark{width:28px;height:28px;flex:none;padding:5px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.ccard-mark .r{fill:none;stroke:var(--accent);stroke-width:6.5}
+.ccard-mark .d{fill:var(--gold)}
+.ccard-org{font-weight:700;color:var(--ink)}
+.ccard-lvl{margin-left:auto;font-size:.8rem}
+.pcard.ccard h3{font:700 1.08rem/1.3 var(--body);letter-spacing:-.005em;margin:0}
+.ccard-link{color:var(--ink);text-decoration:none;padding-block:2px}
+.ccard-link::after{content:"";position:absolute;inset:0;border-radius:20px;z-index:1}
+.ccard:hover .ccard-link{color:var(--accent-ink)}
+.ccard-meta{margin:0;font-size:.86rem;color:var(--muted)}
+.ccard-meta span,.ccard-lvl{white-space:nowrap}
+.ccard-chips{list-style:none;margin:auto 0 0;padding:6px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.ccard-chips li{font:600 .75rem/1.2 var(--body);padding:5px 9px;border-radius:999px;background:var(--sunk);color:var(--ink)}
+.ccard-chips li.c1{background:var(--accent-soft);color:var(--accent-ink)}
+.pcard.ccard.is-match{border-color:var(--gold)}
+
+.ccat-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px}
+/* The blue outlined button: .btn.ghost.ccat-more outranks site.css .btn.ghost, which would make it grey. */
+.btn.ghost.ccat-more{border-color:var(--accent);color:var(--accent-ink);font-weight:700;min-width:150px}
+.btn.ghost.ccat-more:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.ccat-more[hidden]{display:none}
+.ccat-note{margin:0 0 0 auto;font-size:.8rem;color:var(--muted)}
+.ccat-topics{margin-top:22px}
+
+/* ---------- certificates ("Turn your learning into proof") ---------- */
+.proof-split{display:grid;gap:36px;align-items:center}
+@media (min-width:960px){ .proof-split{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px} }
+.proof-copy{display:grid;gap:16px}
+.proof-copy h2{font-size:clamp(1.8rem,1.2rem + 2vw,2.7rem);line-height:1.1}
+.proof-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:12px}
+.proof-list li{display:flex;gap:12px;align-items:flex-start;color:var(--muted)}
+.proof-list b{color:var(--ink)}
+.proof-list .ic{flex:none;width:22px;height:22px;padding:3px;margin-top:2px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink)}
+
+.certfan{margin:0;display:grid;gap:12px;justify-items:center;min-width:0;container-type:inline-size}
+.certfan figcaption{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted)}
+.certfan-stage{position:relative;width:100%;max-width:560px;aspect-ratio:1.12;container-type:inline-size}
+/* The fan is placed so that a card in front only ever covers the ribbon side of a card behind it, or its empty
+   margin: every word on every card stays readable, including "not an accredited degree". */
+.certcard{position:absolute;width:57cqi;font-size:max(9px,2.9cqi);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.certcard.pos-1{left:.5cqi;top:30cqi;transform:rotate(-4deg);z-index:1}
+.certcard.pos-2{left:30cqi;top:1cqi;transform:rotate(3deg);z-index:2}
+.certcard.pos-3{left:42cqi;top:44cqi;transform:rotate(-1.5deg);z-index:3}
+.certfan-stage:hover .pos-1{transform:rotate(-5.5deg) translate(-1cqi,1cqi)}
+.certfan-stage:hover .pos-2{transform:rotate(4deg) translate(1cqi,-1cqi)}
+.certfan-stage:hover .pos-3{transform:rotate(-.5deg) translate(1cqi,1cqi)}
+.certfan.one .certfan-stage{aspect-ratio:auto;max-width:400px}
+.certfan.one .certcard{position:relative;left:auto;top:auto;width:100%;font-size:max(11px,4.2cqi);transform:rotate(-1.5deg)}
+
+/* Certificate paper stays light in both colour schemes, like a printed certificate. */
+.certcard{--surface:#FFFFFF;--ink:#0B1733;--muted:#56637D;--line:#DCE6F2;--accent-soft:#E7F0FF;--accent-ink:#0064E0;color-scheme:light}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .certcard-paper{box-shadow:0 1.6em 3.2em -1.2em rgb(0 0 0 / .8),0 0 0 1px rgb(255 255 255 / .14)} }
+:root[data-theme="dark"] .certcard-paper{box-shadow:0 1.6em 3.2em -1.2em rgb(0 0 0 / .8),0 0 0 1px rgb(255 255 255 / .14)}
+.certcard-paper{position:relative;display:grid;gap:.5em;aspect-ratio:1.42;align-content:center;padding:1.4em 5.4em 1.2em 1.5em;border-radius:1em;background:var(--surface);border:.65em solid var(--accent-soft);box-shadow:0 1.6em 3em -1.4em rgb(10 26 63 / .45),0 0 0 1px var(--line);color:var(--ink);overflow:hidden}
+.certcard-paper::after{content:"";position:absolute;inset:.45em;border:1px solid var(--line);border-radius:.55em;pointer-events:none}
+.certcard-wm .wm{font-size:1.15em}
+.certcard-kind{font:700 .62em/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+.certcard-title{font:600 1.18em/1.2 var(--display);color:var(--ink);text-wrap:balance}
+.certcard-sign{display:grid;gap:.2em;margin-top:.3em;font-size:.6em;color:var(--muted)}
+.certcard-sig{width:9em;height:2.2em;border-bottom:1px solid var(--line);padding-bottom:.2em}
+.certcard-sig path{fill:none;stroke:var(--accent-ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.certcard-ribbon{position:absolute;top:.65em;right:1.5em;width:3.4em;height:5.6em;display:grid;place-items:end center;padding-bottom:1.4em;background:var(--grad-blue);clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);box-shadow:inset 0 -1px 0 rgb(255 255 255 / .2)}
+.certcard-seal{width:2.5em;height:2.5em}
+.certcard-seal .s1{fill:none;stroke:#fff;stroke-width:2.6}
+.certcard-seal .s2{fill:none;stroke:#fff;stroke-width:3}
+.certcard-seal .s3{fill:var(--gold)}
+/* Phones (a stage 420px wide or less; after the card rules above so it wins): the card at the back is left out and
+   the other two sit one above the other, larger, overlapping only in their margins. The small lines, including
+   "not an accredited degree", are set at 10.5px or more, and the paper grows with its text instead of clipping it. */
+@container (max-width:420px){
+  .certfan:not(.one) .certfan-stage{aspect-ratio:auto;display:grid;padding-block:6px 10px}
+  .certfan:not(.one) .certcard{position:relative;left:auto;top:auto;width:92cqi;font-size:max(12px,4.4cqi)}
+  .certfan:not(.one) .certcard.pos-1{display:none}
+  .certfan:not(.one) .certcard.pos-2{justify-self:start;transform:rotate(-1.5deg)}
+  .certfan:not(.one) .certcard.pos-3{justify-self:end;margin-top:-3cqi;transform:rotate(1deg)}
+  .certcard-paper{aspect-ratio:auto;min-height:64cqi}
+  .certfan.one .certcard-paper{min-height:68cqi}
+  .certcard-kind,.certcard-sign{font-size:max(10.5px,.8em)}
+}
+
+/* Industry certifications: text only, grouped per program. */
+.indcerts{margin-top:56px;display:grid;gap:20px}
+.indcerts-head{display:grid;gap:8px;max-width:72ch}
+.indcerts h3{font-size:clamp(1.3rem,1.1rem + .8vw,1.7rem)}
+.indcerts-head p{margin:0;color:var(--muted)}
+.indcerts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
+.indcert{display:grid;gap:8px;align-content:start;padding:18px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.indcert h4{font:700 1rem/1.3 var(--body)}
+.indcert h4 a{color:var(--ink);text-decoration:none;display:inline-block;padding:4px 0}
+.indcert h4 a:hover{color:var(--accent-ink);text-decoration:underline}
+.indcert-k{margin:0;font:700 .68rem/1.3 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink)}
+.indcert ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.indcert li{display:grid;gap:2px;padding-left:12px;border-left:2px solid var(--accent-soft)}
+.indcert li b{font-weight:600;font-size:.92rem;line-height:1.35}
+.indcert li span{font-size:.8rem;color:var(--muted)}
+.indcerts-note{max-width:80ch}
+
+/* The program page version: one row per certification, with the overlapping lessons and the official page. */
+.cred-split{display:grid;gap:24px;align-items:center;margin-bottom:22px}
+@media (min-width:860px){ .cred-split{grid-template-columns:minmax(0,1fr) minmax(0,.9fr)} }
+.indcerts.one{margin-top:28px;gap:12px}
+.indlist{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:12px}
+.indrow{display:grid;gap:6px;padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--surface)}
+.indrow p{margin:0}
+.indrow-name{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.indrow-name span{font-size:.84rem;color:var(--muted)}
+.indrow-k{font:700 .68rem/1.3 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink);margin-right:4px}
+.indrow .mono{font-size:.82rem;color:var(--accent-ink)}
+.indrow-areas{font-size:.86rem;color:var(--muted)}
+.indrow-status{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;color:var(--ink)}
+.indrow-status .ic{flex:none;width:18px;height:18px;color:var(--gold);margin-top:2px}
+.indrow-src{justify-self:start;display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:700;font-size:.9rem;text-decoration:none}
+.indrow-src:hover{text-decoration:underline}
+.indrow-src .ic{width:16px;height:16px}
+
+/* ---------- career ladder: programs with how many of the role's skills they teach ---------- */
+.ldetail .progs a.has-k{flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;border-radius:16px;line-height:1.3}
+.ldetail .progs a.has-k .k{font-size:.76rem;font-weight:500;color:var(--on-deep-muted)}
+
+/* ---------- footer ---------- */
+.sitefoot{font-size:.92rem}
+.sitefoot-top{display:grid;gap:10px;max-width:68ch;padding-bottom:28px;border-bottom:1px solid rgb(255 255 255 / .12)}
+.sitefoot-top .logo{color:#fff;justify-self:start}
+.sitefoot-top p{margin:0}
+.sitefoot-pre{font-size:.84rem}
+.sitefoot-cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:28px 24px;padding-block:32px}
+@media (max-width:1100px){ .sitefoot-cols{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.sitefoot-col h2{margin:0 0 10px;font:700 .8rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:#fff}
+.sitefoot-col ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.sitefoot-col a{color:var(--on-deep-muted);text-decoration:none;display:inline-block;padding:5px 0;line-height:1.4}
+.sitefoot-col a:hover{color:#fff;text-decoration:underline}
+.sitefoot :focus-visible{outline-color:var(--gold-2)}
+.sitefoot-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px 24px;padding-top:20px;border-top:1px solid rgb(255 255 255 / .12)}
+.sitefoot-legal{margin:0;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.84rem}
+.sitefoot-legal>span+span::before{content:"·";margin-right:18px;opacity:.6}
+.sitefoot-social{list-style:none;margin:0;padding:0;display:flex;gap:10px}
+.sitefoot-social a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid rgb(255 255 255 / .3);color:#fff}
+.sitefoot-social a:hover{background:rgb(255 255 255 / .1);border-color:#fff}
+.sitefoot-social .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Phones: each column is an accordion (showcase.js adds the buttons and closes the lists; without it they stay open). */
+@media (max-width:640px){
+  .sitefoot-cols{grid-template-columns:1fr;gap:0;padding-block:12px 20px}
+  .sitefoot-col{border-bottom:1px solid rgb(255 255 255 / .12)}
+  .sitefoot-col h2{margin:0}
+  .sitefoot-col h2:not(:has(button)){padding:16px 2px 8px}
+  .sitefoot-tog{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:52px;padding:4px 2px;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;text-align:left;cursor:pointer}
+  .sitefoot-tog .ic{width:20px;height:20px;color:#fff;transition:transform .2s}
+  .sitefoot-tog[aria-expanded="true"] .ic{transform:rotate(180deg)}
+  .sitefoot-col ul{padding:0 2px 14px}
+  .sitefoot-col a{padding:9px 0;min-height:44px;display:flex;align-items:center}
+  .sitefoot-legal>span+span::before{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ccard:hover,.ccard:hover .ccard-cover img{transform:none}
+  .certfan-stage:hover .pos-1{transform:rotate(-5deg)}
+  .certfan-stage:hover .pos-2{transform:rotate(3deg)}
+  .certfan-stage:hover .pos-3{transform:rotate(-1.5deg)}
+}
+
+/* Small links in the shell (layout.mjs): the status strip and breadcrumbs, at least 24px tall (WCAG 2.5.8). */
+.topstrip a,.crumbs a{display:inline-block;padding-block:3px}

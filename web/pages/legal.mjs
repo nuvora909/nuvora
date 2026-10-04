@@ -1,22 +1,28 @@
 // Legal pages: /legal/privacy/ and /legal/terms/ (plain-English drafts, clearly labelled, to be reviewed by counsel
-// before launch) and /legal/credits/ (stock media and font credits). One layout: a table of contents beside the
-// text, numbered sections, and links between the three pages. Facts the owner has not decided come from OWNER as
-// null and are shown as "to be published"; nothing here invents a contact, provider or policy.
+// before launch), /legal/accessibility/ (the accessibility statement: target, how the site is tested, known limits)
+// and /legal/credits/ (stock media and font credits). One layout: a table of contents beside the text, numbered
+// sections, and links between the pages. Facts the owner has not decided come from OWNER as null and are shown as
+// "to be published"; nothing here invents a contact, provider, policy or test that does not exist.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead } from '../lib/layout.mjs';
 import { breadcrumbList } from '../lib/schema.mjs';
 import { PROGRAMS, CREDENTIAL, TUITION, money, fmtDay } from '../data/programs.mjs';
 import { SITE, SCHEDULE, OWNER, PHOTOS, CLIPS } from '../data/site.mjs';
+import { ACCESS_RULE } from '../assets/js/access-rule.mjs';
 
 const LATER = 'To be published before the first batch';
 const later = (label = LATER) => html`<span class="abt-tbp">${icon('clock')} ${label}</span>`;
 const DRAFT_DATE = fmtDay(new Date(`${SITE.consentVersion}T00:00:00Z`), { month: 'long' });
 const PROJECTS_PER_TERM = PROGRAMS[0].terms[0].projects.length;
+// The day the accessibility statement was last checked against the site and its tests. Update it with the text.
+const A11Y_DATE = fmtDay(new Date('2026-10-03T00:00:00Z'), { month: 'long' });
+const A11Y_UPDATED = fmtDay(new Date('2026-10-04T00:00:00Z'), { month: 'long' });   // button sizes and the portal limit
 
 const DOCS = [
   ['/legal/privacy/', 'Privacy notice', 'lock'],
   ['/legal/terms/', 'Terms of use', 'doc'],
+  ['/legal/accessibility/', 'Accessibility statement', 'users'],
   ['/legal/credits/', 'Media credits', 'cert'],
 ];
 
@@ -92,7 +98,7 @@ const PRIVACY = [
     <ul>
       <li><b>No cookies.</b> This website does not set cookies.</li>
       <li><b>No analytics or ad trackers.</b> We do not use analytics services, advertising tags or tracking pixels.</li>
-      <li><b>Fonts from Google Fonts.</b> Three of the fonts (Plus Jakarta Sans, Source Serif 4 and Outfit) are loaded from Google Fonts, so Google receives your IP address and browser details when pages load. The headline font, Clash Grotesk, is served from this website.</li>
+      <li><b>Fonts from Google Fonts.</b> This website loads Plus Jakarta Sans, Source Serif 4 and Outfit from Google Fonts, and the student portal also loads JetBrains Mono from there, so Google receives your IP address and browser details when pages load. The headline font, Clash Grotesk, is served from this website.</li>
       <li><b>Hosting.</b> Like any website, the service that hosts it receives standard request details, such as your IP address and the pages you ask for. The hosting provider will be named here before launch.</li>
     </ul>
     <p>Everything else on this website runs in your browser. The only time it sends information to Nuvora is when you send a seat request.</p>`],
@@ -136,9 +142,10 @@ const PRIVACY = [
       <li>your name, email address and the country you live in;</li>
       <li>a phone number, if you choose to give one;</li>
       <li>the program and start date you want;</li>
-      <li>your saved Find my program answers, only if you saved a plan and choose to include it.</li>
+      <li>your saved Find my program plan, only if you saved one and tick the box to include it: your answers about your background, goal, weekly time and coding, your answer about a bachelor’s degree if you gave one, and your best match and its score.</li>
     </ul>
-    <p>We use these details only to reply to you about your request. They are stored with our database provider (see <a href="#providers">service providers</a>). Sending a request needs your agreement to this, which you give with the tick box on the form.</p>`],
+    <p>We use these details only to reply to you about your request. They are stored with our database provider (see <a href="#providers">service providers</a>). Sending a request needs your agreement to this, which you give with the tick box on the form.</p>
+    <p>The page shows the same “Request received” message for every request it accepts, whether or not the same request was sent before, so it never reveals anything about earlier requests. A request can only be confirmed through the email address given in it: Nuvora replies there.</p>`],
   ['advisor', 'The advisor', html`
     <p>On this website, the advisor’s answers come from fixed rules that run in your browser, using the published catalog. Nothing you type is sent anywhere, and the advisor is labelled as giving catalog answers.</p>
     <p>Where an AI model is connected, the advisor is labelled as AI, and your questions are sent to the AI provider, Anthropic, to generate the answers. Please do not share personal information with the advisor.</p>`],
@@ -151,17 +158,19 @@ const PRIVACY = [
       <li><b>Live attendance:</b> when you joined each live session and for how many minutes, from Zoom.</li>
       <li><b>Submissions:</b> the links, files and notes you submit for projects.</li>
       <li><b>Grades and feedback:</b> your rubric grade and your instructor’s written feedback for each project.</li>
-      <li><b>Notifications:</b> messages about your course, such as new grades, which may also be sent to you by email.</li>
+      <li><b>Notifications:</b> messages about your course, such as new grades and reminders before your portal access would pause, which may also be sent to you by email.</li>
+      <li><b>Payments:</b> the tuition payments recorded for you, with the term, amount, date and how it was paid.</li>
+      <li><b>Access history:</b> when your portal access was paused or restored, whether by the rule for unpaid terms or by a Nuvora administrator, and the reason given.</li>
     </ul>
     <p>Your last activity is used for one more thing: learners who have been inactive for 14 days appear on their instructor’s check-in list, so someone can see whether you need help.</p>
     <p>Lessons and recordings stream in the portal and are never downloadable. PDF materials are delivered through short-lived download links.</p>`],
-  ['grades', 'Who can see your grades and progress', html`
+  ['grades', 'Who can see your records', html`
     <ul>
-      <li><b>You</b> see all of your own records.</li>
+      <li><b>You</b> see your own progress, attendance, submissions, grades and feedback.</li>
       <li><b>Your instructors</b> see the progress, attendance, submissions and grades of the learners they teach.</li>
-      <li><b>Nuvora administrators</b> can see them to run the school and handle problems.</li>
+      <li><b>Nuvora administrators</b> can see these records to run the school and handle problems. They can also see each student’s payment records and access history, to record tuition payments and to pause or restore portal access.</li>
     </ul>
-    <p>Other students cannot see your grades, feedback or progress.</p>`],
+    <p>Other students cannot see your grades, feedback, progress, payments or access history.</p>`],
   ['providers', 'Service providers', html`
     <p>We use these services to run the website and portal. Each one handles only what it needs for its job.</p>
     <ul class="abt-cards">
@@ -170,7 +179,7 @@ const PRIVACY = [
       ${card('Video streaming service', '', [['Used for', 'Streaming lessons and recordings so they cannot be downloaded'], ['Provider', later('To be named before lessons go live')]])}
       ${card('Email provider', '', [['Used for', 'Sending email, such as notifications'], ['Provider', later('To be named before payments open')]])}
       ${card('Payment provider', '', [['Used for', 'Taking tuition and fee payments once payments open'], ['Provider', later('To be named before payments open')]])}
-      ${card('Google Fonts', '', [['Used for', 'Delivering three of the website’s fonts; Google receives your IP address and browser details']])}
+      ${card('Google Fonts', '', [['Used for', 'Delivering fonts: Plus Jakarta Sans, Source Serif 4 and Outfit on the website, and JetBrains Mono in the portal. Google receives your IP address and browser details']])}
       ${card('Anthropic', '', [['Used for', 'Generating advisor answers, only where an AI model is connected']])}
     </ul>`],
   ['retention', 'How long we keep information', html`
@@ -191,6 +200,7 @@ const TERMS = [
   ['summary', 'In short', html`
     <ul class="abt-short">
       <li>${icon('check')}<span>A seat request is not admission or a contract, and nothing is charged.</span></li>
+      <li>${icon('check')}<span>Tuition is paid one term at a time. <a href="#paying">What happens if a term isn’t paid</a>.</span></li>
       <li>${icon('check')}<span>Programs lead to a ${CREDENTIAL.short}, not an accredited degree.</span></li>
       <li>${icon('check')}<span>Course videos are for streaming only: no downloading, recording or sharing.</span></li>
       <li>${icon('check')}<span>Keep your portal account to yourself, and submit your own work.</span></li>
@@ -201,6 +211,9 @@ const TERMS = [
   ['seat-requests', 'Seat requests are not admission', html`
     <p>Sending a seat request tells us which program and start date you are interested in. It is not an application, an offer of admission, a reserved place or a contract, and nothing is charged. We reply by email.</p>
     <p>To enrol, you complete the application, pay the one-time ${money(TUITION.applicationFee)} application fee and pay for your first term. You pay one term at a time. The refund and deferral policy will be published before the first batch, and you will see it before you pay.</p>`],
+  ['paying', 'Paying tuition and portal access', html`
+    <p>${ACCESS_RULE}</p>
+    <p>For now, Nuvora records payments by hand. Prices are launch pricing in US dollars, and the <a href="/tuition/">tuition page</a> lists every program’s price per term.</p>`],
   ['credential', 'The credential', html`
     <ul>
       <li>Finishing a program earns a <b>${CREDENTIAL.short}</b>. It is not an accredited degree.</li>
@@ -245,6 +258,55 @@ const TERMS = [
     <p>Until then, the <a href="/contact/">contact page</a> lists the ways to reach us today.</p>`],
 ];
 
+// ---------------------------------------------------------------- accessibility statement
+// Only what is built and tested today: the checks named under "How we test" are the ones in tests/e2e and
+// tests/site. Anything not done yet (screen reader testing, an audit, captions) is listed as a limit.
+const reportLine = () => (OWNER.supportEmail
+  ? html`Write to <a href="mailto:${OWNER.supportEmail}">${OWNER.supportEmail}</a>.`
+  : html`The <a href="/contact/">contact page</a> lists the ways to reach us today. A support email address will be published there before the first batch.`);
+
+const ACCESSIBILITY = [
+  ['target', 'Our target', html`
+    <p>We aim for this website and the student portal to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA.</p>
+    <p>We do not claim full conformance yet. Nuvora is pre-launch, no independent accessibility audit has been done, and the known limits are listed below.</p>`],
+  ['built-in', 'What we build in', html`
+    <ul>
+      <li>A skip link to the main content and one main heading on every page.</li>
+      <li>Menus, tabs, the advisor and forms work with a keyboard, with a visible focus outline.</li>
+      <li>Status is shown in words and icons, never by colour alone, in both the light and the dark colour scheme.</li>
+      <li>On this website, main buttons are at least 44 pixels tall, and every other link or button is at least 24 by 24 pixels unless it sits inside a sentence.</li>
+      <li>Pages fit screens from 320 pixels wide without sideways scrolling.</li>
+      <li>If your device asks for reduced motion, the background videos do not play and animations are reduced.</li>
+      <li>Form fields have visible labels, and form errors are written out in words next to the field.</li>
+      <li>Images have text alternatives, and decorative ones are hidden from screen readers. The chart in the sample lesson has a text description and a written readout.</li>
+    </ul>`],
+  ['testing', 'How we test', html`
+    <p>Automated checks in our test suite run in a real browser. They catch many problems, but they are not a substitute for testing by disabled people.</p>
+    <ul>
+      <li><b>Every page at five screen sizes.</b> Each page in the sitemap is opened at 320, 360, 390, 768 and 1280 pixels wide and checked for content that sticks out sideways, links and buttons smaller than 24 by 24 pixels, form fields without labels, links and buttons without a name, images without a text alternative and more than one main heading. On phones, text fields must use text of at least 16 pixels so the page does not zoom.</li>
+      <li><b>The dark colour scheme.</b> Every page is opened in the dark colour scheme and checked for a dark background and for errors.</li>
+      <li><b>Keyboard checks.</b> The phone menu opens, closes with Escape and returns focus to its button. The career tabs move with the arrow keys. The advisor closes with Escape and returns focus to the button that opened it.</li>
+      <li><b>Reduced motion.</b> With reduced motion requested, no video plays on the home page.</li>
+      <li><b>Page structure.</b> Every built page is checked for its language, a page title, one main heading and the main region the skip link points to.</li>
+      <li><b>The student portal.</b> Its pages are checked at phone and desktop sizes, in light and dark mode, for content that runs off the screen, one main heading and labelled fields.</li>
+    </ul>`],
+  ['limits', 'Known limits', html`
+    <ul>
+      <li><b>No screen reader testing yet.</b> We have not yet tested with screen readers such as NVDA, JAWS, VoiceOver or TalkBack.</li>
+      <li><b>Colour contrast is not measured automatically.</b> The checks above do not yet measure contrast on every page.</li>
+      <li><b>Lesson videos.</b> Lessons and recordings play in a placeholder player while the streaming service is set up. Captions and transcripts are not available yet.</li>
+      <li><b>Smaller buttons in the portal.</b> Some secondary buttons in the student portal and the staff admin area are less than 44 pixels tall.</li>
+      <li><b>Live classes.</b> Live sessions run on Zoom, so their accessibility also depends on Zoom.</li>
+      <li><b>Course PDFs.</b> The PDFs in the portal today are generated placeholders and have not been checked for accessibility.</li>
+      <li><b>Stock video clips.</b> The short clips on the home page are decorative and have no sound. A button pauses them.</li>
+    </ul>`],
+  ['report', 'Report a problem', html`
+    <p>If something on this website or in the student portal is hard to use, please tell us which page it is, what you were trying to do, and the browser, device or assistive technology you use.</p>
+    <p>${reportLine()}</p>`],
+  ['statement', 'About this statement', html`
+    <p>This statement was prepared on ${A11Y_DATE}, from the checks in our test suite on that date, and last updated on ${A11Y_UPDATED}. It will be updated as the website and portal change.</p>`],
+];
+
 // ---------------------------------------------------------------- credits
 const CREDITS = [
   ['photos', 'Photos', html`
@@ -263,6 +325,7 @@ const CREDITS = [
     <ul class="abt-cards">
       ${card('Clash Grotesk', '', [['By', 'Indian Type Foundry'], ['Licence', 'ITF Free Font License'], ['Source', html`<a href="https://www.fontshare.com/" rel="noopener">fontshare.com</a>, served from this website`]])}
       ${card('Plus Jakarta Sans, Source Serif 4 and Outfit', '', [['Licence', 'SIL Open Font License'], ['Source', html`<a href="https://fonts.google.com/" rel="noopener">Google Fonts</a>`]])}
+      ${card('JetBrains Mono', '', [['Used in', 'The student portal'], ['Licence', 'SIL Open Font License'], ['Source', html`<a href="https://fonts.google.com/" rel="noopener">Google Fonts</a>`]])}
     </ul>`],
 ];
 
@@ -284,6 +347,15 @@ const PAGES = {
     sections: TERMS,
     intro: draftNote('These plain-English terms set out the rules for using the Nuvora website and student portal as they work today.'),
     side: html`Questions? <a href="/contact/">How to reach us</a>.`,
+  },
+  accessibility: {
+    path: '/legal/accessibility/', label: 'Accessibility statement',
+    title: 'Accessibility statement: WCAG 2.2 AA target, tests, limits',
+    description: 'How accessible the Nuvora website and student portal are today: the WCAG 2.2 AA target, how pages are tested, the known limits and how to report a problem.',
+    lede: 'What we aim for, what we build in, how we test it, what does not work well yet, and how to tell us about a problem.',
+    sections: ACCESSIBILITY,
+    intro: html`<div class="abt-draft" role="note">${icon('info')}<div><b>Statement of ${A11Y_DATE}</b><p>Nuvora is pre-launch. This statement describes the website and student portal as they are today.</p></div></div>`,
+    side: html`Found a problem? <a href="#report">Tell us</a>.`,
   },
   credits: {
     path: '/legal/credits/', label: 'Media credits',

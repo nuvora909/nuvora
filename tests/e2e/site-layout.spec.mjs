@@ -1,6 +1,6 @@
 // Layout and accessibility basics for every page in the sitemap, from a 320px phone to a desktop, plus the phone
 // menu and the dark colour scheme. Pages are read from /sitemap.xml, so new pages are covered automatically.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 
 test.describe.configure({ timeout: 600_000 });   // each test walks through every page
 

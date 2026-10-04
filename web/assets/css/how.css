@@ -29,7 +29,7 @@
 /* ---------- a term, week by week ---------- */
 .how-tl{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 .how-wk{position:relative;display:grid;gap:6px;align-content:start;padding:16px 12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);min-width:0;font-size:.8rem;line-height:1.35;overflow:hidden}
-.how-wk::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#38BDF8,#0B6BF5)}
+.how-wk::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--meta),var(--accent))}
 .how-wk.is-proj{border-color:var(--gold)}
 .how-wk.is-proj::before{background:var(--grad-gold)}
 .how-wn{font:500 1.02rem/1.2 var(--display);color:var(--ink)}
@@ -79,11 +79,11 @@
 /* ---------- tuition: price per level ---------- */
 .how-levels{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .how-level{position:relative;display:grid;gap:16px;align-content:start;padding:26px 24px 24px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;min-width:0}
-.how-level::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--a,#38BDF8),var(--b,#0B6BF5))}
+.how-level::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--a,var(--meta)),var(--b,var(--accent)))}
 .how-level h3{font-size:1.3rem}
 .how-lvl-sub{font-size:.88rem;color:var(--muted);margin-top:-8px}
 .how-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
-.how-price b{font:500 clamp(2.3rem,4vw,2.9rem)/1 var(--display);letter-spacing:-.025em;background:linear-gradient(135deg,#0B6BF5,#6D5DF6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.how-price b{font:500 clamp(2.3rem,4vw,2.9rem)/1 var(--display);letter-spacing:-.025em;background:linear-gradient(135deg,var(--accent),#6D5DF6);-webkit-background-clip:text;background-clip:text;color:transparent}
 .how-price span{color:var(--muted);font-size:.92rem}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .how-price b{background-image:linear-gradient(135deg,#7DD3FC,#A5B4FC)} }
 :root[data-theme="dark"] .how-price b{background-image:linear-gradient(135deg,#7DD3FC,#A5B4FC)}
@@ -137,6 +137,12 @@
 .how-not{list-style:none!important;padding:0!important;display:grid;gap:8px;color:var(--ink)!important}
 .how-not li{display:flex;gap:10px;align-items:center}
 .how-not .ic{color:var(--warn);width:18px;height:18px}
+/* the access rule for unpaid terms, under the paying boxes */
+.how-access{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;margin-top:18px;padding:22px 24px;border-radius:20px;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);max-width:860px}
+.how-access>.ic{width:26px;height:26px;color:var(--accent);margin-top:2px}
+.how-access div{display:grid;gap:8px}
+.how-access p{color:var(--muted)}
+@media (max-width:560px){ .how-access{grid-template-columns:1fr;padding:20px} }
 
 .how-refund{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;padding:28px;border-radius:24px;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--gold);box-shadow:var(--shadow);max-width:860px}
 .how-refund>.ic{width:30px;height:30px;color:var(--warn);margin-top:4px}

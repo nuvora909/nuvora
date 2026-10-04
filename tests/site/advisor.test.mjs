@@ -7,6 +7,7 @@ import { catalogAnswer, catalogText, renderAnswer, aiAvailable, AI_RULES } from 
 import { nextStarts, fmtDay, fromIso } from '../../web/assets/js/dates.mjs';
 import { PROGRAMS, TUITION, money } from '../../web/data/programs.mjs';
 import { ROLES } from '../../web/data/careers.mjs';
+import { ACCESS_RULE } from '../../web/assets/js/access-rule.mjs';
 
 let site, C;
 // The advisor runs in the browser on the catalog module the build generates, so test that exact module. Pages
@@ -57,8 +58,13 @@ const QUESTIONS = [
   ['What does a Data Analyst do?', [ROLES['data-analyst'].title, '/careers/data-analyst/']],
   ['How do I become an ML Engineer?', [ROLES['ml-engineer'].title, '/careers/ml-engineer/']],
   ['Which program should I choose?', ['/find-your-program/']],
-  ['Can I talk to a human?', ['will be published before the first batch']],
-  ['How many hours per week?', [P('c-py').short, P('c-py').weeklyHours]],
+  ['Can I talk to a human?', ['Support contact details will be published before the first batch.', '/admissions/#request']],
+  ['How many hours per week?', [P('c-py').short, P('c-py').weeklyHours, 'Lessons are on demand and live sessions are recorded, so you can study around a job.']],
+  ['What happens if I don’t pay for a term?', [ACCESS_RULE]],
+  ['Do I pay for the whole program up front?', [ACCESS_RULE]],
+  ['What certificate do I get?', ['certificate of completion', 'not an accredited degree']],
+  ['Do I need a bachelor’s degree for the M.S. Data Science?', [P('ms-ds').name, ...P('ms-ds').required]],
+  ['Can I get an EMI?', ['Loans and scholarships aren’t offered yet']],
   ['hello', ['published catalog']],
   ['qwzx plorb vint?', ['/find-your-program/']],
   ['<script>alert(1)</script>', ['/find-your-program/']],
@@ -84,6 +90,28 @@ test('catalog answers never invent outcomes, guarantees, contact details or accr
     for (const c of claims(a)) bad.push(`"${q}": ${c}\n    ${a.replace(/\n/g, ' ')}`);
   }
   assert.deepEqual(bad, []);
+});
+
+test('questions get only the answers they ask for', () => {
+  const ACCREDITATION = 'not an accredited degree';
+  const PRICES = 'Launch pricing in US dollars';
+  // [question, text the answer must not contain]
+  const cases = [
+    // A program name with "certificate" in it is not a question about accreditation.
+    ['How much is the GenAI certificate?', ACCREDITATION],
+    ['What do I need for the MLOps certificate?', ACCREDITATION],
+    ['Tell me about the Certificate in Python & Data Analysis', ACCREDITATION],
+    // Short money words count only as whole words.
+    ['Do I get feedback on my projects?', PRICES],
+    ['Is the course academic or practical?', PRICES],
+    ['Is the content priceless?', PRICES],
+    // Office hours are about the schedule, not the weekly workload.
+    ['When are office hours?', 'a week. Lessons are on demand'],
+  ];
+  const wrong = cases.map(([q, not]) => [q, not, catalogAnswer(q, C, TODAY)]).filter(([, not, a]) => a.includes(not))
+    .map(([q, not, a]) => `"${q}" should not say "${not}":\n    ${a.replace(/\n/g, ' ')}`);
+  assert.deepEqual(wrong, []);
+  for (const q of QUESTIONS.map(([x]) => x)) assert.doesNotMatch(catalogAnswer(q, C, TODAY), /Every program fits around a job/);
 });
 
 test('date answers follow the batch calendar on the day they are asked', () => {
@@ -143,7 +171,7 @@ test('renderAnswer escapes HTML and never outputs external or script links', () 
 test('the catalog facts given to an AI model are true and complete', () => {
   const text = catalogText(C, TODAY);
   for (const want of ['Tuesday', 'Thursday', '19:00', 'IST', 'no graduates', 'Not an accredited degree', 'never downloadable', fmtDay(NEXT.start), fmtDay(AFTER.start),
-    'Refund policy to be published before the first batch', 'No loans or scholarships yet']) {
+    'Refund policy to be published before the first batch', 'No loans or scholarships yet', ACCESS_RULE]) {
     assert.ok(text.includes(want), `catalogText mentions "${want}"`);
   }
   for (const p of PROGRAMS) {

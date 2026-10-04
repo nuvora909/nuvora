@@ -3,7 +3,8 @@
 //
 // The match score is calculated, not predicted: goal fit (40) + background fit (25) + prerequisites (15) +
 // weekly time (20) = 100. Every point is explained to the visitor. Master's-level programs are never offered
-// to someone who says they have no bachelor's degree.
+// to someone who says they have no bachelor's degree, and someone who has never coded is always matched first
+// to a program that teaches Python from the start.
 
 export const QUESTIONS = [
   { id: 'role', q: 'What describes you?', options: [
@@ -107,8 +108,12 @@ export function scoreProgram(p, a) {
  *          program and we have not asked about a degree yet.
  */
 export function recommend(answers, programs) {
+  // Someone who has not coded yet is matched first to the programs that teach Python from the start; programs
+  // that expect code follow, whatever their score, each with the caution that says to learn Python first.
+  const order = (id) => programs.findIndex((p) => p.id === id);
+  const later = (id) => (answers.coding === 'none' && programs.find((p) => p.id === id).requiresCoding ? 1 : 0);
   const ranked = programs.map((p) => scoreProgram(p, answers)).filter(Boolean)
-    .sort((x, y) => y.score - x.score || programs.findIndex((p) => p.id === x.id) - programs.findIndex((p) => p.id === y.id));
+    .sort((x, y) => later(x.id) - later(y.id) || y.score - x.score || order(x.id) - order(y.id));
   const top = ranked[0];
   const topProgram = programs.find((p) => p.id === top.id);
   const needs = topProgram.needsBachelor && !answers.bachelor ? 'bachelor' : null;

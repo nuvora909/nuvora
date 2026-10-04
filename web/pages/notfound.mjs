@@ -1,3 +1,4 @@
+// The branded 404 page (served by the dev server and hosts for any unknown path). It is never indexed.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead } from '../lib/layout.mjs';
@@ -11,5 +12,5 @@ ${pageHead({ eyebrow: 'Error 404', title: accent('We couldn’t find *that page*
 </div></section>`;
 
 export default function notFound() {
-  return [{ path: '/404', noindex: true, html: page({ path: '/404', status: 404, title: 'Page not found', description: 'This page does not exist on the Nuvora website.', body: body() }) }];
+  return [{ path: '/404', noindex: true, html: page({ path: '/404', status: 404, title: 'Page not found', description: `The page you asked for is not on the Nuvora website. Browse all ${PROGRAMS.length} programs, answer four questions in Find my program, or log in to the student portal.`, body: body() }) }];
 }
