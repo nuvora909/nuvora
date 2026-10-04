@@ -1,10 +1,12 @@
 // Nuvora portal: routing, the signed-in shell (sidebar, top bar, badges) and page lifecycle.
 // Pages live in pages/*.js; each receives a context object and renders into the main area.
 import { auth, rpc, onAuthChange, isConfigured, config, ApiError } from './api.js';
-import { html, icon, wordmark, loading, initials, envBanner } from './ui.js';
+import { html, icon, wordmark, loading, initials, envBanner, fmtDateTime } from './ui.js';
 import * as authPages from './pages/auth.js';
 import * as student from './pages/student.js';
 import * as staff from './pages/staff.js';
+import * as admin from './pages/admin.js';
+import * as adminOps from './pages/admin-ops.js';
 
 const root = document.getElementById('app');
 const STAFF_ROLES = new Set(['instructor', 'admin']);
@@ -27,13 +29,23 @@ const ROUTES = [
   { path: 'teach', page: staff.teach, who: 'staff', title: 'Teaching' },
   { path: 'grading', page: staff.grading, who: 'staff', title: 'Grading' },
   { path: 'roster/:id', page: staff.roster, who: 'staff', title: 'Roster', nav: 'teach' },
+  { path: 'access', page: student.access, who: 'student', title: 'Portal access' },
+  // Admin area: shown and reachable only for the admin role. The database checks the role on every call too.
+  { path: 'admin', page: admin.overview, who: 'admin', title: 'Admin overview' },
+  { path: 'admin/students', page: admin.students, who: 'admin', title: 'Students' },
+  { path: 'admin/student/:id', page: admin.student, who: 'admin', title: 'Student', nav: 'admin/students' },
+  { path: 'admin/batches', page: adminOps.batches, who: 'admin', title: 'Batches' },
+  { path: 'admin/staff', page: adminOps.staff, who: 'admin', title: 'Staff' },
+  { path: 'admin/requests', page: adminOps.requests, who: 'admin', title: 'Seat requests' },
+  { path: 'admin/materials', page: adminOps.materials, who: 'admin', title: 'Materials' },
 ];
 
 const state = {
   me: null, dash: null, dashAt: 0, unread: 0, toGrade: 0,
-  renderId: 0, cleanups: [], shell: false, flash: null, signingOut: false, lastLoad: 0,
+  renderId: 0, cleanups: [], shell: false, flash: null, signingOut: false, lastLoad: 0, focus: null, routed: false,
 };
 const isStaff = () => STAFF_ROLES.has(state.me?.role);
+const isAdmin = () => state.me?.role === 'admin';
 
 // ---------------------------------------------------------------- routing
 function match(hash) {
@@ -50,8 +62,10 @@ function match(hash) {
   return { r: null, params: {}, query: new URLSearchParams() };
 }
 
-const homeHash = () => (!auth.session ? '#/login' : isStaff() ? '#/teach' : '#/home');
-function go(hash) {
+const homeHash = () => (!auth.session ? '#/login' : isAdmin() ? '#/admin' : isStaff() ? '#/teach' : '#/home');
+// focus: a selector to move keyboard focus to once the page has rendered (for example a results heading).
+function go(hash, focus = null) {
+  state.focus = focus;
   if (location.hash === hash) route();
   else location.hash = hash;
 }
@@ -87,11 +101,12 @@ async function route() {
     }
     if (id !== state.renderId) return;
   }
-  if (r.who === 'student' && isStaff()) return go('#/teach');
-  if (r.who === 'staff' && !isStaff()) return go('#/home');
+  if (r.who === 'student' && isStaff()) return go(homeHash());
+  if (r.who === 'staff' && !isStaff()) return go(homeHash());
+  if (r.who === 'admin' && !isAdmin()) return go(homeHash());
 
   ensureShell();
-  markNav(r.nav ?? r.path.split('/')[0]);
+  markNav(r.nav ?? r.path.replace(/\/:.*$/, ''));
   return runPage(r, makeCtx(id, document.getElementById('main'), params, query));
 }
 
@@ -117,18 +132,56 @@ function makeCtx(id, main, params, query) {
 
 async function runPage(r, ctx) {
   document.title = `${r.title} · Nuvora`;
+  const arrived = state.lastHash !== location.hash;
+  const trail = focusTrail(ctx.main, document.activeElement);
+  const wanted = state.focus;
+  state.focus = null;
   try {
     // Show a spinner when arriving on a page, not when the same page refreshes itself.
-    if (ctx.main !== root && state.lastHash !== location.hash) ctx.render(loading());
+    // Arriving on another page starts at its top, not at the old page's scroll position.
+    if (ctx.main !== root && arrived) { ctx.render(loading()); window.scrollTo(0, 0); }
     state.lastHash = location.hash;
     await r.page(ctx);
-    if (!ctx.stale()) state.lastLoad = Date.now();
+    if (ctx.stale()) return;
+    state.lastLoad = Date.now();
+    // Not on the very first page of a visit: there the browser starts at the top, as on any website.
+    if (state.routed && (wanted || trail.length || arrived)) restoreFocus(ctx.main, wanted, trail);
+    state.routed = true;
   } catch (e) {
     if (ctx.stale()) return;
     if (e instanceof ApiError && e.status === 401) return;
     ctx.render(errorView(e));
     ctx.main.querySelector('[data-retry]')?.addEventListener('click', () => route());
   }
+}
+
+// ---------------------------------------------------------------- keyboard focus across renders
+// A page that renders again (after an action, a filter or a search) replaces the control a keyboard user was
+// on, and focus would fall back to the page body, at the top of the page. Before a page renders, note where
+// focus was: the control itself (by id, or by its data attribute) and the headings of the sections around it.
+// Afterwards, if focus was lost, it goes back to the same control if it is still there, else to the nearest
+// of those headings that is, else to the page's h1.
+function focusTrail(main, el) {
+  if (!el || el === document.body || !main.contains(el)) return [];
+  const trail = [];
+  if (el.id) trail.push(`#${CSS.escape(el.id)}`);
+  const data = [...el.attributes].find((a) => a.name.startsWith('data-') && a.name !== 'data-busy' && a.value);
+  if (data) trail.push(`${el.localName}[${data.name}="${CSS.escape(data.value)}"]`);
+  for (let p = el.parentElement; p && p !== main; p = p.parentElement) {
+    const label = p.getAttribute('aria-labelledby')?.split(' ')[0];
+    if (label) trail.push(`#${CSS.escape(label)}`);
+  }
+  return trail;
+}
+function restoreFocus(main, wanted, trail) {
+  const now = document.activeElement;
+  const lost = !now || now === document.body || !now.isConnected;
+  if (!wanted && !lost) return;                               // the user has already moved on
+  const target = [wanted, ...trail, 'h1'].filter(Boolean).map((sel) => main.querySelector(sel))
+    .find((el) => el && el.getClientRects().length);
+  if (!target) return;
+  if (!target.matches('a[href], button, input, select, textarea, summary, [tabindex]')) target.tabIndex = -1;
+  target.focus();
 }
 
 function runCleanups() {
@@ -156,7 +209,7 @@ async function loadDashboard(fresh) {
   state.dashAt = Date.now();
   state.me = d.profile;
   setUnread(d.unread_notifications);
-  if (state.shell) { renderBatchPicker(); renderUserButton(); }
+  if (state.shell) { renderBatchPicker(); renderUserButton(); renderAccessBar(); }
   return d;
 }
 
@@ -185,15 +238,20 @@ function ensureShell() {
   if (state.shell) return;
   const staffNav = [['teach', 'board', 'Teaching'], ['grading', 'grade', 'Grading', 'grade'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
   const studentNav = [['home', 'home', 'Home'], ['course', 'book', 'My course'], ['live', 'live', 'Live classes'], ['assignments', 'task', 'Assignments'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
-  const nav = isStaff() ? staffNav : studentNav;
+  const adminNav = [['admin', 'gauge', 'Overview'], ['admin/students', 'users', 'Students'], ['admin/batches', 'calendar', 'Batches'],
+    ['admin/staff', 'shield', 'Staff'], ['admin/requests', 'inbox', 'Seat requests'], ['admin/materials', 'pdf', 'Materials']];
+  const link = ([p, ic, label, badge]) => html`<a class="snav" href="#/${p}" data-nav="${p}">${icon(ic)}<span>${label}</span>${badge ? html`<span class="count" data-badge="${badge}" hidden></span>` : ''}</a>`;
+  const nav = isAdmin()
+    ? html`<p class="navhead">Admin</p>${adminNav.map(link)}<p class="navhead">Teaching</p>${staffNav.map(link)}`
+    : (isStaff() ? staffNav : studentNav).map(link);
   root.innerHTML = String(html`
     ${envBanner(config.environment)}
     <div class="app">
       <nav class="sidebar" aria-label="Portal">
-        <div class="brand">${wordmark('#/')}<small>${isStaff() ? 'Teaching portal' : 'Student portal'}</small></div>
-        ${nav.map(([p, ic, label, badge]) => html`<a class="snav" href="#/${p}" data-nav="${p}">${icon(ic)}<span>${label}</span>${badge ? html`<span class="count" data-badge="${badge}" hidden></span>` : ''}</a>`)}
+        <div class="brand">${wordmark('#/')}<small>${isAdmin() ? 'Admin portal' : isStaff() ? 'Teaching portal' : 'Student portal'}</small></div>
+        ${nav}
         <div class="grow"></div>
-        <div class="sidecard"><b>Need a hand?</b>Bring questions to your batch’s Thursday office hours, or reply to any Nuvora email.</div>
+        ${isAdmin() ? '' : html`<div class="sidecard"><b>Need a hand?</b>Bring questions to your batch’s Thursday office hours. A support email will be published before the first batch.</div>`}
       </nav>
       <div class="main">
         <header class="topbar">
@@ -201,15 +259,41 @@ function ensureShell() {
           <a class="iconbtn" href="#/notifications" data-bell aria-label="Notifications">${icon('bell')}<span class="dot" data-badge="unread-dot" hidden></span></a>
           <div class="user" data-user></div>
         </header>
+        <div data-accessbar></div>
         <main id="main" tabindex="-1"></main>
       </div>
     </div>`);
   state.shell = true;
   state.lastHash = null;
+  const bar = root.querySelector('.sidebar');
+  bar.addEventListener('scroll', menuEdges, { passive: true });
+  bar.addEventListener('focusin', menuFocus);
   renderBatchPicker();
   renderUserButton();
+  renderAccessBar();
   renderBadges();
   startPolling();
+}
+
+// Tuition access, from the student's dashboard (the database decides it with its own clock): a calm notice
+// during the last 7 days before access pauses, and for a paused program while another one is still open.
+// When every program is paused, the pages themselves explain it instead (pausedView in pages/student.js).
+const BAR_DAYS = 7;
+function renderAccessBar() {
+  const host = root.querySelector('[data-accessbar]');
+  if (!host) return;
+  const list = isStaff() ? [] : state.dash?.access ?? [];
+  const soon = list.filter((a) => a.open && a.ends_at && a.days_left !== null && a.days_left <= BAR_DAYS);
+  const paused = state.dash?.batches?.length ? list.filter((a) => !a.open) : [];
+  const days = (n) => (n <= 0 ? 'today' : n === 1 ? 'in 1 day' : `in ${n} days`);
+  host.innerHTML = String(html`${soon.map((a) => html`<div class="accessbar warn" role="status">${icon('clock')}
+      <p><b>Your portal access to ${a.program} pauses ${days(a.days_left)}, on ${fmtDateTime(a.ends_at)}.</b>
+        ${a.state === 'grace' ? `Term ${a.term} hasn’t been paid yet. Access continues as soon as your payment is recorded.`
+          : 'Your extended access ends then, and the usual tuition rule applies again.'}</p>
+      <a class="btn ghost sm" href="#/access">What this means</a></div>`)}
+    ${paused.map((a) => html`<div class="accessbar bad" role="status">${icon('lock')}
+      <p><b>Your portal access to ${a.program} is paused.</b> ${a.state === 'stopped_unpaid' ? `Term ${a.term} hasn’t been paid yet.` : 'Nuvora paused it.'}</p>
+      <a class="btn ghost sm" href="#/access?paused=1">Details</a></div>`)}`);
 }
 
 function teardownShell() {
@@ -223,6 +307,34 @@ function markNav(key) {
     if (a.dataset.nav === key) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
+  // On phones the menu is one sideways strip: bring the current page's item into view (only the strip scrolls).
+  const bar = root.querySelector('.sidebar');
+  const cur = bar?.querySelector('[aria-current="page"]');
+  if (cur && bar.scrollWidth > bar.clientWidth) {
+    const b = bar.getBoundingClientRect(), c = cur.getBoundingClientRect();
+    bar.scrollLeft += c.left - b.left - (b.width - c.width) / 2;
+  }
+  menuEdges();
+}
+
+// The phone strip fades out at an edge while there are more items that way (.more-l / .more-r in portal.css),
+// so nobody takes the visible items for the whole menu.
+function menuEdges() {
+  const bar = root.querySelector('.sidebar');
+  if (!bar) return;
+  const more = bar.scrollWidth - bar.clientWidth > 1;
+  bar.classList.toggle('more-l', more && bar.scrollLeft > 1);
+  bar.classList.toggle('more-r', more && bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 1);
+}
+window.addEventListener('resize', menuEdges);
+// A menu item reached with Tab is scrolled clear of the fades (the browser leaves a half-visible item where it is).
+const FADE = 56;                                                    // the fade's width in portal.css
+function menuFocus(e) {
+  const bar = e.currentTarget;
+  if (bar.scrollWidth <= bar.clientWidth) return;
+  const b = bar.getBoundingClientRect(), c = e.target.getBoundingClientRect();
+  if (c.left < b.left + FADE) bar.scrollLeft -= b.left + FADE - c.left;
+  else if (c.right > b.right - FADE) bar.scrollLeft += c.right - (b.right - FADE);
 }
 
 function renderBatchPicker() {

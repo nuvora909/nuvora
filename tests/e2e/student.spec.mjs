@@ -1,5 +1,5 @@
 // A student's day: dashboard, course, watching lessons, live classes, assignments, notifications, profile.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, sql, one, loginAs, watchErrors, ACCOUNTS } from './helpers.mjs';
 
 let demo;
@@ -69,17 +69,20 @@ test('watching a lesson to 90% completes it; progress is saved as you watch', as
   await page.goto(`/portal/#/lesson/${l.id}`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(l.title);
   await expect(page.getByText(/Resuming at/)).toBeVisible();
-  // Record every toast message: they disappear after 4 seconds, so checking visibility later would race.
+  // Record every toast message as it is written. Toasts clear themselves after a few seconds, and the fake clock
+  // can show and clear one inside a single step, so reading the toast's text later (or when the observer runs) races.
   await page.evaluate(() => {
     window.__toasts = [];
-    new MutationObserver(() => { const t = document.getElementById('toast'); if (t && !t.hidden) window.__toasts.push(t.textContent); })
-      .observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+    new MutationObserver((records) => {
+      for (const r of records) if (r.target.id === 'toast') for (const n of r.addedNodes) if (n.textContent) window.__toasts.push(n.textContent);
+    }).observe(document.body, { subtree: true, childList: true });
   });
   await page.getByLabel('Playback speed').selectOption('2');
   await page.getByRole('button', { name: 'Play' }).first().click();
   const done = page.locator('[data-status] .pill.good');
   for (let i = 0; i < 80 && !(await done.isVisible()); i++) await page.clock.runFor(10_000);
   await expect(done).toHaveText(/Completed/);
+  await page.clock.runFor(1000);                                      // a toast is written 50 ms after it is queued
   expect(await page.evaluate(() => window.__toasts)).toContain('Lesson complete. Nice work!');
   const row = (await sql(request, `select watched_seconds, completed_at is not null as done from lesson_progress where student_id = $1 and lesson_id = $2`, [demo.id.student, l.id]))[0];
   expect(row.done).toBe(true);

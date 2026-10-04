@@ -20,3 +20,11 @@ test('the guardrails are written down next to the code that shows progress', () 
     assert.ok(home.includes(rule), `student.js states: ${rule}`);
   }
 });
+
+// A signed PDF link is only checked when it is made, and hosted Supabase puts no limit on its life, so the
+// portal itself must always ask for a short one (docs/admin-api.md, "PDF materials").
+test('every signed PDF link the portal asks for lives 60 seconds at most', () => {
+  const asks = files.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/expiresIn:\s*([^,}\s]+)/g)].map((m) => [f, m[1]]));
+  assert.ok(asks.length >= 1, 'the portal asks for signed links');
+  for (const [f, v] of asks) assert.ok(/^\d+$/.test(v) && Number(v) <= 60, `${f}: expiresIn ${v}`);
+});

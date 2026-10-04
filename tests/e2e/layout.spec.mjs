@@ -1,5 +1,5 @@
 // Layout and accessibility basics on phone and desktop sizes, in light and dark mode.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, loginAs } from './helpers.mjs';
 
 test.beforeEach(async ({ request }) => { await reset(request); });
@@ -20,7 +20,7 @@ const cutOff = (page) => page.evaluate(() => {
 });
 
 async function checkPage(page, label) {
-  await expect(page.locator('main h1, .auth-card h1').first()).toBeVisible();
+  await expect(page.locator('main h1, .auth h1').first()).toBeVisible();
   expect(await cutOff(page), `${label}: nothing runs off the right edge`).toEqual([]);
   expect(await page.locator('h1').count(), `${label}: one main heading`).toBe(1);
   const nav = (await page.locator('.sidebar').count()) ? await page.locator('.sidebar').boundingBox() : null;
@@ -62,13 +62,13 @@ for (const size of [{ name: 'phone', width: 390, height: 844 }, { name: 'small p
       await checkPage(page, `${p} @${size.width}`);
       if (p === '#/home') {
         await checkHome(page, `home @${size.width}`);
-        await page.screenshot({ path: `test-results/screens/home-${size.width}.png`, fullPage: true });
+        await page.screenshot({ path: test.info().outputPath(`home-${size.width}.png`), fullPage: true });
       }
     }
     await page.goto('/portal/#/course');
     await page.locator('details.mod[open] a.lesson').first().click();
     await checkPage(page, `lesson @${size.width}`);
-    await page.screenshot({ path: `test-results/screens/lesson-${size.width}.png`, fullPage: true });
+    await page.screenshot({ path: test.info().outputPath(`lesson-${size.width}.png`), fullPage: true });
   });
 }
 
@@ -100,14 +100,14 @@ test('dark mode uses the dark palette', async ({ page }) => {
   await loginAs(page, 'student');
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(bg).toBe('rgb(8, 16, 31)');
-  await page.screenshot({ path: 'test-results/screens/home-dark.png' });
+  await page.screenshot({ path: test.info().outputPath('home-dark.png') });
 });
 
 test('desktop screenshots for review', async ({ page }) => {
   await loginAs(page, 'student');
   await checkPage(page, 'home @1366');
   await checkHome(page, 'home @1366');
-  await page.screenshot({ path: 'test-results/screens/home-desktop.png', fullPage: true });
+  await page.screenshot({ path: test.info().outputPath('home-desktop.png'), fullPage: true });
   await page.goto('/portal/#/assignments');
-  await page.screenshot({ path: 'test-results/screens/assignments-desktop.png', fullPage: true });
+  await page.screenshot({ path: test.info().outputPath('assignments-desktop.png'), fullPage: true });
 });

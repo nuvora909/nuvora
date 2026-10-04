@@ -12,7 +12,8 @@ export const config = cfg;
 export const isConfigured = () => Boolean(cfg.supabaseUrl && cfg.anonKey) && !/YOUR[-_]/.test(`${cfg.supabaseUrl}${cfg.anonKey}`);
 
 // ---------------------------------------------------------------- session storage
-// "Remember me" keeps the session in localStorage; otherwise it lives only in this tab (sessionStorage).
+// "Keep me signed in" (off unless ticked) keeps the session in localStorage; otherwise it lives only in this tab
+// (sessionStorage) and ends when the tab closes.
 const storage = (persist) => { try { return persist ? window.localStorage : window.sessionStorage; } catch { return null; } };
 const listeners = new Set();
 let session = null;
@@ -42,12 +43,14 @@ export const onAuthChange = (fn) => { listeners.add(fn); return () => listeners.
 // ---------------------------------------------------------------- HTTP
 const messageOf = (d) => (d && (d.msg ?? d.message ?? d.error_description ?? d.error)) || null;
 
-async function request(path, { method = 'POST', body, token, keepalive = false } = {}) {
+// `file` sends raw bytes (a File or Blob) with its own content type instead of JSON.
+async function request(path, { method = 'POST', body, file, token, keepalive = false } = {}) {
   const headers = { apikey: cfg.anonKey, Authorization: `Bearer ${token ?? cfg.anonKey}` };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (file) headers['Content-Type'] = file.type;
+  else if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
-    res = await fetch(cfg.supabaseUrl + path, { method, headers, keepalive, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(cfg.supabaseUrl + path, { method, headers, keepalive, body: file ?? (body === undefined ? undefined : JSON.stringify(body)) });
   } catch {
     throw new ApiError('Can’t reach Nuvora right now. Check your connection and try again.', 0, 'network');
   }
@@ -75,16 +78,16 @@ export const auth = {
   get session() { return session; },
   get user() { return session?.user ?? null; },
 
-  async signIn(email, password, remember = true) {
+  async signIn(email, password, remember = false) {
     const s = await request('/auth/v1/token?grant_type=password', { body: { email: email.trim(), password } });
     save(s, remember);
     return s.user;
   },
 
   /** Returns { signedIn } — false when the project requires confirming the email first. */
-  async signUp(email, password, fullName) {
+  async signUp(email, password, fullName, remember = false) {
     const r = await request('/auth/v1/signup', { body: { email: email.trim(), password, data: { full_name: fullName.trim() } } });
-    if (r?.access_token) save(r, true);
+    if (r?.access_token) save(r, remember);
     return { signedIn: Boolean(r?.access_token) };
   },
 
@@ -158,6 +161,43 @@ export async function downloadPdf(path, filename) {
   document.body.append(a);
   a.click();
   a.remove();
+}
+
+// ---------------------------------------------------------------- PDF uploads (admins only)
+// Storage accepts a file only from an admin, only as a PDF of at most 50 MB inside a program's folder, and never
+// replaces an existing file. The same checks run here first so the admin gets a quick, clear message.
+export const MAX_PDF_BYTES = 52_428_800;
+
+/** Returns a message explaining why this file can't be uploaded, or null when it looks fine. */
+export function pdfProblem(file) {
+  if (!file) return 'Choose a PDF file first.';
+  if (file.type !== 'application/pdf' || !/.pdf$/i.test(file.name)) return `“${file.name}” isn’t a PDF. Only PDF files can be uploaded.`;
+  if (file.size > MAX_PDF_BYTES) return 'This PDF is larger than 50 MB. Make it smaller and try again.';
+  if (file.size === 0) return 'This file is empty.';
+  return null;
+}
+
+const STORAGE_MESSAGES = {
+  415: 'That file isn’t a PDF. Only PDF files can be uploaded.',
+  413: 'This PDF is larger than 50 MB. Make it smaller and try again.',
+  409: 'A file with this name already exists. Rename the file and upload it again.',
+  403: 'Only admins can upload course files, into a program’s folder.',
+};
+
+export async function uploadPdf(path, file) {
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  try {
+    return await request(`/storage/v1/object/${FILES_BUCKET}/${encoded}`, { file, token: await accessToken() });
+  } catch (e) {
+    if (STORAGE_MESSAGES[e.status]) throw new ApiError(STORAGE_MESSAGES[e.status], e.status, e.code);
+    throw e;
+  }
+}
+
+/** Deletes files no lesson or project uses any more. Returns the paths that were actually deleted. */
+export async function removeFiles(paths) {
+  const r = await request(`/storage/v1/object/${FILES_BUCKET}`, { method: 'DELETE', body: { prefixes: paths }, token: await accessToken() });
+  return (r ?? []).map((o) => o.name);
 }
 
 /** Fire-and-forget call that survives the page closing (used to save the last few seconds of watching). */

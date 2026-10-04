@@ -1,15 +1,20 @@
 // Proves the tests have teeth: each case breaks one security or business rule on purpose,
 // and the matching test file must FAIL. If a sabotaged run passes, the tests are missing something.
 import { spawnSync } from 'node:child_process';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { freshDb } from './db/helpers.mjs';
 
 const fn = (sig, body) => `create or replace function public.${sig} language sql stable security definer
   set search_path = public, pg_temp as $$ ${body} $$;`;
 // Rewrites one existing function in place: its current definition with `from` replaced by `to` (or several
 // [from, to] pairs). Refuses (and the case counts as INVALID) when a `from` is not found, so a reworded
-// function cannot make a case pass silently.
-const lit = (s) => `'${s.replace(/'/g, "''")}'`;
-const patch = (signature, from, to = '') => `do $patch$ declare d text := pg_get_functiondef('public.${signature}'::regprocedure);
+// function cannot make a case pass silently. Line endings are compared as \n on both sides (a checkout may
+// give the migrations or this file Windows line endings).
+const lit = (s) => `'${s.replace(/\r\n/g, '\n').replace(/'/g, "''")}'`;
+const patch = (signature, from, to = '') => `do $patch$ declare d text := replace(pg_get_functiondef('public.${signature}'::regprocedure), chr(13) || chr(10), chr(10));
   begin
     ${(Array.isArray(from) ? from : [[from, to]]).map(([f, t]) => `
     if position(${lit(f)} in d) = 0 then raise exception 'sabotage pattern not found in ${signature}'; end if;
@@ -17,6 +22,8 @@ const patch = (signature, from, to = '') => `do $patch$ declare d text := pg_get
     execute d;
   end $patch$;`;
 const SEAT = 'request_seat(text,date,text,text,text,boolean,text,text,jsonb,text)';
+const RULE = 'access_rule(text,text,timestamptz,boolean,timestamptz,timestamptz)';
+const SUBMIT = 'submit_assignment(uuid,text,text,text)';
 const const_seat = (name, sql) => [name, 'seat_requests', sql];
 const ANY_ENROLLMENT =`exists (select 1 from public.enrollments x where x.student_id = uid and x.program_id = m.program_id and x.status in ('active','completed'))`;
 
@@ -78,12 +85,110 @@ const CASES = [
   ['Achievements announced again on every event', 'home', patch('award_achievements(uuid)', `(x->>'ref')::uuid`, 'gen_random_uuid()')],
   ['A finished lesson counts as mastered without its project', 'home', patch('gaps_json(uuid,text,text)',
     `when lp.completed_at is not null and pj.passed then 'mastered'`, `when lp.completed_at is not null then 'mastered'`)],
+  // Tuition and access: one rule, by the database clock, at every gate; the hourly job announces each change once.
+  ['Unpaid terms never stop (the 30-day check is gone)', 'tuition', patch(RULE, `when p_at < p_grace_start + interval '30 days' then 'grace'`, `when true then 'grace'`)],
+  ['Access stops a day late', 'tuition', patch(RULE, `p_grace_start + interval '30 days'`, `p_grace_start + interval '31 days'`)],
+  ['Access stops at 30 days and a second, not at 30 days', 'tuition', patch(RULE, 'when p_at < p_grace_start', 'when p_at <= p_grace_start')],
+  ['Late joiners lose their 30 days', 'tuition', patch('access_of(uuid,timestamptz)',
+    'greatest(b.starts_on::timestamp at time zone b.timezone, e.enrolled_at)', 'b.starts_on::timestamp at time zone b.timezone')],
+  ['The portal trusts the caller\'s clock (p_now) for access', 'tuition', patch('my_dashboard(timestamptz)', [
+    [`where e.student_id = uid and e.status = 'active' and public.access_open(e)), '[]'::jsonb)`,
+     `where e.student_id = uid and e.status = 'active' and (public.access_of(e.id, p_now)).open), '[]'::jsonb)`],
+    ['cross join lateral public.access_of(e.id, now()) x', 'cross join lateral public.access_of(e.id, p_now) x']])],
+  ['Voided payments still count', 'tuition', patch('access_of(uuid,timestamptz)', 'where enrollment_id = e.id and voided_at is null', 'where enrollment_id = e.id')],
+  ['A payment overrides a manual stop', 'tuition', patch(RULE, `when p_mode = 'off' then 'stopped_manual'`, '')],
+  ['Manual starts never end', 'tuition', patch(RULE, `when p_mode = 'on' and (p_until is null or p_at < p_until)`, `when p_mode = 'on'`)],
+  ['Paused or withdrawn students keep access when paid', 'tuition', patch(RULE, `when p_status is null or p_status not in ('active','completed') then 'closed'`, '')],
+  ['Stopped students still see their batch', 'tuition', patch('can_see_batch(uuid)', `and e.status = 'active' and public.access_open(e))`, `and e.status = 'active')`)],
+  ['Stopped students still get their active batches', 'tuition', patch('my_active_batches()', 'and public.access_open(e)')],
+  ['Stopped students still download PDFs', 'tuition', patch('can_read_material(text)', `and public.access_open(e))`, ')')],
+  ['Stopped students can still submit work', 'tuition', patch(SUBMIT, 'if not public.access_open(e) then', 'if false then')],
+  ['Earlier terms stay open while the current term is stopped', 'tuition', patch('access_open(enrollments)', `and (e.status = 'active' or not exists (`, `and (true or not exists (`)],
+  ['Students can read the payments ledger', 'tuition', 'grant select on public.payments to authenticated;'],
+  ['The hourly job sends reminders again on every run', 'tuition', patch('apply_access_rules()', `md5(e.id::text || '/' || extract(epoch from x.ends_at)::text)::uuid`, 'gen_random_uuid()')],
+  ['Each stop is announced again on every run', 'tuition', patch('sync_access(uuid,uuid)', `set recorded = case when x.open then 'on' else 'off' end, recorded_at = now()`, 'set recorded_at = now()')],
+  ['Admins are not told about automatic stops', 'tuition', patch('sync_access(uuid,uuid)', `from public.profiles p where p.role = 'admin'`, 'from public.profiles p where false')],
+  ['Expired manual starts are never switched back', 'tuition', patch('apply_access_rules()', 'where mode = \'on\' and until <= now()', 'where false')],
+  ['Stopped students still hear that a recording is ready', 'tuition', patch('attach_recording(uuid,text)',
+    `e.status = 'active' and public.access_open(e)`, `e.status = 'active'`)],
+  ['Voiding a payment leaves the stop for the hourly job to announce', 'tuition', patch('admin_void_payment(uuid,text)',
+    'perform public.sync_access(pay.enrollment_id, auth.uid());')],
+  // The admin area: every admin function checks the role itself and writes the audit log.
+  ['Recording a payment forgets the admin check', 'admin', patch('admin_record_payment(uuid,numeric,text,text,text,date)', 'perform public.require_admin();')],
+  ['The students database forgets the admin check', 'admin', patch('admin_students(text,text,uuid,text,text,text,text,boolean,integer,integer)', 'perform public.require_admin();')],
+  ['Admin changes are not written to the audit log', 'admin', `create or replace function public.audit(p_action text, p_target_type text, p_target_id text,
+     p_person uuid, p_details jsonb default '{}'::jsonb) returns void language plpgsql security definer set search_path = public, pg_temp as $$ begin end $$;`],
+  ['Duplicate payment references accepted', 'admin', 'drop index public.payments_reference;'],
+  ['Capacity can be cut below the seats taken', 'admin', patch('admin_update_batch(uuid,integer,text,text)', 'if p_capacity < taken then', 'if false then')],
+  ['The last admin can be demoted', 'admin', patch('change_role(uuid,text)', `(select count(*) from public.profiles where role = 'admin') <= 1`, 'false')],
+  ['Admins can attach a file that was never uploaded', 'admin', patch('admin_add_material(text,text,uuid,uuid,integer)', `if not found then raise exception 'Upload the file first' using errcode = '22023'; end if;`)],
+  ['"Pausing within 7 days" lists every open student', 'admin', patch('admin_students(text,text,uuid,text,text,text,text,boolean,integer,integer)',
+    `and (x).ends_at <= now() + interval '7 days'`)],
+  ['The program outline forgets the admin check', 'admin', patch('admin_program_outline(text)', 'perform public.require_admin();')],
+  // PDF uploads to the course-files bucket.
+  ['Non-PDF files can be uploaded', 'materials', patch('can_upload_course_file(text,jsonb)', `and coalesce(p_metadata->>'mimetype', 'application/pdf') = 'application/pdf'`)],
+  ['Files over 50 MB can be uploaded', 'materials', patch('can_upload_course_file(text,jsonb)', `<= 52428800`, '<= 5242880000')],
+  ['Uploads accepted outside a program folder', 'materials', patch('course_file_path_ok(text)', `and exists (select 1 from public.programs where id = split_part(p_name, '/', 1))`)],
+  ['Files still attached to a lesson can be deleted', 'materials', patch('can_delete_course_file(text)', 'and not exists (select 1 from public.materials where file_path = p_name)')],
+  ['Instructors can upload course files', 'materials', patch('can_upload_course_file(text,jsonb)', 'public.is_admin() and',
+    `(public.is_admin() or exists (select 1 from public.profiles where id = auth.uid() and role = 'instructor')) and`)],
+  // Seat requests: every accepted request gets the same answer.
+  const_seat('A repeat request reveals the earlier reference', patch(SEAT, `if found then return jsonb_build_object('ok', true); end if;`,
+    `if found then return jsonb_build_object('ok', true, 'reference', (select reference from public.seat_requests where email = v_email
+       and program_id = prog.id and start_date = p_start order by created_at limit 1)); end if;`)),
+  const_seat('A repeat request is flagged as a duplicate', patch(SEAT, `if found then return jsonb_build_object('ok', true); end if;`,
+    `if found then return jsonb_build_object('ok', true, 'duplicate', true); end if;`)),
+  const_seat('Over the daily limit the form answers with an error', patch(SEAT, `interval '24 hours') >= 5 then
+    return jsonb_build_object('ok', true);`, `interval '24 hours') >= 5 then
+    raise exception 'You have sent several requests from this email today.' using errcode = '22023';`)),
 ];
 
-// Optional filter: node tests/sabotage.mjs <test file name> runs only the cases checked by that file.
+// The portal in the browser. Each case changes one line in a fresh copy of portal/ (the checkout is never
+// touched), the browser tests serve that copy (NUVORA_PORTAL_DIR, see playwright.config.mjs), and the one
+// test that must notice runs against it. Needs Microsoft Edge, like the browser tests; set NUVORA_E2E_PORT to
+// run it next to another browser run. [name, spec, test title, file in portal/, text, replacement]
+const BROWSER_CASES = [
+  ['The CSV export lets spreadsheet formulas through', 'admin', 'CSV export holds every row', 'js/csv.js', "if (FORMULA.test(s)) s = `'${s}`;", ''],
+  ['Any role can open the admin pages', 'admin', 'only admins see and reach the admin area', 'js/app.js',
+    "if (r.who === 'admin' && !isAdmin()) return go(homeHash());", ''],
+  ['The browser stops checking that an upload is a PDF', 'admin', 'upload a PDF to a lesson', 'js/api.js',
+    "if (file.type !== 'application/pdf' || !/.pdf$/i.test(file.name)) return", 'if (false) return'],
+  ['"Keep me signed in" starts ticked', 'auth', 'keep me signed in', 'js/pages/auth.js',
+    '<input type="checkbox" id="remember">', '<input type="checkbox" id="remember" checked>'],
+];
+const PLAYWRIGHT = fileURLToPath(new URL('../node_modules/@playwright/test/cli.js', import.meta.url));
+const PORTAL = fileURLToPath(new URL('../portal', import.meta.url));
+
+async function runBrowserCase([name, spec, title, file, from, to]) {
+  const dir = await mkdtemp(join(tmpdir(), 'nuvora-sabotage-'));
+  try {
+    await cp(PORTAL, join(dir, 'portal'), { recursive: true });
+    const path = join(dir, 'portal', file);
+    const text = (await readFile(path, 'utf8')).replace(/\r\n/g, '\n');
+    if (!text.includes(from)) return { invalid: `pattern not found in portal/${file}` };
+    await writeFile(path, text.replace(from, to));
+    const r = spawnSync(process.execPath, [PLAYWRIGHT, 'test', `tests/e2e/${spec}.spec.mjs`, '-g', title, '--reporter=line', `--output=${join(dir, 'results')}`],
+      { encoding: 'utf8', env: { ...process.env, NUVORA_PORTAL_DIR: join(dir, 'portal') } });
+    const fails = Number(r.stdout.match(/^\s*(\d+) failed/m)?.[1] ?? 0);
+    return { caught: r.status !== 0 && fails > 0, fails, file: `${spec}.spec` };
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+// Optional filter: node tests/sabotage.mjs <test file name> runs only the cases checked by that file
+// (a database test such as "tuition", or a browser spec such as "admin.spec"); "db" or "browser" runs one kind.
 const only = process.argv[2];
-const cases = CASES.filter(([, file]) => !only || file === only);
+const cases = CASES.filter(([, file]) => !only || only === 'db' || file === only);
+const browserCases = BROWSER_CASES.filter(([, spec]) => !only || only === 'browser' || `${spec}.spec` === only);
+const total = cases.length + browserCases.length;
 let missed = 0;
+for (const c of browserCases) {
+  const r = await runBrowserCase(c);
+  if (r.invalid) { missed++; console.log(`INVALID ${c[0]}: ${r.invalid}`); continue; }
+  if (!r.caught) missed++;
+  console.log(`${r.caught ? 'CAUGHT' : 'MISSED'}  ${c[0]}  (${r.file}: ${r.fails} test${r.fails === 1 ? '' : 's'} failed)`);
+}
 for (const [name, file, sql] of cases) {
   // A sabotage that fails to apply would make the tests fail for the wrong reason, so check it first.
   try { await (await freshDb()).db.exec(sql); } catch (e) {
@@ -96,5 +201,5 @@ for (const [name, file, sql] of cases) {
   if (!caught) missed++;
   console.log(`${caught ? 'CAUGHT' : 'MISSED'}  ${name}  (${file}: ${fails} test${fails === 1 ? '' : 's'} failed)`);
 }
-console.log(missed ? `\n${missed} sabotage(s) went unnoticed.` : `\nAll ${cases.length} sabotages were caught by the tests.`);
+console.log(missed ? `\n${missed} sabotage(s) went unnoticed.` : `\nAll ${total} sabotages were caught by the tests.`);
 process.exit(missed ? 1 : 0);

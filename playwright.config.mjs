@@ -4,6 +4,8 @@ import { defineConfig } from '@playwright/test';
 
 // Set NUVORA_E2E_PORT to run a second copy of the browser tests next to another one (default 5199).
 const PORT = Number(process.env.NUVORA_E2E_PORT || 5199);
+// tests/sabotage.mjs sets NUVORA_PORTAL_DIR to serve a deliberately broken copy of portal/ (never the checkout).
+const PORTAL_DIR = process.env.NUVORA_PORTAL_DIR ? ` --portal-dir "${process.env.NUVORA_PORTAL_DIR}"` : '';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -14,7 +16,7 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,                       // a flaky test is a failing test
   reporter: [['list']],
-  outputDir: 'test-results/e2e',
+  outputDir: `test-results/e2e-${PORT}`,     // per port: two runs side by side never delete each other's traces
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     channel: 'msedge',
@@ -22,11 +24,15 @@ export default defineConfig({
     viewport: { width: 1366, height: 860 },
     timezoneId: 'Asia/Kolkata',
     locale: 'en-IN',
+    // The website's scroll-linked motion moves an element in the frame after Playwright scrolls it into view, so a
+    // click could press on the control and release on its container. Behaviour tests therefore run with reduced
+    // motion; site-cinema.spec.mjs switches motion back on and tests it on its own.
+    reducedMotion: 'reduce',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: `node server/dev-server.mjs --port ${PORT} --test-api`,
+    command: `node server/dev-server.mjs --port ${PORT} --test-api${PORTAL_DIR}`,
     url: `http://127.0.0.1:${PORT}/portal/`,
     reuseExistingServer: false,
     timeout: 60_000,

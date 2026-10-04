@@ -1,12 +1,13 @@
 // Student pages: home, course, lesson, live classes, recordings, assignments, notifications and profile.
 import { rpc, rpcOnUnload, auth, downloadPdf, ApiError } from '../api.js';
 import {
-  html, icon, toast, $, $$, safeUrl, progressBar, statusPill, GRADE_LABEL,
+  html, icon, toast, busy, $, $$, safeUrl, progressBar, statusPill, GRADE_LABEL,
   fmtDate, fmtDateTime, fmtTime, fmtDayMonth, fmtRelative, fmtClock, fmtMinutes, fmtBytes, pdfName, firstName, localZone,
 } from '../ui.js';
 import { DemoPlayer, WatchTracker } from '../player.js';
 
 const notFound = () => new ApiError('Not found', 404, 'P0002');
+const STAFF = new Set(['instructor', 'admin']);
 const weekOf = (b) => {
   const [y, m, d] = b.starts_on.split('-').map(Number);
   const days = Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000);
@@ -29,10 +30,9 @@ const materialsList = (list, heading) => (list?.length ? html`<div class="box ma
 
 function wireDownloads(root) {
   for (const b of $$('[data-download]', root)) {
-    b.addEventListener('click', async () => {
-      b.disabled = true;
-      try { await downloadPdf(b.dataset.download, b.dataset.name); } catch (e) { toast(e.message); } finally { b.disabled = false; }
-    });
+    b.addEventListener('click', () => busy(b, async () => {
+      try { await downloadPdf(b.dataset.download, b.dataset.name); } catch (e) { toast(e.message); }
+    }));
   }
 }
 
@@ -53,14 +53,89 @@ function notEnrolledView(nextStart, reserved = []) {
     <b>You’re not enrolled in a batch yet</b>
     <p>New batches of every program start on the first Monday of each month.${nextStart ? html` The next one starts on <b>${fmtDate(nextStart)}</b>.` : ''}</p>
     <p class="row" style="justify-content:center;margin-top:14px"><a class="btn primary" href="/programs/">Explore programs</a><a class="btn ghost" href="/admissions/">How admission works</a></p>
-    <p class="small" style="margin-top:14px">Already paid? Your batch appears here within a few minutes. If it doesn’t, reply to your payment email.</p>
+    <p class="small" style="margin-top:14px">Already paid? Your batch appears here as soon as Nuvora has enrolled you and recorded your payment.</p>
   </section></div>`;
+}
+
+// ---------------------------------------------------------------- tuition access
+// The database decides access with its own clock (30 days after an unpaid term starts, or after enrolling if
+// that is later, or an admin's manual stop) and leaves a stopped batch out of every page. Instead of "not found", the student gets a calm page:
+// what happened, since when, what to do. An admin's private reason is never sent to the student.
+const SUPPORT = 'to be published before the first batch';   // OWNER.supportEmail in web/data/site.mjs is not set yet
+const stoppedOf = (d) => (d.access ?? []).filter((a) => !a.open);
+
+// The public wording, from the website (web/assets/js/access-rule.mjs), so both always say the same thing.
+async function accessRule() {
+  try { return (await import('/js/access-rule.mjs')).ACCESS_RULE; } catch { return null; }
+}
+
+// When the pause began: from the dashboard if it says, otherwise from the "access paused" notification.
+async function pauseDates(stopped) {
+  if (stopped.every((a) => a.since)) return stopped.map((a) => a.since);
+  const n = await rpc('my_notifications', { p_limit: 50 }).catch(() => ({ items: [] }));
+  const notes = n.items.filter((x) => x.kind === 'access_stopped');
+  return stopped.map((a) => a.since ?? notes.find((x) => x.body.includes(a.program))?.created_at ?? null);
+}
+
+async function pausedView(stopped) {
+  const [dates, rule] = await Promise.all([pauseDates(stopped), accessRule()]);
+  return html`<header class="band"><div><p class="eyebrow">Portal access</p><h1>Your portal access is paused</h1>
+    <p class="sub">Nothing is lost: your progress, projects and grades are kept, and everything opens again once the pause is lifted.</p></div></header>
+  <div class="content">
+    ${stopped.map((a, i) => html`<section class="card paused" aria-labelledby="p-${a.enrollment_id}" data-paused="${a.state}">
+      <div class="spread"><div><h2 id="p-${a.enrollment_id}">${a.program}</h2><p class="sub"><span class="mono">${a.code}</span> · Term ${a.term}</p></div>
+        <span class="pill bad">${icon('lock')} Paused</span></div>
+      <dl class="facts">
+        <div><dt>What happened</dt><dd>${a.state === 'stopped_unpaid'
+          ? `Tuition for term ${a.term} hasn’t been recorded, and the 30 days of access for this unpaid term are over. Lessons, PDFs, live classes, projects and recordings for this term paused automatically.`
+          : 'Nuvora paused your access to this term. Lessons, PDFs, live classes, projects and recordings are closed for now.'}</dd></div>
+        <div><dt>Since</dt><dd>${dates[i] ? fmtDateTime(dates[i]) : 'Recently'}</dd></div>
+        <div><dt>What to do</dt><dd>${a.state === 'stopped_unpaid'
+          ? `Pay the tuition for term ${a.term}. Access opens again as soon as Nuvora records your payment. If you’ve already paid, contact Nuvora with your payment reference so it can be recorded.`
+          : 'Contact Nuvora to find out more and to have your access restored.'}</dd></div>
+        <div><dt>Support contact</dt><dd>${SUPPORT}</dd></div>
+      </dl>
+    </section>`)}
+    ${rule ? html`<section class="card" aria-labelledby="h-rule"><h2 id="h-rule">How portal access works</h2><p style="margin-top:8px">${rule}</p></section>` : ''}
+  </div>`;
+}
+
+// The student's access to each active term, and the rule (linked from the notice bar and notifications).
+const ACCESS_WORDS = {
+  paid: ['checkc', 'Paid · open', 'good'], grace: ['clock', 'Open · payment due', 'warn'], started_manual: ['shield', 'Open · extended by Nuvora', 'info'],
+  stopped_unpaid: ['lock', 'Paused · payment not recorded', 'bad'], stopped_manual: ['lock', 'Paused by Nuvora', 'bad'], closed: ['circle', 'Closed', ''],
+};
+export async function access(ctx) {
+  const d = await ctx.dashboard(true);
+  if (ctx.stale()) return;
+  const stopped = stoppedOf(d);
+  if (stopped.length && (!d.batches.length || ctx.query.get('paused'))) return ctx.render(await pausedView(stopped));
+  const rule = await accessRule();
+  if (ctx.stale()) return;
+  ctx.render(html`<header class="band"><div><p class="eyebrow">Portal access</p><h1>Your portal access</h1>
+    <p class="sub">Worked out by Nuvora’s server just now, for each term you’re enrolled in.</p></div></header>
+  <div class="content">
+    ${d.access.length ? html`<section class="card"><div class="list">${d.access.map((a) => {
+      const [ic, label, tone] = ACCESS_WORDS[a.state] ?? ['circle', a.state, ''];
+      return html`<div class="item"><div class="meta"><b>${a.program}</b><span><span class="mono">${a.code}</span> · Term ${a.term}${a.open && a.ends_at
+        ? ` · open until ${fmtDateTime(a.ends_at)} (${a.days_left === 1 ? '1 day' : `${a.days_left} days`} left)` : ''}</span></div>
+        <span class="pill ${tone}">${icon(ic)} ${label}</span></div>`;
+    })}</div></section>`
+    : html`<section class="card empty"><b>No active enrollment</b>When you’re enrolled in a term, its access shows here.</section>`}
+    ${stopped.length ? html`<p><a class="btn ghost" href="#/access?paused=1">What to do about a paused term</a></p>` : ''}
+    ${rule ? html`<section class="card" aria-labelledby="h-rule"><h2 id="h-rule">How portal access works</h2><p style="margin-top:8px">${rule}</p>
+      <p class="small muted" style="margin-top:8px">Support contact: ${SUPPORT}.</p></section>` : ''}
+  </div>`);
 }
 
 async function requireBatch(ctx) {
   const d = await ctx.dashboard();
   const b = ctx.batch();
-  if (!b && !ctx.stale()) ctx.render(notEnrolledView(await rpc('next_start_date').catch(() => null), d.reserved));
+  if (!b && !ctx.stale()) {
+    const stopped = stoppedOf(d);
+    const view = stopped.length ? await pausedView(stopped) : notEnrolledView(await rpc('next_start_date').catch(() => null), d.reserved);
+    ctx.render(view);
+  }
   return b;
 }
 
@@ -220,6 +295,7 @@ export async function home(ctx) {
   const d = await ctx.dashboard(true);
   if (ctx.stale()) return;
   if (!d.batches.length) {
+    if (stoppedOf(d).length) return ctx.render(await pausedView(stoppedOf(d)));
     const next = await rpc('next_start_date').catch(() => null);
     return ctx.render(notEnrolledView(next, d.reserved));
   }
@@ -330,7 +406,16 @@ export async function course(ctx) {
 
 // ---------------------------------------------------------------- lesson
 export async function lesson(ctx) {
-  const l = await rpc('my_lesson', { p_lesson: ctx.params.id });
+  let l;
+  try {
+    l = await rpc('my_lesson', { p_lesson: ctx.params.id });
+  } catch (e) {
+    // A lesson of a paused term looks "not found" to the database; say why instead.
+    const stopped = e instanceof ApiError && e.code === 'P0002' && !STAFF.has(ctx.me?.role) ? stoppedOf(await ctx.dashboard(true)) : [];
+    if (!stopped.length) throw e;
+    if (!ctx.stale()) ctx.render(await pausedView(stopped));
+    return;
+  }
   if (ctx.stale()) return;
   ctx.setTitle(l.title);
   const resumeAt = !l.completed && l.last_position > 5 && l.last_position < l.duration - 5 ? l.last_position : 0;
@@ -361,10 +446,14 @@ export async function lesson(ctx) {
 
   wireDownloads(ctx.main);
   if (l.kind === 'reading') {
-    $('[data-reading]', ctx.main)?.addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      try { await rpc('mark_reading_done', { p_lesson: l.id }); e.target.textContent = 'Completed'; ctx.invalidate(); toast('Reading marked as done.'); }
-      catch (err) { e.target.disabled = false; toast(err.message); }
+    // aria-disabled, not disabled, once done: the button keeps a keyboard user's focus.
+    $('[data-reading]', ctx.main)?.addEventListener('click', (e) => {
+      const b = e.currentTarget;
+      if (b.dataset.done) return;
+      busy(b, async () => {
+        try { await rpc('mark_reading_done', { p_lesson: l.id }); b.dataset.done = '1'; b.textContent = 'Completed'; ctx.invalidate(); toast('Reading marked as done.'); }
+        catch (err) { toast(err.message); }
+      }).then(() => { if (b.dataset.done) b.setAttribute('aria-disabled', 'true'); });
     });
     return;
   }
@@ -508,23 +597,25 @@ export async function assignments(ctx) {
       const fail = (m) => { err.textContent = m; err.hidden = false; };
       if (!/^https:\/\/\S+\.\S+/.test(link) || !safeUrl(link)) return fail('Add a link that starts with https://');
       err.hidden = true;
-      const btn = $('button[type=submit]', form);
-      btn.disabled = true;
-      try {
-        await rpc('submit_assignment', { p_assignment: id, p_link: link, p_note: note || null });
-        ctx.invalidate();
-        toast('Submitted. Your instructor will review it soon.');
-        await ctx.refresh();
-      } catch (ex) {
-        btn.disabled = false;
-        fail(ex.message);
-      }
+      await busy($('button[type=submit]', form), async () => {
+        try {
+          await rpc('submit_assignment', { p_assignment: id, p_link: link, p_note: note || null });
+          ctx.invalidate();
+          toast('Submitted. Your instructor will review it soon.');
+          await ctx.refresh();
+        } catch (ex) {
+          fail(ex.message);
+        }
+      });
     });
   }
 }
 
 // ---------------------------------------------------------------- notifications
-const KIND_TARGET = { welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past', achievement: '#/home', badge: '#/home', term_reserved: '#/home' };
+const KIND_TARGET = {
+  welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past', achievement: '#/home', badge: '#/home', term_reserved: '#/home',
+  access_stopped: '#/access', access_restored: '#/home', access_reminder_7d: '#/access', access_reminder_1d: '#/access',
+};
 export async function notifications(ctx) {
   const n = await rpc('my_notifications', { p_limit: 50 });
   if (ctx.stale()) return;
@@ -661,10 +752,11 @@ function wireLearningSettings(ctx) {
   });
   const sw = $('#streak', ctx.main);
   sw.addEventListener('change', async () => {
+    const focused = document.activeElement === sw;           // disabling it drops focus; give it back afterwards
     sw.disabled = true;
     try {
       await rpc('set_streak_visibility', { p_on: sw.checked });
       toast(sw.checked ? 'Your streak is shown on your home page.' : 'Your streak is hidden.');
-    } catch (ex) { sw.checked = !sw.checked; toast(ex.message); } finally { sw.disabled = false; }
+    } catch (ex) { sw.checked = !sw.checked; toast(ex.message); } finally { sw.disabled = false; if (focused) sw.focus(); }
   });
 }

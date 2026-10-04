@@ -9,6 +9,11 @@ export const ACCOUNTS = {
   nextBatch:    { email: 'sara.student@nuvora.test',     name: 'Sara Kim',       role: 'student' },
   otherProgram: { email: 'omar.student@nuvora.test',     name: 'Omar Haddad',    role: 'student' },
   newcomer:     { email: 'nia.applicant@nuvora.test',    name: 'Nia Brooks',     role: 'student' },
+  // Tuition and access situations for the admin area (see server/demo.mjs).
+  grace:        { email: 'ines.student@nuvora.test',     name: 'Ines Duarte',    role: 'student' },
+  lapsed:       { email: 'kenji.student@nuvora.test',    name: 'Kenji Sato',     role: 'student' },
+  stopped:      { email: 'lucas.student@nuvora.test',    name: 'Lucas Moreau',   role: 'student' },
+  extended:     { email: 'amara.student@nuvora.test',    name: 'Amara Okafor',   role: 'student' },
   instructor:   { email: 'elena.instructor@nuvora.test', name: 'Elena Ruiz',     role: 'instructor' },
   instructor2:  { email: 'kofi.instructor@nuvora.test',  name: 'Kofi Mensah',    role: 'instructor' },
   admin:        { email: 'admin@nuvora.test',            name: 'Nuvora Admin',   role: 'admin' },

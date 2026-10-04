@@ -1,7 +1,7 @@
 // Staff pages: teaching overview, grading queue and batch roster.
 // Instructors see only the batches they teach; admins see all. The database enforces this on every call.
 import { rpc } from '../api.js';
-import { html, icon, toast, $, $$, safeUrl, progressBar, GRADE_LABEL, fmtDate, fmtDateTime, fmtRelative } from '../ui.js';
+import { html, icon, toast, busy, $, $$, safeUrl, progressBar, GRADE_LABEL, fmtDate, fmtDateTime, fmtRelative } from '../ui.js';
 
 const RUBRIC = [
   ['distinguished', 'Exceeds every requirement; could serve as an example.'],
@@ -95,20 +95,23 @@ export async function grading(ctx) {
       const fail = (m) => { err.textContent = m; err.hidden = false; };
       if (!grade) return fail('Choose a grade.');
       if ((grade === 'basic' || grade === 'not_yet') && feedback.length < 10) return fail('Add feedback so the student knows what to change.');
-      const btn = $('button[type=submit]', form);
-      btn.disabled = true;
-      try {
-        await rpc('grade_submission', { p_submission: id, p_grade: grade, p_feedback: feedback || null });
-        toast(`Graded ${GRADE_LABEL[grade]}. The student has been notified.`);
-        document.getElementById(`s-${id}`)?.remove();
-        remaining -= 1;
-        $('[data-sub]', ctx.main).textContent = subtitle();
-        if (!batch) ctx.setToGrade(remaining);
-        if (!remaining) $('[data-queue]', ctx.main).innerHTML = String(html`<section class="card empty"><b>Nothing to grade</b>New submissions will appear here.</section>`);
-      } catch (ex) {
-        btn.disabled = false;
-        fail(ex.message);
-      }
+      await busy($('button[type=submit]', form), async () => {
+        try {
+          await rpc('grade_submission', { p_submission: id, p_grade: grade, p_feedback: feedback || null });
+          toast(`Graded ${GRADE_LABEL[grade]}. The student has been notified.`);
+          // The graded card goes away; keyboard focus moves on to the next submission (or the page heading).
+          const card = document.getElementById(`s-${id}`);
+          const next = card?.nextElementSibling?.querySelector('h2') ?? card?.previousElementSibling?.querySelector('h2') ?? $('h1', ctx.main);
+          card?.remove();
+          remaining -= 1;
+          $('[data-sub]', ctx.main).textContent = subtitle();
+          if (!batch) ctx.setToGrade(remaining);
+          if (!remaining) $('[data-queue]', ctx.main).innerHTML = String(html`<section class="card empty"><b>Nothing to grade</b>New submissions will appear here.</section>`);
+          if (next?.isConnected) { next.tabIndex = -1; next.focus(); }
+        } catch (ex) {
+          fail(ex.message);
+        }
+      });
     });
   }
 }

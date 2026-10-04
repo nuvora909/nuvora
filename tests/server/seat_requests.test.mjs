@@ -23,15 +23,14 @@ const form = (over = {}) => ({
   p_details: { role: 'Data analyst', hours: '10-14', has_bachelor: true, score: 82 }, p_source: '/programs/ms-data-science-analytics/', ...over,
 });
 
-test('the form works with the public key alone and answers in the agreed shape', async () => {
+test('the form works with the public key alone and answers only {"ok": true}, new or repeated', async () => {
   let r = await post('/rest/v1/rpc/request_seat', form());
   assert.equal(r.status, 200);
-  const first = await r.json();
-  assert.match(first.reference, /^NV-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/);
-  assert.deepEqual({ ...first, reference: '' }, { reference: '', program: 'ms-ds', program_name: 'M.S. Data Science & Analytics',
-    start_date: start, apply_by: new Date(Date.parse(`${start}T00:00:00Z`) - 7 * 86400000).toISOString().slice(0, 10), duplicate: false });
+  const first = await r.text();
+  assert.equal(first, '{"ok":true}');
   r = await post('/rest/v1/rpc/request_seat', form({ p_email: 'RAVI.KUMAR@example.com', p_phone: undefined, p_details: undefined, p_source: undefined }));
-  assert.deepEqual(await r.json(), { ...first, duplicate: true }, 'optional fields may be left out; repeats get the same reference');
+  assert.equal(r.status, 200);
+  assert.equal(await r.text(), first, 'optional fields may be left out; a repeat gets exactly the same answer');
   r = await fetch(`${s.url}/rest/v1/rpc/request_seat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form()) });
   assert.equal(r.status, 401, 'an API key is still required');
 });
@@ -75,6 +74,7 @@ test('admins see the request and are notified of it', async () => {
   assert.equal(mine.length, 1);
   assert.deepEqual(mine[0].details, { role: 'Data analyst', hours: '10-14', has_bachelor: true, score: 82 });
   const notes = await (await post('/rest/v1/rpc/my_notifications', {}, admin)).json();
+  assert.match(mine[0].reference, /^NV-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/, 'the reference is for admins only');
   assert.ok(notes.items.some((n) => n.kind === 'seat_request' && n.body.includes(mine[0].reference)));
   const upd = await post('/rest/v1/rpc/admin_update_seat_request', { p_id: mine[0].id, p_status: 'contacted', p_notes: 'Emailed the brochure.' }, admin);
   assert.equal(upd.status, 200);

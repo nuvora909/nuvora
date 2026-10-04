@@ -1,6 +1,6 @@
 // The student home: learning path rings, the next step, today's targets, the streak, achievements, skill
 // badges and the skills for a career goal. What the page shows must match the database.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, sql, one, loginAs, watchErrors } from './helpers.mjs';
 
 let demo;

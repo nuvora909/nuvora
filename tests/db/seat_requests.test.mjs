@@ -1,6 +1,7 @@
 // "Request a seat" from the public website: request_seat() is open to visitors, checks every field,
-// deduplicates, limits each email to 5 new requests a day, and notifies every admin. The stored requests
-// are readable only by admins, through their own functions.
+// deduplicates, limits each email to 5 new requests a day, and notifies every admin. Every accepted request,
+// new or a repeat, gets the same answer {"ok": true}: no reference and no sign of an earlier request. The
+// stored requests are readable only by admins, through their own functions.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { freshDb, rejects } from './helpers.mjs';
@@ -21,6 +22,11 @@ const ask = (fn, over) => {
                names.map((k) => (a[k] !== null && typeof a[k] === 'object' ? JSON.stringify(a[k]) : a[k])));
 };
 const count = (where = 'true', params = []) => h.one(h.sql, `select count(*)::int from seat_requests where ${where}`, params);
+const OK = { ok: true };
+// The stored requests of an email (newest first), as admins see them.
+const stored = async (email, program = null) => (await h.sql(`select *, start_date::text as start from seat_requests
+                                                              where email = $1 and ($2::text is null or program_id = $2)
+                                                              order by created_at desc, id`, [email, program])).rows;
 
 before(async () => {
   h = await freshDb();
@@ -37,20 +43,20 @@ before(async () => {
                            (next_start_date(${TODAY}) + 7)::text as second_monday`)).rows[0];
 });
 
-test('visitors can request a seat and get a reference in the agreed shape', async () => {
+test('visitors can request a seat and get only {"ok": true} back', async () => {
   const r = await ask(h.anon, { p_full_name: '  Priya   Nair ', p_email: ' Priya@Example.COM ', p_phone: '+91 (22) 4000-1234',
                                 p_details: { role: 'Analyst', hours: 10, has_bachelor: true, match: null }, p_source: 'programs/bs-ai-machine-learning' });
-  assert.deepEqual(Object.keys(r).sort(), ['apply_by', 'duplicate', 'program', 'program_name', 'reference', 'start_date']);
-  assert.match(r.reference, /^NV-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/);
-  assert.deepEqual({ ...r, reference: 'x' }, { reference: 'x', program: 'bs-aiml', program_name: 'B.S. Artificial Intelligence & Machine Learning',
-                                                start_date: D.open, apply_by: D.apply_by, duplicate: false });
+  assert.deepEqual(r, OK);
+  const [saved] = await stored('priya@example.com');
+  assert.match(saved.reference, /^NV-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/, 'admins still get a reference');
+  assert.deepEqual([saved.program_id, saved.start], ['bs-aiml', D.open]);
   const row = (await h.sql(`select full_name, email, phone, country, details, source, consent_version, status, notes, handled_by
-                            from seat_requests where reference = $1`, [r.reference])).rows[0];
+                            from seat_requests where reference = $1`, [saved.reference])).rows[0];
   assert.deepEqual(row, { full_name: 'Priya Nair', email: 'priya@example.com', phone: '+91 (22) 4000-1234', country: 'India',
                           details: { role: 'Analyst', hours: 10, has_bachelor: true, match: null }, source: 'programs/bs-ai-machine-learning',
                           consent_version: 'privacy-2026-10', status: 'new', notes: null, handled_by: null });
-  const signedIn = await ask(h.as(student), { p_email: 'student@test.io', p_program: 'c-py' });
-  assert.equal(signedIn.duplicate, false, 'signed-in visitors can use the form too');
+  assert.deepEqual(await ask(h.as(student), { p_email: 'student@test.io', p_program: 'c-py' }), OK);
+  assert.equal(await count(`email = 'student@test.io'`), 1, 'signed-in visitors can use the form too');
 });
 
 test('every admin is notified once about each new request, nobody else', async () => {
@@ -77,8 +83,8 @@ test('start dates: first Mondays only, open until 7 days before (inclusive), at 
     const e = await rejects(ask(h.anon, { p_email: 'dates@example.com', p_start: start }), msg);
     assert.equal(e.code, '22023');
   }
-  assert.equal((await ask(h.anon, { p_email: 'dates@example.com', p_start: D.later })).start_date, D.later);
-  assert.equal(await count(`email = 'dates@example.com'`), 1);
+  assert.deepEqual(await ask(h.anon, { p_email: 'dates@example.com', p_start: D.later }), OK);
+  assert.deepEqual((await stored('dates@example.com')).map((r) => r.start), [D.later]);
 });
 
 test('the program must exist and take students', async () => {
@@ -104,10 +110,9 @@ test('names, emails, countries and phone numbers are checked', async () => {
     assert.equal(e.code, '22023', JSON.stringify(over));
   }
   assert.equal(await count(`email like 'checks@%'`), 0);
-  const ok = await ask(h.anon, { p_email: 'Checks@Example.com', p_full_name: 'José  María', p_phone: '   ', p_country: 'Côte d’Ivoire' });
-  assert.equal(ok.duplicate, false);
-  assert.deepEqual((await h.sql(`select email, full_name, phone from seat_requests where reference = $1`, [ok.reference])).rows[0],
-                   { email: 'checks@example.com', full_name: 'José María', phone: null });
+  assert.deepEqual(await ask(h.anon, { p_email: 'Checks@Example.com', p_full_name: 'José  María', p_phone: '   ', p_country: 'Côte d’Ivoire' }), OK);
+  assert.deepEqual((await h.sql(`select email, full_name, phone from seat_requests where email like 'checks@%'`)).rows,
+                   [{ email: 'checks@example.com', full_name: 'José María', phone: null }]);
 });
 
 test('consent to be contacted is required, with the version of its wording', async () => {
@@ -126,35 +131,42 @@ test('answers: known keys only, each a short scalar, 1000 characters in all; sou
                         p_country => 'India', p_consent => true, p_consent_version => 'v1', p_details => '[1, 2]'::jsonb)`, [D.open]), 'could not be saved');
   await rejects(ask(h.anon, { p_email: 'details@example.com', p_source: 's'.repeat(201) }), 'reload the page');
   assert.equal(await count(`email = 'details@example.com'`), 0);
-  const ok = await ask(h.anon, { p_email: 'details@example.com', p_details: null, p_source: '   ' });
-  assert.deepEqual((await h.sql(`select details, source from seat_requests where reference = $1`, [ok.reference])).rows[0], { details: {}, source: null });
+  assert.deepEqual(await ask(h.anon, { p_email: 'details@example.com', p_details: null, p_source: '   ' }), OK);
+  assert.deepEqual((await h.sql(`select details, source from seat_requests where email = 'details@example.com'`)).rows, [{ details: {}, source: null }]);
 });
 
-test('the same email, program and start within 30 days returns the first reference and stores nothing', async () => {
-  const first = await ask(h.anon, { p_email: 'twice@example.com' });
+test('a repeat (same email, program and start within 30 days) gets the same answer, stores nothing and reveals nothing', async () => {
+  assert.deepEqual(await ask(h.anon, { p_email: 'twice@example.com' }), OK);
+  const [first] = await stored('twice@example.com');
   const notes = await h.one(h.sql, `select count(*)::int from notifications`);
   const again = await ask(h.anon, { p_email: 'TWICE@example.com', p_full_name: 'Someone Else', p_phone: '+44 20 7946 0000' });
-  assert.deepEqual(again, { ...first, duplicate: true });
+  assert.deepEqual(again, OK, 'no reference and no "duplicate" flag');
   assert.equal(await count(`email = 'twice@example.com'`), 1);
   assert.equal(await h.one(h.sql, `select count(*)::int from notifications`), notes, 'admins are not notified twice');
-  assert.equal((await ask(h.anon, { p_email: 'twice@example.com', p_start: D.later })).duplicate, false, 'another start is a new request');
-  assert.equal((await ask(h.anon, { p_email: 'twice@example.com', p_program: 'ms-aml' })).duplicate, false, 'another program too');
+  assert.deepEqual(await ask(h.anon, { p_email: 'twice@example.com', p_start: D.later }), OK);
+  assert.deepEqual(await ask(h.anon, { p_email: 'twice@example.com', p_program: 'ms-aml' }), OK);
+  assert.equal(await count(`email = 'twice@example.com'`), 3, 'another start or another program is a new request');
   await h.sql(`update seat_requests set created_at = now() - interval '31 days' where reference = $1`, [first.reference]);
-  const later = await ask(h.anon, { p_email: 'twice@example.com' });
-  assert.equal(later.duplicate, false, 'after 30 days it counts as new');
-  assert.notEqual(later.reference, first.reference);
+  assert.deepEqual(await ask(h.anon, { p_email: 'twice@example.com' }), OK);
+  const later = await stored('twice@example.com', 'bs-aiml');
+  assert.equal(later.filter((r) => r.start === D.open).length, 2, 'after 30 days it counts as new');
+  assert.notEqual(later[0].reference, first.reference);
 });
 
-test('at most 5 new requests per email in 24 hours', async () => {
+test('at most 5 new requests per email in 24 hours; over the limit the answer is the same and nothing is stored', async () => {
   const email = 'busy@example.com';
-  for (const p of ['bs-ds', 'bs-aiml', 'ms-aml', 'ms-ds', 'c-py']) assert.equal((await ask(h.anon, { p_email: email, p_program: p })).duplicate, false);
-  const e = await rejects(ask(h.anon, { p_email: email, p_program: 'c-genai' }), 'several requests from this email today');
-  assert.equal(e.code, '22023');
-  assert.equal((await ask(h.anon, { p_email: email, p_program: 'bs-ds' })).duplicate, true, 'repeats still get their reference');
-  assert.equal((await ask(h.anon, { p_email: 'other@example.com', p_program: 'c-genai' })).duplicate, false, 'other emails are unaffected');
+  for (const p of ['bs-ds', 'bs-aiml', 'ms-aml', 'ms-ds', 'c-py']) assert.deepEqual(await ask(h.anon, { p_email: email, p_program: p }), OK);
+  assert.equal(await count(`email = $1`, [email]), 5);
+  const notes = await h.one(h.sql, `select count(*)::int from notifications`);
+  assert.deepEqual(await ask(h.anon, { p_email: email, p_program: 'c-genai' }), OK, 'an error would reveal the earlier requests');
+  assert.equal(await count(`email = $1 and program_id = 'c-genai'`, [email]), 0, 'the sixth is not stored');
+  assert.equal(await h.one(h.sql, `select count(*)::int from notifications`), notes, 'nor announced');
+  assert.deepEqual(await ask(h.anon, { p_email: email, p_program: 'bs-ds' }), OK, 'a repeat answers the same');
+  assert.deepEqual(await ask(h.anon, { p_email: 'other@example.com', p_program: 'c-genai' }), OK);
+  assert.equal(await count(`email = 'other@example.com'`), 1, 'other emails are unaffected');
   await h.sql(`update seat_requests set created_at = now() - interval '25 hours' where email = $1 and program_id = 'bs-ds'`, [email]);
-  assert.equal((await ask(h.anon, { p_email: email, p_program: 'c-genai' })).duplicate, false, 'older requests no longer count');
-  assert.equal(await count(`email = $1`, [email]), 6);
+  assert.deepEqual(await ask(h.anon, { p_email: email, p_program: 'c-genai' }), OK);
+  assert.equal(await count(`email = $1`, [email]), 6, 'older requests no longer count');
 });
 
 test('nobody reads or changes seat requests directly; admins work them through their functions', async () => {

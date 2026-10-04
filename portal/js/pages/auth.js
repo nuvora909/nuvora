@@ -5,20 +5,29 @@ import { html, icon, wordmark, envBanner, toast, $ } from '../ui.js';
 const MIN_PASSWORD = 8;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function layout(card) {
+// The website's look: a navy panel with a gold eyebrow and an italic serif accent word, a rounded card, and one
+// gold button. The heading is given as [before, accent word, after] so the accent word can be styled.
+function layout([before, word, after = ''], sub, card) {
   return html`${envBanner(config.environment)}
   <div class="auth">
     <div class="auth-l">
-      <div class="auth-head"><div class="brand">${wordmark('/')}<small>Student portal</small></div><a class="small" href="/">Back to the website</a></div>
-      <div class="auth-body">${card}</div>
+      <div class="auth-head"><div class="brand">${wordmark('/')}<small>Nuvora portal</small></div><a class="small" href="/">Back to the website</a></div>
+      <main class="auth-body" id="main" tabindex="-1">
+        <div class="auth-intro"><p class="eyebrow">Students, instructors and admins</p><h1>${before}<span class="serif">${word}</span>${after}</h1><p class="sub">${sub}</p></div>
+        ${card}
+      </main>
       <div class="auth-foot"><span>© ${new Date().getFullYear()} Nuvora</span><nav class="row"><a href="/legal/privacy/">Privacy</a><a href="/legal/terms/">Terms</a><a href="/programs/">Programs</a></nav></div>
     </div>
     <div class="auth-r">
       <img src="../img/login-pro.jpg" alt="A professional woman in a blazer and glasses working on her laptop outside a modern office building" decoding="async">
+      <p class="stocklabel">Stock photo · not a Nuvora student</p>
       <div class="copy"><p>Your next chapter starts here.</p><span>Live classes, recorded lessons and real projects, all in one place.</span></div>
     </div>
   </div>`;
 }
+
+// Unticked by default: the session then lasts only while this tab is open, which is safer on shared computers.
+const rememberBox = html`<label class="remember"><input type="checkbox" id="remember"> Keep me signed in on this device</label>`;
 
 const passwordField = (id, label, autocomplete, extra = '') => html`
   <div class="field"><div class="flabel"><label for="${id}">${label}</label>${extra}</div>
@@ -54,15 +63,14 @@ async function busy(button, label, fn) {
 
 // ---------------------------------------------------------------- log in
 export function login(ctx) {
-  ctx.root.innerHTML = String(layout(html`
+  ctx.root.innerHTML = String(layout(['Welcome ', 'back'], 'Log in to your Nuvora portal.', html`
     <form class="auth-card" novalidate data-form="login">
-      <div><h1>Welcome back</h1><p class="sub">Log in to your Nuvora portal</p></div>
       ${ctx.flash ? html`<p class="okmsg" role="status">${ctx.flash}</p>` : ''}
       <p class="formerr" role="alert" tabindex="-1" hidden></p>
       <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="username" required></div>
       ${passwordField('password', 'Password', 'current-password', html`<a class="small" href="#/forgot">Forgot password?</a>`)}
-      <label class="remember"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
-      <button class="btn primary big" type="submit">Log in</button>
+      ${rememberBox}
+      <button class="btn gold big" type="submit">Log in</button>
       <div class="auth-links"><span class="muted">New to Nuvora? <a href="#/signup">Create an account</a></span></div>
       ${config.environment === 'local' ? html`<p class="small muted">Local test environment: sign in with a demo account listed in <span class="mono">server/demo-accounts.mjs</span>.</p>` : ''}
     </form>`));
@@ -89,9 +97,8 @@ export function login(ctx) {
 
 // ---------------------------------------------------------------- create account
 export function signup(ctx) {
-  ctx.root.innerHTML = String(layout(html`
+  ctx.root.innerHTML = String(layout(['Create your ', 'account'], 'One account for applications, classes and your portal.', html`
     <form class="auth-card" novalidate data-form="signup">
-      <div><h1>Create your account</h1><p class="sub">One account for applications, classes and your portal</p></div>
       <p class="formerr" role="alert" tabindex="-1" hidden></p>
       <div class="field"><label for="name">Full name</label><input id="name" type="text" autocomplete="name" required maxlength="80"></div>
       <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required></div>
@@ -99,7 +106,8 @@ export function signup(ctx) {
       <p class="small muted" style="margin-top:-10px">At least ${MIN_PASSWORD} characters.</p>
       ${passwordField('confirm', 'Confirm password', 'new-password')}
       <label class="remember"><input type="checkbox" id="agree"> <span>I agree to the <a href="/legal/terms/" target="_blank" rel="noopener">Terms</a> and <a href="/legal/privacy/" target="_blank" rel="noopener">Privacy Policy</a></span></label>
-      <button class="btn primary big" type="submit">Create account</button>
+      ${rememberBox}
+      <button class="btn gold big" type="submit">Create account</button>
       <div class="auth-links"><span class="muted">Already have an account? <a href="#/login">Log in</a></span></div>
     </form>`));
   const form = $('[data-form="signup"]', ctx.root);
@@ -117,9 +125,9 @@ export function signup(ctx) {
     if (!$('#agree', form).checked) return showError(form, 'Please agree to the Terms and Privacy Policy to continue.');
     showError(form, '');
     try {
-      const { signedIn } = await busy($('button[type=submit]', form), 'Creating account…', () => auth.signUp(email, password, name));
+      const { signedIn } = await busy($('button[type=submit]', form), 'Creating account…', () => auth.signUp(email, password, name, $('#remember', form).checked));
       if (signedIn) { toast('Welcome to Nuvora!'); ctx.go('#/home'); return; }
-      form.innerHTML = String(html`<div><h1>Check your inbox</h1><p class="sub">We sent a confirmation link to <b>${email}</b>. Open it to finish creating your account.</p></div>
+      form.innerHTML = String(html`<div><h2>Check your inbox</h2><p class="sub">We sent a confirmation link to <b>${email}</b>. Open it to finish creating your account.</p></div>
         <a class="btn ghost" href="#/login">Back to log in</a>`);
     } catch (err) {
       showError(form, err.code === 'user_already_exists' ? 'An account with this email already exists. Try logging in instead.' : err.message);
@@ -129,14 +137,13 @@ export function signup(ctx) {
 
 // ---------------------------------------------------------------- forgot password
 export function forgot(ctx) {
-  ctx.root.innerHTML = String(layout(html`
+  ctx.root.innerHTML = String(layout(['Reset your ', 'password'], 'We’ll email you a link to choose a new one.', html`
     <form class="auth-card" novalidate data-form="forgot">
-      <div><h1>Reset your password</h1><p class="sub">We’ll email you a link to choose a new one</p></div>
       ${ctx.flash ? html`<p class="formerr" role="alert">${ctx.flash}</p>` : ''}
       <p class="formerr" role="alert" tabindex="-1" hidden></p>
       <p class="okmsg" role="status" hidden></p>
       <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required></div>
-      <button class="btn primary big" type="submit">Send reset link</button>
+      <button class="btn gold big" type="submit">Send reset link</button>
       <div class="auth-links"><a href="#/login">Back to log in</a></div>
     </form>`));
   const form = $('[data-form="forgot"]', ctx.root);
@@ -159,14 +166,13 @@ export function forgot(ctx) {
 
 // ---------------------------------------------------------------- new password (after the email link)
 export function reset(ctx) {
-  ctx.root.innerHTML = String(layout(html`
+  ctx.root.innerHTML = String(layout(['Choose a new ', 'password'], 'You’re signed in from your reset link.', html`
     <form class="auth-card" novalidate data-form="reset">
-      <div><h1>Choose a new password</h1><p class="sub">You’re signed in from your reset link</p></div>
       <p class="formerr" role="alert" tabindex="-1" hidden></p>
       ${passwordField('password', 'New password', 'new-password')}
       <p class="small muted" style="margin-top:-10px">At least ${MIN_PASSWORD} characters.</p>
       ${passwordField('confirm', 'Confirm new password', 'new-password')}
-      <button class="btn primary big" type="submit">Save password</button>
+      <button class="btn gold big" type="submit">Save password</button>
     </form>`));
   const form = $('[data-form="reset"]', ctx.root);
   wireEyes(form);

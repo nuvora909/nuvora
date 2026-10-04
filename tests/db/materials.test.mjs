@@ -73,14 +73,37 @@ test('files in other buckets are never exposed by this rule', async () => {
   assert.equal((await h.as(a)(`select count(*)::int n from storage.objects where bucket_id = 'other'`)).rows[0].n, 0);
 });
 
-test('nobody but the server can add, change or delete files', async () => {
+test('students and instructors cannot add, change or delete files; nobody can change one', async () => {
   for (const who of [a, iOct, admin]) {
-    await rejects(h.as(who)(`insert into storage.objects (bucket_id, name) values ('course-files', 'bs-aiml/evil.pdf')`), '42501');
+    if (who !== admin) {
+      await rejects(h.as(who)(`insert into storage.objects (bucket_id, name, metadata) values ('course-files', 'bs-aiml/evil.pdf',
+                               '{"mimetype": "application/pdf", "size": 10}')`), '42501');
+    }
     const upd = await h.as(who)(`update storage.objects set name = 'bs-aiml/renamed.pdf' where bucket_id = 'course-files'`);
     assert.equal(upd.affectedRows ?? 0, 0);
     const del = await h.as(who)(`delete from storage.objects where bucket_id = 'course-files'`);
-    assert.equal(del.affectedRows ?? 0, 0);
+    assert.equal(del.affectedRows ?? 0, 0, 'files attached to a lesson or project are never deleted');
   }
+  assert.equal((await h.sql(`select count(*)::int n from storage.objects where bucket_id = 'course-files'`)).rows[0].n, 4);
+});
+
+test('admins upload only PDFs up to 50 MB, inside a program folder, and delete only unattached files', async () => {
+  const up = (name, meta = { mimetype: 'application/pdf', size: 1000 }, bucket = 'course-files') =>
+    h.as(admin)(`insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3)`, [bucket, name, meta]);
+  for (const [name, meta] of [
+    ['bs-aiml/lessons/video.mp4', { mimetype: 'video/mp4', size: 1000 }],
+    ['bs-aiml/lessons/fake.pdf', { mimetype: 'text/html', size: 1000 }],
+    ['bs-aiml/lessons/big.pdf', { mimetype: 'application/pdf', size: 52428801 }],
+    ['nowhere/notes.pdf', undefined], ['notes.pdf', undefined], ['bs-aiml/../ms-ds/notes.pdf', undefined],
+    ['bs-aiml/.hidden.pdf', undefined], ['bs-aiml/notes.PDF', undefined], ['bs-aiml/notes.pdf.js', undefined], ['bs-aiml//notes.pdf', undefined],
+  ]) await rejects(up(name, meta), '42501');
+  await rejects(up('bs-aiml/x.pdf', undefined, 'other'), '42501');
+  await up('bs-aiml/lessons/mth-110/slides.pdf');
+  await up('bs-aiml/lessons/mth-110/limit.pdf', { mimetype: 'application/pdf', size: 52428800 });
+  assert.ok((await visibleFiles(h.as(admin))).includes('bs-aiml/lessons/mth-110/slides.pdf'), 'admins see unattached uploads');
+  assert.ok(!(await visibleFiles(h.as(a))).includes('bs-aiml/lessons/mth-110/slides.pdf'), 'students never see unattached files');
+  const del = await h.as(admin)(`delete from storage.objects where bucket_id = 'course-files' returning name`);
+  assert.deepEqual(del.rows.map((r) => r.name).sort(), ['bs-aiml/lessons/mth-110/limit.pdf', 'bs-aiml/lessons/mth-110/slides.pdf']);
   assert.equal((await h.sql(`select count(*)::int n from storage.objects where bucket_id = 'course-files'`)).rows[0].n, 4);
 });
 

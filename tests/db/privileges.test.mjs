@@ -9,8 +9,10 @@ import { freshDb } from './helpers.mjs';
 // request_seat: the public website's "Request a seat" form (checks every field itself).
 const ANON_FUNCTIONS = ['first_monday', 'next_start_date', 'request_seat'];
 const AUTHENTICATED_FUNCTIONS = [
-  // used inside security rules (can_read_material: the storage rule for PDF downloads)
+  // used inside security rules (can_read_material: the storage rule for PDF downloads; can_upload_course_file
+  // and can_delete_course_file: the storage rules for admin PDF uploads)
   'can_read_material', 'can_see_batch', 'is_admin', 'my_active_batches', 'teaches',
+  'can_upload_course_file', 'can_delete_course_file',
   'first_monday', 'next_start_date', 'request_seat',
   // student actions and pages
   'record_progress', 'mark_reading_done', 'submit_assignment', 'my_dashboard', 'my_course', 'my_lesson',
@@ -21,7 +23,12 @@ const AUTHENTICATED_FUNCTIONS = [
   // admin (each checks the admin role itself)
   'admin_create_batch', 'admin_enroll', 'admin_transfer', 'admin_set_enrollment_status', 'admin_set_role',
   'admin_assign_staff', 'require_admin', 'admin_seat_requests', 'admin_update_seat_request',
+  'admin_overview', 'admin_students', 'admin_student', 'admin_set_access', 'admin_record_payment', 'admin_void_payment',
+  'admin_batches', 'admin_update_batch', 'admin_staff', 'admin_set_role_by_email', 'admin_unassign_staff',
+  'admin_convert_seat_request', 'admin_materials', 'admin_program_outline', 'admin_add_material', 'admin_remove_material', 'admin_audit_log',
 ].sort();
+// The scheduler's jobs: server side only (service_role), never signed-in users or visitors.
+const SERVICE_ONLY = ['apply_access_rules', 'queue_session_reminders', 'update_batch_statuses', 'create_monthly_batches', 'progress_terms'];
 
 // Tables (and for partial grants, the columns) each role may read or change.
 const ANON_SELECT = { programs: '*', modules: '*', lessons: ['code', 'duration_seconds', 'id', 'kind', 'module_id', 'position', 'title'] };
@@ -61,6 +68,14 @@ test('visitors can call only the date helpers and the seat request form', async 
 
 test('signed-in users can call only the approved functions', async () => {
   assert.deepEqual(await callable('authenticated'), AUTHENTICATED_FUNCTIONS);
+});
+
+test('the scheduled jobs (including the hourly access rules) run only server side', async () => {
+  const service = await callable('service_role');
+  for (const f of SERVICE_ONLY) {
+    assert.ok(service.includes(f), `service_role can run ${f}`);
+    assert.ok(!AUTHENTICATED_FUNCTIONS.includes(f) && !ANON_FUNCTIONS.includes(f), `${f} is not on a public list`);
+  }
 });
 
 test('every table has row-level security switched on', async () => {

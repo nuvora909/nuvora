@@ -1,5 +1,5 @@
 // Instructors and admins: only their batches, the grading loop with students, the roster.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, sql, one, login, loginAs, watchErrors } from './helpers.mjs';
 
 let demo;
@@ -88,10 +88,14 @@ test('roster shows each student\'s progress; another instructor cannot open it',
   await expect(page.getByText('This page isn’t available')).toBeVisible();
 });
 
-test('admins see every batch', async ({ page }) => {
+test('admins see every running batch on the Teaching page', async ({ page, request }) => {
   await loginAs(page, 'admin');
+  await page.getByRole('link', { name: 'Teaching' }).click();
+  await expect(page).toHaveURL(/#\/teach$/);
   await expect(page.locator('.band .eyebrow')).toContainText('Admin');
-  await expect(page.locator('section.card h2[id^="b-"]')).toHaveCount(3);
+  const running = await one(request, `select count(*)::int from batches where status in ('scheduled','active')`);
+  expect(running).toBeGreaterThanOrEqual(4);
+  await expect(page.locator('section.card h2[id^="b-"]')).toHaveCount(running);
 });
 
 test('instructors can preview lessons without it counting as progress', async ({ page, request }) => {

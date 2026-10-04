@@ -6,8 +6,16 @@
 //   Leo (classmate)       the same two batches as Maya; quiet for the last 19 days
 //   Sara (nextBatch)      starts term 1 next month
 //   Omar (otherProgram)   M.S. Data Science, term 1, same dates as Maya's batch
-//   Nia (newcomer)        signed up, not enrolled
-//   Elena (instructor)    teaches Maya's batches; Kofi (instructor2) the other two; plus an admin
+//   Nia (newcomer)        signed up, not enrolled; has a seat request an admin can convert
+//   Elena (instructor)    teaches Maya's batches; Kofi (instructor2) the other three; plus an admin
+//
+// Tuition (paid term by term; 30 days of access for an unpaid term, see the admin_access migration):
+//   Maya, Leo             terms 1 and 2 paid            Omar      paid (an earlier payment voided: wrong amount)
+//   Sara                  unpaid; her 30 days start when her term starts next month
+//   Ines (grace)          joined the earlier M.S. batch 20 days ago, unpaid: 10 days left
+//   Kenji (lapsed)        earlier M.S. batch, unpaid for more than 30 days: stopped automatically
+//   Lucas (stopped)       Omar's batch, stopped manually by an admin (reason recorded)
+//   Amara (extended)      earlier M.S. batch, unpaid past 30 days, started manually until 14 days from today
 import { randomUUID } from 'node:crypto';
 import { runAs } from './localdb.mjs';
 import { hashPassword } from './auth.mjs';
@@ -94,17 +102,23 @@ export async function loadDemo(db) {
                                       where e.student_id = $1 and e.status = 'active'`, [id.student]));
   const starts = (await db.query(`select starts_on::text cur, first_monday((starts_on + interval '1 month')::date)::text nxt
                                   from public.batches where id = $1`, [current])).rows[0];
+  // The earlier M.S. batch started a month before Omar's (six to ten weeks ago), so its 30 days are over.
+  const earlierStart = await one(db.query(`select first_monday(($1::date - interval '1 month')::date)::text`, [starts.cur]));
   const batch = {
     current,
     next: await one(service(`select create_batch('bs-aiml', $1, 1)`, [starts.nxt])),
     otherProgram: await one(service(`select create_batch('ms-ds', $1, 1)`, [starts.cur])),
+    earlier: await one(service(`select create_batch('ms-ds', $1, 1)`, [earlierStart])),
     term1,
   };
   await service(`select enroll_student($1, 'bs-aiml', $2)`, [id.nextBatch, starts.nxt]);
   await service(`select enroll_student($1, 'ms-ds', $2)`, [id.otherProgram, starts.cur]);
+  await service(`select enroll_student($1, 'ms-ds', $2)`, [id.stopped, starts.cur]);
+  for (const s of ['grace', 'lapsed', 'extended']) await service(`select enroll_student($1, 'ms-ds', $2)`, [id[s], earlierStart]);
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.current, id.instructor]);
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.next, id.instructor2]);
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.otherProgram, id.instructor2]);
+  await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.earlier, id.instructor2]);
   await service(`select update_batch_statuses(current_date)`);
 
   // Placeholder Zoom links (not real meetings).
@@ -188,6 +202,51 @@ export async function loadDemo(db) {
   // Maya's goal: ML Engineer. Leo has not chosen one (the portal suggests one for his program).
   await as(id.student)(`select set_my_goal('ml-engineer')`);
   for (const s of ['student', 'classmate', 'nextBatch', 'otherProgram']) await service(`select award_achievements($1)`, [id[s]]);
+
+  // ---------------------------------------------------------------- tuition, access and seat requests
+  // Recorded through the admin functions, so the audit log and the access history read like real use.
+  // References are placeholders (DEMO-...), not real transactions.
+  const admin = as(id.admin);
+  const enrollmentOf = (who, b) => one(db.query(`select id from public.enrollments where student_id = $1 and batch_id = $2`, [id[who], b]));
+  const payTerm = (eid, usd, ref, paidOn, note = null) =>
+    admin(`select admin_record_payment($1, $2, 'bank_transfer', $3, $4, $5::date)`, [eid, usd, ref, note, paidOn]);
+  for (const [n, s] of ['student', 'classmate'].entries()) {
+    await payTerm(await enrollmentOf(s, term1), 1950, `DEMO-BT-01${n}1`, await one(db.query(`select ($1::date - 7)::text`, [t1Start])));
+    await payTerm(await enrollmentOf(s, current), 1950, `DEMO-BT-01${n}2`, await one(db.query(`select ($1::date - 3)::text`, [starts.cur])));
+  }
+  const omar = await enrollmentOf('otherProgram', batch.otherProgram);
+  const omarPaidOn = await one(db.query(`select ($1::date - 5)::text`, [starts.cur]));
+  const wrong = await one(payTerm(omar, 2000, 'DEMO-BT-0201', omarPaidOn));
+  await admin(`select admin_void_payment($1, 'Wrong amount entered; recorded again.')`, [wrong.payment.id]);
+  await payTerm(omar, 2450, 'DEMO-BT-0202', omarPaidOn, 'Term 1 in full.');
+
+  // The earlier M.S. batch: Kenji and Amara joined before it started; Ines joined 20 days ago (a late joiner).
+  await db.query(`update public.enrollments set enrolled_at = ($2::date - 5 + time '10:00') at time zone 'Asia/Kolkata'
+                  where batch_id = $1 and student_id = any($3)`, [batch.earlier, earlierStart, [id.lapsed, id.extended]]);
+  await db.query(`update public.enrollments set enrolled_at = now() - interval '20 days' where batch_id = $1 and student_id = $2`, [batch.earlier, id.grace]);
+  await admin(`select admin_set_access($1, 'on', 'Payment promised by bank transfer; access extended for two weeks.', now() + interval '14 days')`,
+              [await enrollmentOf('extended', batch.earlier)]);
+  await admin(`select admin_set_access($1, 'off', 'Paused at the student''s request while travelling.')`,
+              [await enrollmentOf('stopped', batch.otherProgram)]);
+  // The hourly job's first run records Kenji's automatic stop and notifies him and the admin.
+  await service(`select apply_access_rules()`);
+
+  // Seat requests from the website, in each status. Nia's can be converted (she has an account).
+  const nextStart = await one(db.query(`select next_start_date((now() at time zone 'Asia/Kolkata')::date)::text`));
+  await service(`select request_seat(p_program => 'c-py', p_start => $1::date, p_full_name => 'Nia Brooks', p_email => $2, p_country => 'Kenya',
+                                     p_consent => true, p_consent_version => 'privacy-2026-10', p_details => '{"goal": "Analyst role"}'::jsonb,
+                                     p_source => '/programs/certificate-python-data-analysis/')`, [nextStart, ACCOUNTS.newcomer.email]);
+  for (const [name, email, program, country, status, notes, ago] of [
+    ['Rohan Verma', 'rohan.verma@example.com', 'ms-aml', 'India', 'new', null, '2 hours'],
+    ['Chloe Martin', 'chloe.martin@example.com', 'bs-ds', 'France', 'contacted', 'Called; sending the application checklist.', '3 days'],
+    ['Daniel Okoye', 'daniel.okoye@example.com', 'c-genai', 'Nigeria', 'closed', 'Chose a later start; asked us to close this request.', '9 days'],
+  ]) {
+    await db.query(`insert into public.seat_requests (reference, program_id, start_date, full_name, email, country, consent_version, status, notes,
+                                                     created_at, updated_at, consented_at)
+                    values (seat_reference(), $1, $2::date, $3, $4, $5, 'privacy-2026-10', $6, $7, now() - $8::interval, now() - $8::interval, now() - $8::interval)`,
+                    [program, nextStart, name, email, country, status, notes, ago]);
+  }
+  await db.query(`update public.seat_requests set handled_by = $1 where status <> 'new'`, [id.admin]);
 
   return { batch, id, starts: { current: starts.cur, next: starts.nxt, term1: t1Start } };
 }

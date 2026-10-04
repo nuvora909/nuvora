@@ -1,5 +1,5 @@
 // Shared steps for the browser tests.
-import { expect } from '@playwright/test';
+import { expect } from './fixtures.mjs';
 import { ACCOUNTS, DEMO_PASSWORD } from '../../server/demo-accounts.mjs';
 
 export { ACCOUNTS, DEMO_PASSWORD };
@@ -24,14 +24,24 @@ export async function login(page, who, { remember = true, password = DEMO_PASSWO
   await page.goto('/portal/#/login');
   await page.getByLabel('Email address').fill(ACCOUNTS[who].email);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  if (!remember) await page.getByLabel('Keep me signed in on this device').uncheck();
+  // The box is unticked by default; tests that look at stored sessions tick it.
+  if (remember) await page.getByLabel('Keep me signed in on this device').check();
   await page.getByRole('button', { name: 'Log in' }).click();
 }
 
+export const HOME = { student: /#\/home$/, instructor: /#\/teach$/, admin: /#\/admin$/ };
+
 export async function loginAs(page, who) {
   await login(page, who);
-  await expect(page).toHaveURL(ACCOUNTS[who].role === 'student' ? /#\/home$/ : /#\/teach$/);
-  await expect(page.locator('main h1')).toBeVisible();
+  await expect(page).toHaveURL(HOME[ACCOUNTS[who].role]);
+  await expect(page.locator('.app main h1')).toBeVisible();                     // the signed-in portal, not the sign-in page
+}
+
+/** Signs out by forgetting the session and loading the portal afresh, then signs in as someone else. */
+export async function switchTo(page, who) {
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.goto('about:blank');
+  await loginAs(page, who);
 }
 
 /** Collects console errors and failed requests so every test can assert the page stayed healthy. */

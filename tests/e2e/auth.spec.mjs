@@ -1,5 +1,5 @@
 // Signing in, signing up, password reset, sign-out and expired sessions.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { reset, sql, login, loginAs, watchErrors, ACCOUNTS, DEMO_PASSWORD } from './helpers.mjs';
 
 test.beforeEach(async ({ request }) => { await reset(request); });
@@ -8,9 +8,11 @@ test('pages need a signed-in user, and sign-in returns you to the page you asked
   const errors = watchErrors(page);
   await page.goto('/portal/#/assignments');
   await expect(page).toHaveURL(/#\/login$/);
+  await expect(page.getByRole('main')).toContainText('Log in to your Nuvora portal');   // "skip to main content" has somewhere to go
   await login(page, 'student');
   await expect(page).toHaveURL(/#\/assignments$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Assignments' })).toBeVisible();
+  // Keyboard focus starts on the new page's heading, not on the page body.
+  await expect(page.getByRole('heading', { level: 1, name: 'Assignments' })).toBeFocused();
   expect(errors).toEqual([]);
 });
 
@@ -73,6 +75,7 @@ test('password reset by email link, which works only once', async ({ page, reque
   await page.getByLabel('Confirm new password').fill('my-new-password-1');
   await page.getByRole('button', { name: 'Save password' }).click();
   await expect(page).toHaveURL(/#\/home$/);
+  await expect(page.locator('main h1')).toBeVisible();                    // the home page has finished drawing
 
   await page.getByRole('button', { name: /Maya Patel/ }).click();
   await page.getByRole('button', { name: 'Sign out' }).click();
@@ -92,7 +95,7 @@ test('signing out clears the session; the back button shows nothing private', as
   await page.getByRole('button', { name: /Maya Patel/ }).click();
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/#\/login$/);
-  await expect(page.getByRole('status')).toContainText('You’ve signed out');
+  await expect(page.getByRole('status').filter({ hasText: 'You’ve signed out' })).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/#\/login$/);
   await expect(page.getByText(/Good (morning|afternoon|evening), Maya/)).toHaveCount(0);
@@ -107,7 +110,7 @@ test('an invalid or revoked session sends you back to sign in', async ({ page, r
   });
   await page.reload();
   await expect(page).toHaveURL(/#\/login$/);
-  await expect(page.getByRole('status')).toContainText('session ended');
+  await expect(page.getByRole('status').filter({ hasText: 'session ended' })).toBeVisible();
   expect(await sql(request, 'select 1 as ok')).toEqual([{ ok: 1 }]);
 });
 

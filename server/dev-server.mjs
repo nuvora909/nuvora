@@ -1,7 +1,7 @@
 // Local development server for Nuvora.
 // Serves the public site at / (built from web/ into dist/ on start) and the portal at /portal/, and stands in for
 // Supabase's Auth API (/auth/v1),
-// REST API (/rest/v1/rpc) and Storage signed downloads (/storage/v1) on top of an in-memory PostgreSQL
+// REST API (/rest/v1/rpc) and Storage (/storage/v1: admin PDF uploads, signed downloads) on top of an in-memory PostgreSQL
 // loaded with the real migrations.
 // The portal speaks the same HTTP protocol to this server as it will to Supabase in production.
 //
@@ -31,6 +31,7 @@ const TYPES = {
 const NAME = /^[a-z_][a-z0-9_]{0,62}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_BODY = 64 * 1024;
+const MAX_UPLOAD = 50 * 1024 * 1024;                               // the course-files bucket's limit
 const RECOVERY_TTL = 3600;
 const MIN_PASSWORD = 8;
 
@@ -40,12 +41,14 @@ class HttpError extends Error {
 const authError = (status, error_code, msg) => new HttpError(status, { code: status, error_code, msg });
 const restError = (status, code, message, details = null, hint = null) => new HttpError(status, { code, message, details, hint });
 
-export async function startServer({ port = 5173, host = '127.0.0.1', testApi = false, demo = true, accessTtl = 3600, quiet = false, build = true, watch = false } = {}) {
+export async function startServer({ port = 5173, host = '127.0.0.1', testApi = false, demo = true, accessTtl = 3600, quiet = false, build = true, watch = false,
+                                    portalDir = resolve(ROOT, 'portal') } = {}) {
   // Each server builds the website into its own temporary folder, so a preview server and a test server can run
   // side by side. Photos, video and fonts are served straight from web/static.
   const siteDir = build ? await mkdtemp(join(tmpdir(), 'nuvora-site-')) : DIST;
   if (build) await buildSite({ outDir: siteDir, quiet: true, media: false });
-  const STATIC_ROOTS = [['/portal/', resolve(ROOT, 'portal')], ...MEDIA_ROOTS, ['/', siteDir]];
+  // portalDir: another copy of portal/ (tests/sabotage.mjs serves a deliberately broken copy this way).
+  const STATIC_ROOTS = [['/portal/', resolve(portalDir)], ...MEDIA_ROOTS, ['/', siteDir]];
   // --watch: rebuild the website in a fresh process (so edited modules are re-read) when web/ or the catalog changes.
   const watchers = [];
   if (build && watch) {
@@ -60,7 +63,7 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
   const tenYears = 10 * 365 * 86400;
   const anonKey = signJwt({ iss: 'nuvora-local', role: 'anon', iat: issued, exp: issued + tenYears }, secret);
   const serviceKey = signJwt({ iss: 'nuvora-local', role: 'service_role', iat: issued, exp: issued + tenYears }, secret);
-  const state = { db: null, refresh: new Map(), recovery: new Map(), outbox: [], demo: null };
+  const state = { db: null, refresh: new Map(), recovery: new Map(), outbox: [], demo: null, files: new Map() };
   const log = quiet ? () => {} : (...a) => console.log(...a);
   let dummyHash; // compared against when an email is unknown, so timing does not reveal which emails exist
 
@@ -70,6 +73,7 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     state.refresh.clear();
     state.recovery.clear();
     state.outbox.length = 0;
+    state.files.clear();
     state.demo = demo ? await loadDemo(state.db) : null;
     if (old) await closeDb(old);
   }
@@ -279,13 +283,19 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     return send(res, 200, r.rows[0]?.result ?? null);
   }
 
-  // ---------------------------------------------------------------- Storage API (signed PDF downloads)
+  // ---------------------------------------------------------------- Storage API (PDF uploads and signed downloads)
   // Same shape as Supabase Storage: POST .../object/sign/<bucket>/<path> asks for a short-lived link, which
   // the storage row-level security rules allow or refuse; GET on that link (with its token) returns the file.
+  // Admins upload with POST .../object/<bucket>/<path> (the file's bytes as the body) and delete with
+  // DELETE .../object/<bucket> {"prefixes": [...]}; both go through the same row-level security rules, and an
+  // upload is also held to the bucket's file types and size limit, like Supabase Storage.
   const encodePath = (p) => p.split('/').map(encodeURIComponent).join('/');
   const storageError = (status, message, statusCode = String(status), error = 'error') => new HttpError(status, { statusCode, error, message });
 
   async function storageRoute(req, res, u) {
+    const obj = /^\/storage\/v1\/object\/(?!sign\/)([^/]+)(?:\/(.+))?$/.exec(u.pathname);
+    if (obj && req.method === 'POST' && obj[2]) return upload(req, res, obj[1], obj[2]);
+    if (obj && req.method === 'DELETE' && !obj[2]) return removeFiles(req, res, obj[1]);
     const m = /^\/storage\/v1\/object\/sign\/([^/]+)\/(.+)$/.exec(u.pathname);
     if (!m) throw storageError(404, 'Not found', '404', 'not_found');
     let bucket, name;
@@ -307,7 +317,8 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
       if (!claims || claims.url !== `${bucket}/${name}`) throw storageError(400, 'Invalid or expired link', '400', 'InvalidSignature');
       const row = (await state.db.query(`select metadata from storage.objects where bucket_id = $1 and name = $2`, [bucket, name])).rows[0];
       if (!row) throw storageError(400, 'Object not found', '404', 'not_found');
-      const pdf = placeholderPdf(row.metadata?.title ?? name, [
+      // An uploaded file is served as uploaded; the demo's files are generated on the fly.
+      const pdf = state.files.get(`${bucket}/${name}`) ?? placeholderPdf(row.metadata?.title ?? name, [
         'Sample course material generated by the local test server.',
         'In production this is the PDF uploaded by your admin.', '', `File: ${name}`]);
       const wanted = u.searchParams.get('download');
@@ -320,6 +331,65 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
       return res.end(pdf);
     }
     throw storageError(405, 'Method not allowed');
+  }
+
+  // Upload one file. Checked in Supabase's order: the bucket's file types, its size limit, then the row-level
+  // security rules (for course files: admins only, PDFs in a program folder). Existing files are never replaced.
+  async function upload(req, res, rawBucket, rawName) {
+    let bucket, name;
+    try { bucket = decodeURIComponent(rawBucket); name = decodeURIComponent(rawName); } catch { throw storageError(400, 'Invalid path'); }
+    const claims = claimsFor(req);
+    const b = (await state.db.query(`select file_size_limit, allowed_mime_types from storage.buckets where id = $1`, [bucket])).rows[0];
+    if (!b) throw storageError(404, 'Bucket not found', '404', 'Bucket not found');
+    const type = String(req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase() || 'application/octet-stream';
+    if (b.allowed_mime_types?.length && !b.allowed_mime_types.includes(type)) {
+      req.resume();
+      throw storageError(415, `mime type ${type} is not supported`, '415', 'invalid_mime_type');
+    }
+    const limit = Math.min(Number(b.file_size_limit) || MAX_UPLOAD, MAX_UPLOAD);
+    const tooLarge = () => storageError(413, 'The object exceeded the maximum allowed size', '413', 'Payload too large');
+    if (Number(req.headers['content-length']) > limit) { req.resume(); throw tooLarge(); }
+    const chunks = [];
+    let size = 0;
+    for await (const c of req) {
+      size += c.length;
+      if (size > limit) { req.resume(); throw tooLarge(); }
+      chunks.push(c);
+    }
+    const body = Buffer.concat(chunks);
+    // The local server also looks inside: a PDF must start with the PDF signature.
+    if (type === 'application/pdf' && body.subarray(0, 5).toString('latin1') !== '%PDF-') {
+      throw storageError(415, 'The file is not a PDF', '415', 'invalid_pdf');
+    }
+    let r;
+    try {
+      r = await runAs(state.db, claims.role, claims,
+        `insert into storage.objects (bucket_id, name, owner, metadata) values ($1, $2, $3, $4) returning id`,
+        [bucket, name, claims.role === 'authenticated' ? claims.sub : null, { mimetype: type, size: body.length, contentLength: body.length }]);
+    } catch (e) {
+      if (e.code === '23505') throw storageError(409, 'The resource already exists', '409', 'Duplicate');
+      if (e.code === '42501') throw storageError(403, 'new row violates row-level security policy', '403', 'Unauthorized');
+      throw e;
+    }
+    state.files.set(`${bucket}/${name}`, body);
+    return send(res, 200, { Key: `${bucket}/${name}`, Id: r.rows[0].id });
+  }
+
+  // Delete files: only those the row-level security rules let the caller delete (for course files: admins,
+  // and only files no lesson or project uses). Returns the deleted objects, like Supabase.
+  async function removeFiles(req, res, rawBucket) {
+    let bucket;
+    try { bucket = decodeURIComponent(rawBucket); } catch { throw storageError(400, 'Invalid path'); }
+    const claims = claimsFor(req);
+    const { prefixes } = await readJson(req);
+    if (!Array.isArray(prefixes) || !prefixes.length || prefixes.length > 1000 || prefixes.some((p) => typeof p !== 'string')) {
+      throw storageError(400, 'prefixes must be a list of file names');
+    }
+    const r = await runAs(state.db, claims.role, claims,
+      `delete from storage.objects where bucket_id = $1 and name = any($2::text[])
+       returning id, name, bucket_id, owner, metadata, created_at, updated_at`, [bucket, prefixes]);
+    for (const row of r.rows) state.files.delete(`${bucket}/${row.name}`);
+    return send(res, 200, r.rows);
   }
 
   // ---------------------------------------------------------------- test-only API
@@ -439,7 +509,7 @@ export function pgStatus(code, role) {
   return 500;
 }
 
-// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo] [--watch]
+// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo] [--watch] [--portal-dir <folder>]
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const argv = process.argv.slice(2);
   const opt = (name, fallback) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : fallback; };
@@ -448,6 +518,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     testApi: argv.includes('--test-api'),
     demo: !argv.includes('--no-demo'),
     watch: argv.includes('--watch'),
+    ...(opt('--portal-dir') ? { portalDir: opt('--portal-dir') } : {}),
   });
   console.log('Demo accounts (local only): see server/demo-accounts.mjs');
   const stop = async () => { await s.close(); process.exit(0); };
