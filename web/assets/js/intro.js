@@ -12,6 +12,7 @@ const el = document.querySelector('[data-intro]');
 const SKIP_ON = ['pointerdown', 'keydown', 'wheel'];
 let ended = false;
 let skipped = false;
+let swallowClickTimer;
 
 function end(shown) {
   if (ended) return;
@@ -22,22 +23,36 @@ function end(shown) {
   document.dispatchEvent(new CustomEvent('nuvora:intro-done', { detail: { shown, skipped } }));
 }
 
-// A quick fade from wherever the intro is (intro.css .is-skipped), so skipping never flashes.
-function skip() {
+// A key or pointer press completes the skip in that input event; no animation frame or CSS event can delay the page.
+function swallowClick(event) {
+  clearTimeout(swallowClickTimer);
+  removeEventListener('click', swallowClick, true);
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function skip(event) {
   if (skipped || ended) return;
   skipped = true;
-  el.style.setProperty('--intro-from', getComputedStyle(el).opacity);
-  el.classList.add('is-skipped');
+  if (event.type === 'pointerdown') {
+    // The overlay is removed now, but this same press must not activate what was underneath it.
+    event.stopImmediatePropagation();
+    if (event.button === 0) {
+      addEventListener('click', swallowClick, { capture: true, once: true });
+      swallowClickTimer = setTimeout(() => removeEventListener('click', swallowClick, true), 1000);
+    }
+  }
+  end(true);
 }
 
 if (!el || getComputedStyle(el).display === 'none' || document.hidden) end(false);
 else {
-  // Only the overlay's own fade (or the skip fade) ends the intro. Animations of its ::before/::after layers also
-  // report the overlay as their target, so the animation name and pseudoElement are checked too.
+  // Only the overlay's own fade ends the intro. Animations of its ::before/::after layers also report the overlay
+  // as their target, so the animation name and pseudoElement are checked too.
   el.addEventListener('animationend', (e) => {
-    if (e.target === el && !e.pseudoElement && (e.animationName === 'intro-out' || e.animationName === 'intro-skip')) end(true);
+    if (e.target === el && !e.pseudoElement && e.animationName === 'intro-out') end(true);
   });
-  for (const type of SKIP_ON) addEventListener(type, skip, { capture: true, passive: true });
+  for (const type of SKIP_ON) addEventListener(type, skip, { capture: true, passive: type !== 'pointerdown' });
   // A safety net only, for an animationend that never arrives: the CSS hides the overlay 1.5 s after its first frame
   // on its own (a slow first paint can delay that frame), so it ends here once its animation is no longer running.
   const settle = () => (el.getAnimations().some((a) => a.playState === 'running') ? setTimeout(settle, 1000) : end(true));

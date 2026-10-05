@@ -93,10 +93,11 @@ test('intro.css: shown and animated only without reduced motion, about 3.2 s, an
   assert.ok(total >= 2.8 && total <= 3.6, `the intro lasts ${total} s`);
   // The title is readable by about 1.3 s, and every timed part of the sequence exists.
   const keyframes = (name) => all.filter((r) => r.at.at(-1) === `@keyframes ${name}`).map((r) => r.body).join(';');
-  for (const name of ['intro-out', 'intro-skip']) {
+  for (const name of ['intro-out']) {
     assert.match(keyframes(name), /visibility:hidden/, `${name} ends with visibility hidden`);
     assert.match(keyframes(name), /pointer-events:none/, `${name} ends with pointer-events none`);
   }
+  assert.doesNotMatch(await read('web/assets/css/intro.css'), /intro-skip|is-skipped/, 'skipping does not wait for a CSS fade');
   for (const name of ['intro-focus', 'intro-draw', 'intro-pop', 'intro-bloom', 'intro-bar-top', 'intro-bar-bottom', 'intro-gather', 'intro-flare', 'intro-tag', 'intro-push', 'intro-exit']) assert.ok(keyframes(name), `@keyframes ${name}`);
   const rise = /animation:intro-focus ([\d.]+)s \S+ calc\(var\(--i\) \* (\d+)ms \+ (\d+)ms\)/.exec(rule('.intro-l,.intro-o').body);
   const letters = 6;
@@ -117,8 +118,12 @@ test('intro.js skips on input, removes the overlay, never traps focus, and annou
   assert.match(js, /setAttribute\('data-intro-done', ''\)/, 'a flag for scripts that start after the event');
   assert.match(js, /el\?\.remove\(\)/);
   assert.match(js, /'pointerdown', 'keydown'/);
-  assert.match(js, /passive: true/);
-  assert.doesNotMatch(js, /preventDefault|stopPropagation|\.focus\(|inert/, 'input passes through and focus is never moved or trapped');
+  assert.match(js, /passive: type !== 'pointerdown'/, 'pointer input can be stopped before the page underneath');
+  assert.match(js, /function skip\(event\)[\s\S]*?end\(true\);/, 'the input event completes the skip immediately');
+  assert.match(js, /event\.stopImmediatePropagation\(\)/, 'the input does not reach the page underneath');
+  assert.match(js, /addEventListener\('click', swallowClick, \{ capture: true, once: true \}\)/, 'the same pointer press cannot activate the page');
+  assert.match(js, /function swallowClick\(event\)[\s\S]*?event\.preventDefault\(\)[\s\S]*?event\.stopImmediatePropagation\(\)/);
+  assert.doesNotMatch(js, /\.focus\(|inert/, 'focus is never moved or trapped');
   assert.match(js, /getComputedStyle\(el\)\.display === 'none'/, 'when it is not shown, it ends at once');
 });
 

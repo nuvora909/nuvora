@@ -17,7 +17,6 @@
     color-scheme:light;overflow:hidden;contain:strict;-webkit-tap-highlight-color:transparent;
     animation:intro-out .8s cubic-bezier(.4,0,.2,1) 2.4s both}
   html.intro-off .intro{display:none!important}
-  .intro.is-skipped{animation:intro-skip .25s ease-out both}
 
   /* Light: a bloom behind the mark that breathes up, then a film-grain-free soft vignette at the edges. */
   .intro::before{content:"";position:absolute;inset:0;margin:auto;width:min(96vw,980px);height:min(60vw,520px);border-radius:50%;
@@ -67,8 +66,6 @@
   @keyframes intro-flare{0%{opacity:0;scale:.05 1}35%{opacity:1}to{opacity:0;scale:1 1}}
   @keyframes intro-tag{from{opacity:0;translate:0 .6em;filter:blur(4px)}to{opacity:1;translate:0 0;filter:blur(0)}}
   @keyframes intro-out{0%{opacity:1}to{opacity:0;visibility:hidden;pointer-events:none}}
-  @keyframes intro-skip{from{opacity:var(--intro-from,1)}to{opacity:0;visibility:hidden;pointer-events:none}}
-
   /* While the overlay fades, the stage keeps moving toward the viewer, so the title dissolves into the page. */
   .intro .intro-stage{animation:intro-push 2.4s cubic-bezier(.25,.1,.25,1) both,intro-exit .8s cubic-bezier(.4,0,.2,1) 2.4s forwards}
   @keyframes intro-exit{to{scale:1.14;filter:blur(6px);opacity:0}}
