@@ -638,3 +638,56 @@ main :is(.sec:not(.dark),.psec)::before{content:"";position:absolute;inset:0 -8%
   }
 }
 @media (prefers-reduced-motion:reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
+
+/* ---------- brochure styles ---------- */
+.brochure{background:var(--surface);color:var(--ink);}
+.brochure .programs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:32px;margin:40px 0;}
+.brochure .program-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+.brochure .program-card:hover{box-shadow:0 8px 32px -8px rgba(10,26,63,.25);transform:translateY(-2px);}
+.brochure .card-header{padding:24px;}
+.brochure .card-header .card-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;}
+.brochure .program-name{font-size:1.5rem;font-weight:600;color:var(--ink);margin:0;}
+.brochure .program-level{font-size:.9rem;color:var(--muted);font-weight:500;}
+.brochure .program-tagline{font-size:1.1rem;color:var(--accent-ink);font-weight:500;margin:8px 0 16px 0;line-height:1.4;}
+.brochure .card-body{flex:1;padding:0 24px 24px 24px;}
+.brochure .card-section{margin-bottom:24px;}
+.brochure .card-section h4{font-size:1.1rem;font-weight:600;color:var(--ink);margin:0 0 8px 0;display:flex;align-items:center;gap:6px;}
+.brochure .card-section h4 .ic{width:16px;height:16px;}
+.brochure .audience{font-size:.94rem;color:var(--muted);line-height:1.5;}
+.brochure .audience-item{display:inline-block;background:var(--sunk);color:var(--ink);padding:4px 8px;border-radius:999px;font-size:.86rem;font-weight:500;margin:0 2px 2px 0;}
+.brochure .time-details{display:flex;gap:16px;align-items:center;font-size:1.1rem;font-weight:600;color:var(--ink);}
+.brochure .duration{font-weight:600;}
+.brochure .weekly{font-weight:500;}
+.brochure .muted{font-size:.86rem;color:var(--muted);}
+.brochure .tuition{font-size:1rem;color:var(--ink);line-height:1.6;}
+.brochure .tuition strong{font-weight:600;}
+.brochure .total{font-weight:500;color:var(--accent-ink);}
+.brochure .fee{font-size:.86rem;color:var(--warn);}
+.brochure .skills-tools{display:grid;gap:16px;margin:16px 0;}
+.brochure .skills,.brochure .tools{font-size:.94rem;color:var(--muted);}
+.brochure .skills strong,.brochure .tools strong{font-weight:600;color:var(--ink);display:block;margin-bottom:4px;}
+.brochure .role,.brochure .tool{display:inline-block;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-size:.86rem;margin:0 2px 2px 0;}
+.brochure .capstone{font-size:.94rem;color:var(--muted);line-height:1.6;}
+.brochure .card-footer{padding:24px;border-top:1px solid var(--line);}
+.brochure .btn.outline{background:transparent;color:var(--accent-ink);border:1px solid var(--accent);}
+.brochure .btn.outline:hover{background:var(--accent-soft);color:var(--accent-ink);}
+.brochure .brochure-footer{text-align:center;padding:32px 0;border-top:1px solid var(--line);margin-top:40px;}
+.brochure .disclaimer{font-size:.86rem;color:var(--muted);line-height:1.6;max-width:600px;margin:0 auto 16px;}
+.brochure .footer-note{font-size:.94rem;color:var(--ink);font-weight:500;max-width:600px;margin:0 auto 24px;}
+.brochure .footer-note strong{color:var(--accent-ink);}
+.brochure .brochure-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+@media (max-width:900px){
+  .brochure .programs-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;}
+  .brochure .card-header{padding:20px;}
+  .brochure .card-body{padding:0 20px 20px 20px;}
+  .brochure .card-footer{padding:20px;}
+}
+@media (max-width:600px){
+  .brochure .programs-grid{grid-template-columns:1fr;}
+  .brochure .card-header{padding:16px;}
+  .brochure .card-body{padding:0 16px 16px 16px;}
+  .brochure .card-footer{padding:16px;}
+  .brochure .program-name{font-size:1.3rem;}
+  .brochure .program-tagline{font-size:1rem;}
+  .brochure .card-section h4{font-size:1rem;}
+}

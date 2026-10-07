@@ -19,8 +19,57 @@ import { signJwt, verifyJwt, hashPassword, checkPassword, randomToken } from './
 import { loadDemo } from './demo.mjs';
 import { placeholderPdf } from './pdf.mjs';
 import { buildSite, DIST } from '../scripts/build-site.mjs';
+import nodemailer from 'nodemailer';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+// Email configuration from environment variables with fallback for local development
+const smtpConfig = {
+  host: process.env.SMTP_HOST || 'localhost',
+  port: Number(process.env.SMTP_PORT) || 25,
+  secure: process.env.SMTP_SECURE === 'true' || false,
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || ''
+  }
+};
+
+// Create transporter only if we have credentials or are using a local SMTP server
+let transporter = null;
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport(smtpConfig);
+}
+
+/**
+ * Send an email using nodemailer
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} options.text - Email body (plain text)
+ * @param {string} options.html - Email body (HTML)
+ */
+async function sendEmail({ to, subject, text, html }) {
+  // For local development without SMTP credentials, log to console instead
+  if (!transporter) {
+    console.log('[email-local]', { to, subject, text, html });
+    return { success: true, messageId: 'local-dev' };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@nuvora.test',
+      to,
+      subject,
+      text,
+      html
+    });
+    console.log('[email-sent]', { to, subject, messageId: info.messageId });
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('[email-error]', { to, subject, error: error.message });
+    throw error;
+  }
+}
 const MEDIA_ROOTS = ['img', 'video', 'fonts'].map((m) => [`/${m}/`, resolve(ROOT, 'web/static', m)]);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -225,6 +274,14 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
         state.recovery.set(token, { userId: user.id, expires: Date.now() + RECOVERY_TTL * 1000 });
         const link = `${origin}/auth/v1/verify?token=${token}&type=recovery&redirect_to=${encodeURIComponent(redirect)}`;
         state.outbox.push({ to: user.email, subject: 'Reset your Nuvora password', link, sent_at: new Date().toISOString() });
+
+        // Send actual email
+        await sendEmail({
+          to: user.email,
+          subject: 'Reset your Nuvora password',
+          text: `Hello,\n\nYou requested a password reset for your Nuvora account. Click the link below to reset your password:\n${link}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe Nuvora Team`
+        });
+
         log(`[email] password reset for ${user.email}: ${link}`);
       }
       return send(res, 200, {});                                   // same answer whether or not the email exists
@@ -278,6 +335,21 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     } catch (e) {
       throw restError(pgStatus(e.code, claims.role), e.code ?? 'XX000', e.message, e.detail ?? null, e.hint ?? null);
     }
+
+    // Send welcome email when a new student is enrolled
+    if (fn === 'enroll_student' && args.email) {
+      try {
+        await sendEmail({
+          to: args.email,
+          subject: 'Welcome to Nuvora!',
+          text: `Hello ${args.full_name || 'Student'},\n\nWelcome to Nuvora! We're excited to have you join our learning community.\n\nYour enrollment has been confirmed. You can now access your courses and start learning right away.\n\nIf you have any questions, please don't hesitate to reach out to our support team.\n\nHappy learning!\n\nBest regards,\nThe Nuvora Team`
+        });
+      } catch (emailError) {
+        // Don't let email failures break the enrollment process
+        console.warn('[welcome-email-failed]', { to: args.email, error: emailError.message });
+      }
+    }
+
     if (procs[0].set) return send(res, 200, r.rows);
     if (procs[0].void) return send(res, 204);
     return send(res, 200, r.rows[0]?.result ?? null);
