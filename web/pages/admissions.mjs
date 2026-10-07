@@ -40,7 +40,7 @@ const codingCerts = PROGRAMS.filter((p) => !p.needsBachelor && p.requiresCoding)
 
 const FAQ = [
   ['Is requesting a seat the same as applying?',
-    'No. A seat request is not an application, an admission decision or a payment. It tells Nuvora which program and start date you want. Nuvora replies by email with next steps, and the application opens later.'],
+    'No. A seat request is not an application or an admission decision. It tells Nuvora which program and start date you want. Nuvora replies by email with next steps, and the application opens later.'],
   ['Does it cost anything to request a seat?',
     `No. Nothing is charged when you request a seat. The one-time ${FEE} application fee and your first term’s tuition are paid later, when enrolment opens. Tuition is ${priceLine()}, in US dollars at launch pricing, paid one term at a time.`],
   ['When will Nuvora reply?',
@@ -64,7 +64,7 @@ const STEPS = [
     text: `Compare the ${PROGRAMS.length} programs, or answer four questions in Find my program. Check what each one needs and how many hours a week it takes.`,
     links: [['/programs/', 'Compare programs'], ['/find-your-program/', 'Find my program']] },
   { ic: 'doc', title: 'Request a seat',
-    text: 'Choose a program and a start date, and give your name, email and country. It is not an application, and nothing is charged.',
+    text: 'Choose a program and a start date, and give your name, email and country. It is not an application and is free to request. The application fee is paid later when enrolment opens.',
     links: [['#request', 'Request a seat']] },
   { ic: 'mail', title: 'We reply by email',
     text: 'Nuvora replies by email with next steps for your program and start date. The application, the fee and first-term payment open later.' },
@@ -79,7 +79,7 @@ const startLabel = ({ start, applyBy }) => `${fmtLong(start)} · requests close 
 const hero = (today) => pageHead({
   eyebrow: 'Admissions',
   title: accent('Join Nuvora, *step by step*'),
-  lede: 'Nuvora is preparing its first batches. Requesting a seat is not an application, an admission decision or a payment: it tells us which program and start date you want, and we reply by email with next steps.',
+  lede: 'Nuvora is preparing its first batches. Requesting a seat is free and not an application or payment: it tells us which program and start date you want, and we reply by email with next steps. The one-time application fee is paid later when enrolment opens.',
   crumbs: CRUMBS,
   extra: html`
     <div class="adm-headfacts">
@@ -103,7 +103,7 @@ const plainly = () => html`
         <h3>${icon('check')} A seat request is</h3>
         <ul>
           <li>${icon('check')}<span>A way to tell Nuvora which program and start date you want</span></li>
-          <li>${icon('check')}<span>Free: nothing is charged and no card is asked for</span></li>
+          <li>${icon('check')}<span>Free: nothing is charged when you request</span></li>
           <li>${icon('check')}<span>Answered by email, with the next steps for your program and start</span></li>
         </ul>
       </div>
@@ -112,7 +112,7 @@ const plainly = () => html`
         <ul>
           <li>${icon('x')}<span>An application: that opens later</span></li>
           <li>${icon('x')}<span>An admission decision</span></li>
-          <li>${icon('x')}<span>A payment</span></li>
+          <li>${icon('x')}<span>A payment to Nuvora</span></li>
         </ul>
       </div>
     </div>
@@ -239,7 +239,7 @@ function form(today) {
   </div>
   <div class="adm-submit">
     <button class="btn gold" type="submit" data-seat-submit disabled><span data-submit-label>Send seat request</span> ${icon('arrow')}</button>
-    <p class="small muted">Not an application or a payment. Nothing is charged.</p>
+    <p class="small muted">Not an application or payment. The one-time application fee is paid later when enrolment opens.</p>
   </div>
   <p class="adm-status" data-seat-status role="status"></p>
   <noscript><p class="adm-status is-error">This form needs JavaScript to send your request. Please turn JavaScript on for this site, then reload the page.</p></noscript>
@@ -250,7 +250,7 @@ const result = () => html`
 <div class="adm-result" data-seat-result hidden>
   <span class="adm-resultic">${icon('check')}</span>
   <h3 tabindex="-1" data-result-title>Request received</h3>
-  <p data-result-lede>Nuvora will reply by email to the address you gave, with next steps. Nothing has been charged.</p>
+  <p data-result-lede>Nuvora will reply by email to the address you gave, with next steps. The one-time application fee is charged later when enrolment opens.</p>
   <dl class="adm-ref">
     <div><dt>Program</dt><dd data-r="program"></dd></div>
     <div><dt>Start date</dt><dd data-r="start"></dd></div>
@@ -275,7 +275,7 @@ const request = (today) => html`
     <div class="adm-reqintro">
       <span class="eyebrow">${icon('doc')} Seat request</span>
       <h2 id="request-title">${accent('Request a *seat*')}</h2>
-      <p class="lede">Tell us the program and start date you want, and Nuvora replies by email with next steps. This is not an application or a payment.</p>
+      <p class="lede">Tell us the program and start date you want, and Nuvora replies by email with next steps. This is not an application and is free to request. The one-time application fee is paid later when enrolment opens.</p>
       <ul class="adm-reqfacts">
         <li>${icon('doc')}<span><b>What you send:</b> the program and start date, your name, email and country, a phone number if you want to add one, and your saved Find my program plan only if you tick the box to include it.</span></li>
         <li>${icon('lock')}<span><b>Where it goes:</b> only to Nuvora’s database, so that Nuvora can reply to you.</span></li>

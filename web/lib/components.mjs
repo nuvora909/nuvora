@@ -42,6 +42,9 @@ export const programCard = (p) => html`
   <div class="ccard-body">
     <p class="ccard-brand">${mark()}<span class="ccard-org">Nuvora</span><span class="ccard-lvl">${LEVEL_SHORT[p.level]}</span></p>
     <h3><a class="ccard-link" href="${p.url}">${p.name}</a></h3>
+    <p class="ccard-brochure">
+      <button class="btn ghost" data-brochure-trigger data-program-id="${p.id}">Brochure</button>
+    </p>
     <p class="ccard-meta"><span>${p.duration}</span> · <span>${p.weeklyHours} hrs/week</span></p>
     <ul class="ccard-chips">
       <li class="c1">Live twice a week</li><li>${needs(p)}</li>

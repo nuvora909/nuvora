@@ -192,6 +192,7 @@ ${styles.map((s) => `<link rel="stylesheet" href="${s}">`).join('')}
 <script type="module" src="/js/intro.js"></script>
 <script type="module" src="/js/site.js"></script>
 <script type="module" src="/js/showcase.js"></script>
+<script type="module" src="/js/brochure.js"></script>
 ${scripts.map((s) => `<script type="module" src="${s}"></script>`).join('\n')}
 ${ld.map((o) => `<script type="application/ld+json">${jsonBlock(o)}</script>`).join('\n')}
 </head>
@@ -206,6 +207,7 @@ ${body}
 ${footer()}
 ${advisor()}
 <div data-advisor-root></div>
+<div data-brochure-root></div>
 </body>
 </html>
 `.replace(/\n{3,}/g, '\n\n');

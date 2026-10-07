@@ -206,6 +206,20 @@ function advisorButtons() {
   });
 }
 
+// ---------- Brochure modal entry points ----------
+function brochureButtons() {
+  const buttons = $$('[data-brochure-trigger]');
+  if (!buttons.length) return;
+  let mod;
+  const open = async (e) => {
+    const btn = e.currentTarget;
+    mod ??= await import('./brochure.js');
+    const programId = btn.dataset.programId;
+    mod.openBrochure({ programId });
+  };
+  buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
+}
+
 refreshDates();
 localTimes();
 menus();
@@ -213,4 +227,5 @@ ladders();
 hotspots();
 personalize();
 advisorButtons();
+brochureButtons();
 export { $, $$, fromIso };
