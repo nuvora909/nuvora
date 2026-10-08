@@ -2,7 +2,7 @@
 import { html, raw, accent } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
 import { liveDate } from './layout.mjs';
-import { coverUrl, coverAlt } from './covers.mjs';
+import { brochureCoverUrl, brochureCoverAlt, coverGlow } from './covers.mjs';
 import { PROGRAMS, TOPICS, CREDENTIAL, P } from '../data/programs.mjs';
 import { ROLES, TRACKS, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE, RUBRIC, FAQ, FACTS, PHOTOS } from '../data/site.mjs';
@@ -28,22 +28,32 @@ const mark = () => raw('<svg class="ccard-mark" viewBox="0 0 40 40" aria-hidden=
 const LEVEL_SHORT = { Certificate: 'Certificate', Bachelor: 'Bachelor’s-level', Master: 'Master’s-level' };
 const needs = (p) => (p.needsBachelor ? 'Bachelor’s degree to join' : p.requiresCoding ? 'Python to start' : 'No coding to start');
 
-// A program card with its cover art: brand row, title, meta line and two true chips that tell programs apart (the
-// credential is the same for every program, so it is shown on the program page and in the certificates section).
+// A program card with its portrait vector brochure art, brand row, title, meta line and two true chips that tell
+// programs apart (the credential is the same for every program, so it is shown on program pages and certificates).
 // The whole card links to the program page (the title link stretches over the card). .pcard[data-program] and
 // [data-match-badge] are the hooks site.js uses to mark a visitor's saved match; [data-card] and data-topics are
 // used by showcase.js.
 export const programCard = (p) => html`
 <article class="pcard ccard" data-program="${p.id}" data-level="${p.level}" data-topics="${p.topics.join('|')}" data-card>
-  <div class="ccard-cover">
-    <img src="${coverUrl(p)}" alt="${coverAlt(p)}" width="640" height="360" loading="lazy" decoding="async">
+  <div class="ccard-cover" style="--ccard-glow:${coverGlow(p)}">
+    <div class="ccard-book">
+      <span class="ccard-book-pages" aria-hidden="true"></span>
+      <span class="ccard-book-back" aria-hidden="true"></span>
+      <img class="ccard-book-face" src="${brochureCoverUrl(p)}" alt="${brochureCoverAlt(p)}" width="480" height="640" loading="lazy" decoding="async">
+      <span class="ccard-book-foil" aria-hidden="true"></span>
+    </div>
+    <span class="ccard-3d-tag" aria-hidden="true">3D PROGRAM GUIDE</span>
     <span class="ccard-match" data-match-badge hidden><span class="chip gold">${icon('spark')} Your match</span></span>
+    <!-- AR Enhancement: AR preview button -->
+    <button class="ar-preview-btn" data-program-id="${p.id}" aria-label="Preview ${p.name} in AR">
+      ${icon('cube')} AR Preview
+    </button>
   </div>
   <div class="ccard-body">
     <p class="ccard-brand">${mark()}<span class="ccard-org">Nuvora</span><span class="ccard-lvl">${LEVEL_SHORT[p.level]}</span></p>
     <h3><a class="ccard-link" href="${p.url}">${p.name}</a></h3>
     <p class="ccard-brochure">
-      <button class="btn ghost" data-brochure-trigger data-program-id="${p.id}">Brochure</button>
+      <button class="btn ghost" data-brochure-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="Request the ${p.name} brochure">Brochure</button>
     </p>
     <p class="ccard-meta"><span>${p.duration}</span> · <span>${p.weeklyHours} hrs/week</span></p>
     <ul class="ccard-chips">

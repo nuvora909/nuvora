@@ -11,7 +11,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 export const store = {
   get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
   set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
-  del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
+  del(key) { try { localStorage.removeItem(key); } catch { return false; } },
 };
 export const PLAN_KEY = 'nuvora.plan';
 const PLAN_DAYS = 90;
@@ -92,11 +92,11 @@ function localTimes() {
 // ---------- header menus ----------
 function menus() {
   const menusEls = $$('details[data-mega], details[data-mnav]');
-  const closeAll = (except) => menusEls.forEach((d) => { if (d !== except) d.open = false; });
+  const closeAll = (except) => menuEls.forEach((d) => { if (d !== except) d.open = false; });
   document.addEventListener('click', (e) => { if (!e.target.closest('details[data-mega], details[data-mnav]')) closeAll(); });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const open = menusEls.find((d) => d.open);
+    const open = menuEls.find((d) => d.open);
     if (open) { open.open = false; open.querySelector('summary').focus(); }
   });
   for (const d of menusEls) {
@@ -161,6 +161,101 @@ function hotspots() {
   }
 }
 
+// ---------- AR Preview functionality ----------
+function arPreviews() {
+  const arButtons = $$('.ar-preview-btn');
+  if (!arButtons.length) return;
+
+  arButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const programId = button.dataset.programId;
+
+      // Create AR preview modal
+      const modal = document.createElement('div');
+      modal.className = 'ar-preview-modal';
+      modal.innerHTML = `
+        <div class="ar-preview-content">
+          <button class="ar-preview-close" aria-label="Close AR preview">${icon('x')}</button>
+          <div class="ar-preview-header">
+            <h3>AR Preview: ${button.closest('.pcard')?.querySelector('.ccard-link')?.textContent || 'Program'}</h3>
+            <p class="ar-preview-description">View this program in augmented reality</p>
+          </div>
+          <div class="ar-preview-scene" id="ar-scene-${programId}">
+            <!-- AR scene will be injected here -->
+            <div class="ar-placeholder">
+              <div class="ar-instructions">
+                <p>To view in AR:</p>
+                <ol>
+                  <li>Click the "Start AR" button below</li>
+                  <li>Allow camera access when prompted</li>
+                  <li>Point your device at a flat surface</li>
+                  <li>Place the 3D model in your environment</li>
+                </ol>
+              </div>
+              <button class="ar-start-btn" data-program-id="${programId}">
+                Start AR Experience
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Close button functionality
+      const closeBtn = modal.querySelector('.ar-preview-close');
+      closeBtn.addEventListener('click', () => {
+        modal.remove();
+      });
+
+      // Close when clicking outside content
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+
+      // Start AR button
+      const startBtn = modal.querySelector('.ar-start-btn');
+      startBtn.addEventListener('click', async () => {
+        startBtn.textContent = 'Loading AR...';
+        startBtn.disabled = true;
+
+        try {
+          // In a real implementation, this would initialize AR.js or similar AR library
+          // For now, we'll simulate with a placeholder 3D model viewer
+          const scene = document.getElementById(`ar-scene-${programId}`);
+          scene.innerHTML = `
+            <div class="ar-model-container">
+              <div class="ar-model-placeholder">
+                <div class="ar-model-icon">${icon('cube')}</div>
+                <p>3D Model Placeholder</p>
+                <p>${button.closest('.pcard')?.querySelector('.ccard-link')?.textContent || 'Program'}</p>
+              </div>
+              <button class="ar-reset-btn">Reset Position</button>
+            </div>
+          `;
+
+          startBtn.textContent = 'AR Active';
+          startBtn.style.background = 'var(--good)';
+
+          // Add reset functionality
+          const resetBtn = scene.querySelector('.ar-reset-btn');
+          resetBtn.addEventListener('click', () => {
+            // Reset AR model position
+            alert('AR model position reset');
+          });
+        } catch (error) {
+          startBtn.textContent = 'Start AR Experience';
+          startBtn.disabled = false;
+          alert('AR functionality not available on this device. Please try on a mobile device with AR support.');
+        }
+      });
+    });
+  });
+}
+
 // ---------- saved plan (opt-in, this device only) ----------
 function personalize() {
   const plan = savedPlan();
@@ -215,17 +310,47 @@ function brochureButtons() {
     const btn = e.currentTarget;
     mod ??= await import('./brochure.js');
     const programId = btn.dataset.programId;
-    mod.openBrochure({ programId });
+    mod.openBrochure({ programId, returnFocus: btn });
   };
   buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
 }
 
+// Visual Performance Optimizations
+function optimizeVisualPerformance() {
+  // Add will-change properties for better animation performance
+  const animatedElements = $$('[class*="card"], .hero, .pillar, .ldetail, .flow li, .ccard');
+  animatedElements.forEach(el => {
+    el.style.willChange = 'transform, opacity';
+  });
+
+  // Add contain properties for layout isolation where beneficial
+  const containmentCandidates = $$('.pcard, .certcard, .hs-card, .lstep');
+  containmentCandidates.forEach(el => {
+    el.style.contain = 'content';
+  });
+
+  // Optimize touch targets for better performance on touch devices
+  const touchTargets = $$('.btn, .link, .chip, [aria-label]');
+  touchTargets.forEach(el => {
+    const computedStyle = window.getComputedStyle(el);
+    const minHeight = parseFloat(computedStyle.minHeight) || 0;
+    const minWidth = parseFloat(computedStyle.minWidth) || 0;
+    if (minHeight < 44 || minWidth < 44) {
+      el.style.minHeight = '44px';
+      el.style.minWidth = '44px';
+    }
+  });
+}
+
+// Initialize everything
 refreshDates();
 localTimes();
 menus();
 ladders();
 hotspots();
+arPreviews(); // New AR functionality
 personalize();
 advisorButtons();
 brochureButtons();
+optimizeVisualPerformance(); // New performance optimizations
 export { $, $$, fromIso };
