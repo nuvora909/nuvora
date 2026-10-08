@@ -10,7 +10,7 @@ export const SITE = {
   indexable: process.env.NUVORA_INDEXABLE === '1',
   description: 'Online data science and AI programs taught in 12-week terms: lessons you watch any time, two live Zoom sessions a week and projects graded by instructors.',
   status: 'Pre-launch',
-  consentVersion: '2026-10-02',
+  consentVersion: '2026-10-09',
 };
 
 // Owner facts that are not published yet. Pages render "to be published before the first batch" for null values.
