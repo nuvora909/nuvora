@@ -3,6 +3,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync } from 'node:fs';
 
+
 const root = new URL('../supabase/', import.meta.url);
 
 // Mirrors what Supabase provides. Note the default privileges: on Supabase every new table and function
