@@ -1,6 +1,6 @@
-﻿// How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
+// How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
 // assessment, the credential and support. Every fact comes from the data modules; nothing here describes
-// outcomes. Features are described as current only when they exist in the portal today; anything still being set
+// outcomes. Features are described as current only when they exUS time in the portal today; anything still being set
 // up (the streaming service, the real course PDFs, mentoring) says so.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
@@ -18,9 +18,9 @@ const NUM = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
 const WEEKS = SCHEDULE.weeks;
 const PROJECT_WEEKS = PROGRAMS[0].terms[0].projects.map(([, day]) => Math.ceil(day / 7));
 const PROJECTS = PROJECT_WEEKS.length;
-const listWeeks = (ws) => `${ws.slice(0, -1).join(', ')} and ${ws[ws.length - 1]}`;
-const DUE_WEEKS = listWeeks(PROJECT_WEEKS);
-const hours = PROGRAMS.flatMap((p) => p.weeklyHours.split('â€“').map(Number));
+const formatTimeWeeks = (ws) => `${ws.slice(0, -1).join(', ')} and ${ws[ws.length - 1]}`;
+const DUE_WEEKS = formatTimeWeeks(PROJECT_WEEKS);
+const hours = PROGRAMS.flatMap((p) => p.weeklyHours.split('–').map(Number));
 const HOURS = [Math.min(...hours), Math.max(...hours)];
 const credits = PROGRAMS.map((p) => p.credits);
 const CREDITS = [Math.min(...credits), Math.max(...credits)];
@@ -41,11 +41,11 @@ const FAQ = [
   ['When does a lesson count as complete?',
     'When you have watched 90% of it. Progress comes from the time you have really watched, not from clicks.'],
   ['What happens if my project is graded Basic or Not yet?',
-    'Your instructor writes feedback on what is missing, and you revise and resubmit the project. Proficient or Distinguished is a pass.'],
+    'Your instructor writes feedback on what is missing, and you revise and resubmit the project. Proficient or DUS timeinguished is a pass.'],
   ['How many hours a week should I plan for?',
     `Between ${HOURS[0]} and ${HOURS[1]} hours, depending on the program: the two live sessions plus lessons and project work at your own time. Each program page lists its weekly hours.`],
   ['What if I fall behind?',
-    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructorâ€™s check-in list so they can reach out.`],
+    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructor’s check-in lUS time so they can reach out.`],
   ['Is the certificate an accredited degree?',
     `No. You receive a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
 ];
@@ -64,7 +64,7 @@ const PILLARS = [
     points: [`Projects due in weeks ${DUE_WEEKS}`, 'Written feedback on every submission', 'Proficient or better passes; below that, revise and resubmit'] },
   { n: '03', title: 'Stay *supported*',
     lede: 'Instructors teach live and grade your work, office hours run every week, and your instructor sees when you go quiet.',
-    points: [`Live class on ${CLASS}, office hours on ${OFFICE}`, 'Instructors who teach your classes and grade your projects', 'Inactive for 14 days? You appear on your instructorâ€™s check-in list'] },
+    points: [`Live class on ${CLASS}, office hours on ${OFFICE}`, 'Instructors who teach your classes and grade your projects', 'Inactive for 14 days? You appear on your instructor’s check-in'] },
 ];
 
 const learningSystem = () => html`
@@ -148,7 +148,7 @@ const PORTAL = [
   ['doc', 'PDF notes and briefs', 'Lesson notes, exercise sheets and project briefs download as PDFs you can keep. The course PDFs in the portal today are placeholders while the real ones are written.'],
   ['live', 'Live session links', `Join links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours open 15 minutes before each session, with times in your time zone.`],
   ['video', 'Recordings', 'Every live session is recorded and streams in the portal, so you can catch up or watch again.'],
-  ['folder', 'Assignments and feedback', 'Submit projects, see your rubric level and your instructorâ€™s written feedback, and resubmit when a project needs more work.'],
+  ['folder', 'Assignments and feedback', 'Submit projects, see your rubric level and your instructor’s written feedback, and resubmit when a project needs more work.'],
   ['chat', 'Notifications', 'Class reminders, new recordings and feedback on your work, gathered in one place.'],
 ];
 
@@ -221,8 +221,8 @@ const support = () => html`
         <p class="lede">People teach you, grade your work and notice when you go quiet.</p></div>
       <ul class="ticks how-support">
         <li>${icon('check')}<span><b>Instructors teach live and grade.</b> The instructors who run your ${SCHEDULE.classDay} class also grade your projects. ${OWNER.instructors.length ? '' : 'Their names and backgrounds will be published before the first batch.'}</span></li>
-        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} IST, ${SCHEDULE.officeMinutes} minutes on Jitsi, for questions about lessons and projects.</span></li>
-        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructorâ€™s check-in list so they can reach out.</span></li>
+        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} US time, ${SCHEDULE.officeMinutes} minutes on Jitsi, for questions about lessons and projects.</span></li>
+        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructor’s check-in lUS time so they can reach out.</span></li>
       </ul>
       <div class="box"><h3>${icon('clock')} Planned: mentoring and success coaching</h3>
         <p class="muted">We plan to offer mentoring and success coaching to help you plan your weeks around work and life. It is not running yet, and the details will be published before the first batch.</p></div>

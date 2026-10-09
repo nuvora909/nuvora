@@ -1,4 +1,12 @@
-﻿// One decision page per program at /programs/<slug>/.
+function coverGlow(p) {
+  return "0";
+}
+function brochureCoverUrl(p) {
+  return "/images/brochure.jpg";
+}
+function brochureCoverAlt(p) {
+  return "Brochure cover";
+}
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, breadcrumbs, liveDate } from '../lib/layout.mjs';
@@ -57,7 +65,7 @@ function hero(p, today) {
     <aside class="keyfacts" aria-labelledby="kf-title">
       <h2 id="kf-title">Key facts</h2>
       <dl class="kv" data-test="key-facts">
-        <div><dt>Who itâ€™s for</dt><dd>${p.audience[0]}</dd></div>
+        <div><dt>Who it’s for</dt><dd>${p.audience[0]}</dd></div>
         <div><dt>You need</dt><dd>${p.required[0]}</dd></div>
         <div><dt>Weekly time</dt><dd>${p.weeklyHours} hours</dd></div>
         <div><dt>Duration</dt><dd>${p.duration}</dd></div>
@@ -74,7 +82,7 @@ function hero(p, today) {
 
 const termBlock = (t, i, open) => html`
 <details class="term" id="term-${i + 1}" ${open ? 'open' : ''}>
-  <summary><span class="tn">${i + 1}</span><span><b>${t.title}</b><br><span>${t.lessons.length} lessons Â· ${t.projects.length} projects Â· 12 weeks</span></span>${icon('down')}</summary>
+  <summary><span class="tn">${i + 1}</span><span><b>${t.title}</b><br><span>${t.lessons.length} lessons · ${t.projects.length} projects · 12 weeks</span></span>${icon('down')}</summary>
   <div class="tbody">
     <div><h3>Lessons<span class="sr-only"> in term ${i + 1}</span></h3><ul>${t.lessons.map(([code, title]) => html`<li><span class="mono">${code}</span><span>${title}</span></li>`)}</ul></div>
     <div><h3>Graded projects<span class="sr-only"> in term ${i + 1}</span></h3><ul>${t.projects.map(([title, day]) => html`<li>${icon('folder')}<span>${title}</span><span class="due">week ${week(day)}</span></li>`)}</ul></div>
@@ -90,7 +98,7 @@ const termPath = (p, today) => {
   <caption>If you start on ${fmtDay(start)}</caption>
   <thead><tr><th scope="col">Term</th><th scope="col">Starts</th><th scope="col">Ends</th></tr></thead>
   <tbody>${shown.map((r) => (r ? html`<tr data-term="${r.term}"><th scope="row">Term ${r.term}: ${p.terms[r.term - 1].title}</th><td><time datetime="${isoDay(r.start)}">${fmtDay(r.start)}</time></td><td><time datetime="${isoDay(r.end)}">${fmtDay(r.end)}</time></td></tr>`
-    : html`<tr><td colspan="3" class="muted">â€¦ ${p.termCount - 4} more terms, one after another â€¦</td></tr>`))}</tbody>
+    : html`<tr><td colspan="3" class="muted">… ${p.termCount - 4} more terms, one after another …</td></tr>`))}</tbody>
 </table></div>`
 }
 
@@ -120,7 +128,7 @@ ${hero(p, today)}
     <h2 id="h-overview">${accent('Is it *right for you*?')}</h2>
     <p class="lede">${p.tagline}</p>
     <div class="twocol">
-      <div class="box"><h3>${icon('users')} Who itâ€™s for</h3><ul class="ticks">${p.audience.map((a) => html`<li>${icon('check')}<span>${a}</span></li>`)}</ul></div>
+      <div class="box"><h3>${icon('users')} Who it’s for</h3><ul class="ticks">${p.audience.map((a) => html`<li>${icon('check')}<span>${a}</span></li>`)}</ul></div>
       <div class="box"><h3>${icon('book')} What you need</h3><ul>${p.required.map((r) => html`<li>${r}</li>`)}</ul>
         <p class="small muted"><b>Helpful:</b> ${p.helpful.join(', ')}</p></div>
       <div class="box"><h3>${icon('layers')} Tools you will use</h3><div class="row">${p.tools.map((t) => html`<span class="chip blue">${t}</span>`)}</div></div>
@@ -182,14 +190,14 @@ ${hero(p, today)}
     <h2 id="h-credinet">${accent('Credential and *credit*')}</h2>
     <div class="cred-split">
       <div class="stack">
-        <p class="lede">Your certificate names the program and is backed by the graded projects you can show. List it on your rÃ©sumÃ© under Certifications, and on LinkedIn under Licenses &amp; certifications with Nuvora as the issuing organization.</p>
+        <p class="lede">Your certificate names the program and is backed by the graded projects you can show. List it on your résumé under Certifications, and on LinkedIn under Licenses &amp; certifications with Nuvora as the issuing organization.</p>
       </div>
       ${certFan([p])}
     </div>
     <div class="twocol">
       <div class="box"><h3>${icon('cert')} What you receive</h3><p>A ${CREDENTIAL.short} for the ${p.name}, issued by Nuvora when you complete your program.</p></div>
       <div class="box"><h3>${icon('info')} Recognition</h3><p>Nuvora is not an accredited university and this is not an accredited degree. The ${p.credits} Nuvora credits (about ${p.creditsPerTerm} per term) describe workload; they are not academic credit and may not transfer to universities.</p></div>
-      <div class="box"><h3>${icon('layers')} Transfer and test-outs</h3><p>Nuvora does not accept transfer credit or offer test-outs: every learner completes every term.${p.needsBachelor ? ' Joining needs a bachelorâ€™s degree in any field.' : ''}</p></div>
+      <div class="box"><h3>${icon('layers')} Transfer and test-outs</h3><p>Nuvora does not accept transfer credit or offer test-outs: every learner completes every term.${p.needsBachelor ? ' Joining needs a bachelor’s degree in any field.' : ''}</p></div>
     </div>
     ${programCerts(p)}
   </section>
@@ -208,19 +216,20 @@ ${hero(p, today)}
 </div>
 ${ctaBand({ title: `Start the *${p.short}*`, program: p })}
 <div class="sticky-cta" data-sticky-cta aria-hidden="true">
-  <div class="wrap"><div class="txt"><b>${p.short}</b><br><span>Next start ${liveDate('start', 0, today)} Â· ${money(p.tuition.perTerm)} per term</span></div>
+  <div class="wrap"><div class="txt"><b>${p.short}</b><br><span>Next start ${liveDate('start', 0, today)} · ${money(p.tuition.perTerm)} per term</span></div>
   <a class="btn gold sm" href="/admissions/?program=${p.id}#request" tabindex="-1">Request a seat</a></div>
 </div>`;
+}
 
 export default function programs({ today } = {}) {
   return PROGRAMS.map((p) => ({
     path: p.url,
     html: page({
       path: p.url, today,
-      title: fit(TITLE_MAX, [`${p.name} Â· online, ${p.termCount === 1 ? '12 weeks' : p.duration}`, `${p.name} Â· online`, p.name]),
+      title: fit(TITLE_MAX, [`${p.name} · online, ${p.termCount === 1 ? '12 weeks' : p.duration}`, `${p.name} · online`, p.name]),
       description: fit(DESC_MAX, [
         `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(p.tuition.perTerm)} per term. ${CREDENTIAL.short}, not an accredited degree.`,
-        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(tuition.perTerm)} per term. Not an accredited degree.`,
+        `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week, ${money(p.tuition.perTerm)} per term. Not an accredited degree.`,
         `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week. Not an accredited degree.`,
         `${p.tagline} ${p.duration}, ${p.weeklyHours} hours a week.`,
       ]),

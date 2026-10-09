@@ -122,7 +122,7 @@ begin
   return r;
 end $$;
 
--- Live classes page. The Zoom link is included only from 15 minutes before a class until it ends,
+-- Live classes page. The Jitsi link is included only from 15 minutes before a class until it ends,
 -- judged by the server's clock.
 create function public.my_sessions(p_batch uuid) returns jsonb
 language plpgsql stable security definer set search_path = public, pg_temp as $$
@@ -319,3 +319,4 @@ grant execute on function
   public.staff_grading_queue(uuid),
   public.staff_roster(uuid, timestamptz)
   to authenticated;
+

@@ -1,4 +1,4 @@
--- Programs as sequences of 12-week terms.
+﻿-- Programs as sequences of 12-week terms.
 -- Owner decision (2026-10-02): Bachelor's programs run 12 terms (3-4 years part-time), Master's 4 terms
 -- (12-18 months), certificates 1 term. Each term is one batch: 12 weeks from a first Monday, the usual
 -- Tuesday class and Thursday office hours, four competency lessons and three graded projects.
@@ -109,7 +109,7 @@ drop function public.create_batch(text, date);
 
 -- Create the batch of one term of a program starting on a date, with that term's live sessions and
 -- assignment due dates. Safe to call repeatedly: an existing batch is returned unchanged.
-create function public.create_batch(p_program text, p_starts_on date, p_term int default 1) returns uuid
+create function public.create_batch(p_program text, p_starts_on date, p_term int) returns uuid
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   prog public.programs;
@@ -457,7 +457,7 @@ language sql stable security definer set search_path = public, pg_temp as $$
 $$;
 
 -- One batch as the student's home and dashboard show it: the term's lesson counts, next classes
--- (a Zoom link only from 15 minutes before a class until it ends, by the real clock), recordings,
+-- (a Jitsi link only from 15 minutes before a class until it ends, by the real clock), recordings,
 -- attendance and the student's own assignment status.
 create function public.batch_summary_json(b public.batches, p_student uuid, p_now timestamptz default now()) returns jsonb
 language sql stable security definer set search_path = public, pg_temp as $$
@@ -657,3 +657,5 @@ revoke execute on function
 
 grant execute on function public.admin_create_batch(text, date, int) to authenticated;
 grant execute on function public.create_batch(text, date, int), public.progress_terms(date) to service_role;
+
+

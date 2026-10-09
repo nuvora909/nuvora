@@ -87,7 +87,7 @@ export function pathHtml(programId, startIso) {
     <div class="tablewrap"><table style="min-width:0"><tbody>
       <tr><th scope="row">Tuition</th><td>${money(p.tuition.perTerm)} per term × ${p.termCount} = <b>${money(p.tuition.total)}</b>, paid one term at a time</td></tr>
       <tr><th scope="row">Application fee</th><td>${money(p.tuition.applicationFee)}, once</td></tr>
-      <tr><th scope="row">Live sessions</th><td>${esc(CATALOG.schedule.classDay)}s ${esc(CATALOG.schedule.classTime)} IST and ${esc(CATALOG.schedule.officeDay)}s ${esc(CATALOG.schedule.officeTime)} IST, on Zoom</td></tr>
+      <tr><th scope="row">Live sessions</th><td>${esc(CATALOG.schedule.classDay)}s ${esc(CATALOG.schedule.classTime)} US time and ${esc(CATALOG.schedule.officeDay)}s ${esc(CATALOG.schedule.officeTime)} US time, on Jitsi</td></tr>
     </tbody></table></div>
     <div class="row">
       <a class="btn gold" href="/admissions/?program=${p.id}&amp;start=${isoDay(start)}#request">Request a seat for ${fmtDay(start)} ${ICON.arrow}</a>
@@ -170,7 +170,7 @@ function mountPath() {
   document.addEventListener('nuvora:match', (e) => {
     const { answers, result } = e.detail;
     render(result.match.id);
-    if (saveBox?.checked) persist(answers, result);
+    if (saveBox?.checked) persUS time(answers, result);
   });
   host.addEventListener('change', (e) => { if (e.target.matches('[data-path-start]')) render(current.programId, e.target.value); });
   document.addEventListener('click', (e) => {
@@ -180,12 +180,12 @@ function mountPath() {
     host.querySelector('h2')?.setAttribute('tabindex', '-1');
     host.querySelector('h2')?.focus({ preventScroll: true });
   });
-  const persist = (answers, result) => store.set(PLAN_KEY, { v: 1, savedAt: Date.now(), answers, match: result.match.id, matchName: P(result.match.id).name, score: result.match.score });
+  const persUS time = (answers, result) => store.set(PLAN_KEY, { v: 1, savedAt: Date.now(), answers, match: result.match.id, matchName: P(result.match.id).name, score: result.match.score });
   if (saveBox) {
     saveBox.checked = Boolean(savedPlan());
     saveBox.addEventListener('change', () => {
       const s = session.get();
-      if (saveBox.checked && s?.answers) persist(s.answers, recommend(s.answers, CATALOG.programs));
+      if (saveBox.checked && s?.answers) persUS time(s.answers, recommend(s.answers, CATALOG.programs));
       if (!saveBox.checked) store.del(PLAN_KEY);
     });
   }
@@ -201,3 +201,4 @@ function mountPath() {
 
 mountPath();
 document.querySelectorAll('form[data-finder]').forEach(mount);
+

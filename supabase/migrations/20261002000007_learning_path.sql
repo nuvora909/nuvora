@@ -8,7 +8,7 @@
 --   * No loss-aversion wording. Streaks forgive single rest days, and each student can switch them off;
 --     when off, no streak number is sent to the browser at all.
 --   * Anything that grants access or reveals something time-gated uses the server clock (now()), never
---     the caller's p_now: the Zoom link rule lives in batch_summary_json and uses now(). p_now only shapes
+--     the caller's p_now: the Jitsi link rule lives in batch_summary_json and uses now(). p_now only shapes
 --     what the student's own page displays (week, "due soon", streak day, the order of suggestions).
 --   * Achievements and badges are derived from stored data; nothing is invented or counted twice. Each one
 --     earned creates exactly one notification (unique user + kind + ref).
@@ -537,3 +537,4 @@ revoke execute on function
 
 grant execute on function public.my_home(uuid, timestamptz), public.set_my_goal(text), public.set_streak_visibility(boolean) to authenticated;
 grant execute on function public.award_achievements(uuid) to service_role;
+

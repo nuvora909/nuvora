@@ -20,7 +20,7 @@ before(async () => {
   await h.service(`select enroll_student($1, 'bs-aiml', '2026-11-02')`, [bNov]);
   await h.service(`select enroll_student($1, 'ms-ds', '2026-10-05')`, [dMsds]);
   await h.as(admin)(`select admin_assign_staff($1, $2, 'instructor')`, [oct, inst]);
-  await h.sql(`update sessions set join_url = 'https://zoom.us/j/secret-' || id where batch_id = $1`, [nov]);
+  await h.sql(`update sessions set join_url = 'https://Jitsi.us/j/secret-' || id where batch_id = $1`, [nov]);
   ids = { oct, nov, msds, aOct, bNov, cNone, dMsds, inst, admin, eA };
 });
 
@@ -109,3 +109,4 @@ test('the student dashboard only contains the caller\'s batches', async () => {
   assert.deepEqual((await h.one(h.as(cNone), `select my_dashboard()`)).batches, []);
   assert.deepEqual((await h.one(h.as(dMsds), `select my_dashboard()`)).batches.map((b) => b.code), ['MSDS-T1-2026-10']);
 });
+

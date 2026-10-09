@@ -121,8 +121,8 @@ export async function loadDemo(db) {
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.earlier, id.instructor2]);
   await service(`select update_batch_statuses(current_date)`);
 
-    // Placeholder Jitsi links (not real meetings).
-    await db.query(`update public.sessions set room_id = gen_random_uuid(), join_url = 'https://meet.jit.si/nuvora-' || room_id::text`);
+    // Jitsi links: use base URL from app_settings (default if not set)
+    await db.query(`update public.sessions set room_id = gen_random_uuid(), join_url = (select coalesce((select value from public.app_settings where key = 'jitsi_base_url'), 'https://meet.jit.si/nuvora-')) || room_id::text`);
 }
 
 

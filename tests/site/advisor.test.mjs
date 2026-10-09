@@ -48,7 +48,7 @@ const QUESTIONS = [
   ['What salary will I get after graduating?', ['no graduates', 'don’t guarantee']],
   ['What is the median salary of your graduates?', ['no graduates']],
   ['What percentage of students get placed?', ['no graduates']],
-  ['What is the class schedule?', ['Tuesday', 'Thursday', '19:00', 'IST', 'recorded']],
+  ['What is the class schedule?', ['Tuesday', 'Thursday', '19:00', 'US', 'recorded']],
   ['What are the prerequisites?', ['No coding experience', 'bachelor’s degree']],
   ['What do I need for the MLOps certificate?', [P('c-mlops').name, ...P('c-mlops').required]],
   ['What is your refund policy?', ['will be published before the first batch']],
@@ -170,7 +170,7 @@ test('renderAnswer escapes HTML and never outputs external or script links', () 
 
 test('the catalog facts given to an AI model are true and complete', () => {
   const text = catalogText(C, TODAY);
-  for (const want of ['Tuesday', 'Thursday', '19:00', 'IST', 'no graduates', 'Not an accredited degree', 'never downloadable', fmtDay(NEXT.start), fmtDay(AFTER.start),
+  for (const want of ['Tuesday', 'Thursday', '19:00', 'US', 'no graduates', 'Not an accredited degree', 'never downloadable', fmtDay(NEXT.start), fmtDay(AFTER.start),
     'Refund policy to be published before the first batch', 'No loans or scholarships yet', ACCESS_RULE]) {
     assert.ok(text.includes(want), `catalogText mentions "${want}"`);
   }

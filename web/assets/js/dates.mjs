@@ -1,8 +1,8 @@
-﻿// Batch calendar rules, shared by the site build (Node) and the browser.
+// Batch calendar rules, shared by the site build (Node) and the browser.
 // Batches start on the first Monday of each month. Applications close 7 days before a start, and the closing
 // day itself is still open (the same rule as the database function next_start_date). All dates are calendar
 // dates in the batch time zone (Asia/Kolkata), represented as Date objects at 00:00 UTC.
-export const TIMEZONE = 'Asia/Kolkata';
+export const TIMEZONE = 'America/New_York';
 export const TERM_WEEKS = 12;
 const DAY = 86400000;
 
@@ -12,7 +12,7 @@ export function firstMonday(year, month) {
   return d;
 }
 
-export function todayInKolkata(now = new Date()) {
+export function todayInBatchZone(now = new Date()) {
   const s = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
   return new Date(`${s}T00:00:00Z`);
 }
@@ -20,7 +20,7 @@ export function todayInKolkata(now = new Date()) {
 export const applyByFor = (start) => new Date(start.getTime() - 7 * DAY);
 
 // The next `count` starts whose application window is still open on `today`.
-export function nextStarts(count, today = todayInKolkata()) {
+export function nextStarts(count, today = todayInBatchZone()) {
   const out = [];
   let y = today.getUTCFullYear(), m = today.getUTCMonth();
   while (out.length < count) {
@@ -61,12 +61,12 @@ export const fmtDay = (d, opts = {}) => d.toLocaleDateString('en-US', { timeZone
 export const fmtLong = (d) => d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 export const fmtMonth = (d) => d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', year: 'numeric' });
 
-// A weekly class time in the batch zone ("Tuesday 19:00 IST") shown in another time zone. IST has no daylight
-// saving, so 19:00 IST is always 13:30 UTC; the visitor's offset can still change with their own DST.
+// A weekly class time in the batch zone ("Tuesday 19:00 US time") shown in another time zone. US time has daylight saving, so 19:00 US time is always 14:30 or 15:30 UTC depending on DST;
+// the visitor's offset can still change with their own DST.
 export function weeklyTimeIn(day, hhmm, timeZone, ref = new Date()) {
   const [h, m] = hhmm.split(':').map(Number);
-  // Find the next date (from ref) that falls on `day` (0 = Sunday) in Kolkata.
-  const base = todayInKolkata(ref);
+  // Find the next date (from ref) that falls on `day` (0 = Sunday) in the US time zone.
+  const base = todayInBatchZone(ref);
   const delta = (day - base.getUTCDay() + 7) % 7;
   const utc = new Date(base.getTime() + delta * DAY + (h * 60 + m - 330) * 60000);
   const fmt = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'long', hour: 'numeric', minute: '2-digit' });
@@ -74,3 +74,9 @@ export function weeklyTimeIn(day, hhmm, timeZone, ref = new Date()) {
   const hour24 = Number(new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', hourCycle: 'h23' }).format(utc));
   return { weekday: parts.weekday, time: `${parts.hour}:${parts.minute} ${parts.dayPeriod}`, hour24, utc };
 }
+
+
+
+
+
+

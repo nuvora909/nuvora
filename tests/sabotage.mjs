@@ -36,7 +36,7 @@ const CASES = [
   ['Classmates can read each other\'s work', 'assignments', 'alter table public.submissions disable row level security;'],
   ['Students can run the batch creator', 'batches', 'grant execute on function public.create_batch(text, date, int) to authenticated;'],
   ['Watch progress is visible to everyone', 'progress', 'alter table public.lesson_progress disable row level security;'],
-  ['Zoom links readable straight from the table', 'portal', 'grant select on public.sessions to authenticated;'],
+  ['Jitsi links readable straight from the table', 'portal', 'grant select on public.sessions to authenticated;'],
   ['Join links handed out days early', 'portal', `create or replace function public.my_sessions(p_batch uuid) returns jsonb language sql stable
      security definer set search_path = public, pg_temp as $$ select coalesce(jsonb_agg(jsonb_build_object('id', id, 'join_url', join_url,
      'phase', 'upcoming', 'has_recording', false) order by starts_at), '[]') from sessions where batch_id = (public.portal_batch(p_batch)).id $$;`],
@@ -73,7 +73,7 @@ const CASES = [
                    or`, 'where')),
   const_seat('Admins are not told about new requests', 'drop trigger seat_request_created on public.seat_requests;'),
   // The student home: own data only, verified events only, the real clock for anything time-gated.
-  ['The caller\'s clock unlocks Zoom links on the home page', 'home', patch('batch_summary_json(batches,uuid,timestamptz)',
+  ['The caller\'s clock unlocks Jitsi links on the home page', 'home', patch('batch_summary_json(batches,uuid,timestamptz)',
     `when now() between s.starts_at - interval '15 minutes' and s.ends_at`, `when p_now between s.starts_at - interval '15 minutes' and s.ends_at`)],
   ['The home page opens any batch', 'home', patch('my_home(uuid,timestamptz)', 'b := public.portal_batch(p_batch);', 'select * into b from public.batches where id = p_batch;')],
   ['The streak is sent even when switched off', 'home', patch('my_home(uuid,timestamptz)', `'streak', case when me.show_streak then`, `'streak', case when true then`)],
@@ -203,3 +203,4 @@ for (const [name, file, sql] of cases) {
 }
 console.log(missed ? `\n${missed} sabotage(s) went unnoticed.` : `\nAll ${total} sabotages were caught by the tests.`);
 process.exit(missed ? 1 : 0);
+

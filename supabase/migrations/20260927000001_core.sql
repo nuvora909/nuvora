@@ -276,7 +276,7 @@ create policy profiles_update_self on public.profiles for update using (id = aut
 grant select on public.batches, public.batch_staff, public.enrollments,
                 public.batch_assignments, public.submissions, public.lesson_progress, public.attendance
   to authenticated;
--- Zoom links and recording ids are not readable directly: my_sessions() hands out a join link only
+-- Jitsi links and recording ids are not readable directly: my_sessions() hands out a join link only
 -- from 15 minutes before a class until it ends, so links cannot be collected and shared in advance.
 grant select (id, batch_id, template_id, title, starts_at, ends_at, status) on public.sessions to authenticated;
 create policy batches_read     on public.batches           for select using (public.can_see_batch(id));
@@ -302,3 +302,4 @@ create policy notifications_own_update on public.notifications for update using 
 
 -- Server-side jobs (webhooks, schedulers) use the service role and bypass RLS by design.
 grant all on all tables in schema public to service_role;
+

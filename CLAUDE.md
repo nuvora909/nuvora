@@ -50,5 +50,5 @@ end: change it, test it, commit it, push it, and report what changed in plain wo
 
 ## Roadmap
 
-Phase 3: protected video (VdoCipher) and Zoom. Phase 4: Razorpay payments, which record term payments automatically,
+Phase 3: protected video (VdoCipher) and Jitsi. Phase 4: Razorpay payments, which record term payments automatically,
 plus reminders and admin reports. Phase 5: deploy (Cloudflare Pages from GitHub, hosted Supabase) and go-live.

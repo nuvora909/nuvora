@@ -306,7 +306,7 @@ already voided` or a missing reason.
     "seats_taken": 2, "seats_left": 58,
     "instructors": [ { "id": "uuid", "name": "Elena Ruiz", "email": "...", "role": "instructor" } ],
     "sessions": { "total": 24, "upcoming": 13, "upcoming_with_link": 13 },
-    "next_session": { "id": "uuid", "title": "Live class · Week 5 · ...", "starts_at": "...", "join_url": "https://zoom.us/j/..." } }
+    "next_session": { "id": "uuid", "title": "Live class · Week 5 · ...", "starts_at": "...", "join_url": "https://Jitsi.us/j/..." } }
 ]
 ```
 
@@ -319,7 +319,7 @@ Changes only what is given (`null` keeps the current value). Returns the batch o
 - `p_capacity`: 1 to 500, and not below `seats_taken`.
 - `p_status`: `scheduled`, `active`, `completed` or `cancelled`. The daily job still moves scheduled batches to
   active and active ones to completed by date; it never touches a cancelled batch.
-- `p_join_url`: the live-class link (e.g. a recurring Zoom meeting) for **every upcoming class and office hour**
+- `p_join_url`: the live-class link (e.g. a recurring Jitsi meeting) for **every upcoming class and office hour**
   of the batch (not ended or cancelled). Must start with `https://`, at most 500 characters, no spaces. An empty
   string removes the links. Students still get a link only from 15 minutes before each class until it ends.
 
@@ -600,3 +600,4 @@ Sign-ins are in `server/demo-accounts.mjs`.
 Seat requests: Nia's and one other `new`, one `contacted` (with notes), one `closed`. Payments use placeholder
 references (`DEMO-BT-...`). Admins: `admin` (Nuvora Admin). Instructors: Elena teaches Maya's batches; Kofi the
 other three (including the earlier M.S. batch).
+

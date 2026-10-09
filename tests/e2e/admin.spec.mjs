@@ -255,12 +255,12 @@ test('create a batch, set its link and capacity, and assign an instructor', asyn
   await again.getByLabel('Live-class link for every upcoming class').fill('not a link');
   await again.getByRole('button', { name: 'Save changes' }).click();
   await expect(again.getByRole('alert')).toContainText('must start with https://');
-  await again.getByLabel('Live-class link for every upcoming class').fill('https://zoom.us/j/5550001111');
+  await again.getByLabel('Live-class link for every upcoming class').fill('https://Jitsi.us/j/5550001111');
   await again.getByRole('button', { name: 'Save changes' }).click();
   await expect(toastText(page)).toContainText(`${made.code} saved: 25 seats`);
   expect(await one(request, `select capacity from batches where id = $1`, [made.id])).toBe(25);
   const links = await sql(request, `select distinct join_url from sessions where batch_id = $1 and status not in ('ended','cancelled')`, [made.id]);
-  expect(links.map((r) => r.join_url)).toEqual(['https://zoom.us/j/5550001111']);
+  expect(links.map((r) => r.join_url)).toEqual(['https://Jitsi.us/j/5550001111']);
 
   // Unassigning asks first.
   await page.locator(`[data-batch="${made.id}"]`).getByRole('button', { name: 'Unassign' }).click();
@@ -456,3 +456,4 @@ test('admin pages fit a phone: tables become stacked cards and nothing runs off 
   }
   expect(errors).toEqual([]);
 });
+

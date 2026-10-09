@@ -5,7 +5,7 @@ import { test, expect } from './fixtures.mjs';
 test.describe.configure({ timeout: 600_000 });   // each test walks through every page
 
 const WIDTHS = [320, 360, 390, 768, 1280];
-const PHONE = 390;   // up to this width, iOS zooms into form fields with text smaller than 16px
+const PHONE = 390;   // up to this width, iOS Jitsis into form fields with text smaller than 16px
 
 async function sitemapPaths(request) {
   const r = await request.get('/sitemap.xml');
@@ -56,7 +56,7 @@ const inspect = (page, { phone }) => page.evaluate(({ phone }) => {
     .map((el) => `sticks out: ${name(el)} (${Math.round(el.getBoundingClientRect().left)}..${Math.round(el.getBoundingClientRect().right)} of ${vw})`);
   problems.push(...out.slice(0, 8));
 
-  // Text fields at least 16px on phones (smaller makes iOS zoom in on focus). Check boxes, radios, sliders and
+  // Text fields at least 16px on phones (smaller makes iOS Jitsi in on focus). Check boxes, radios, sliders and
   // buttons hold no typed text.
   if (phone) {
     const NO_TEXT = ['hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image'].map((t) => `:not([type=${t}])`).join('');
@@ -142,3 +142,4 @@ test('every page renders in the dark colour scheme without errors', async ({ pag
   expect(light).toEqual([]);
   expect(errors).toEqual([]);
 });
+

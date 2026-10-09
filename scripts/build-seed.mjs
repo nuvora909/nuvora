@@ -1,4 +1,4 @@
-﻿// Builds supabase/seed.sql from scripts/catalog.mjs: programs (with the tuition per term), their terms, one module of four lessons per
+// Builds supabase/seed.sql from scripts/catalog.mjs: programs (with the tuition per term), their terms, one module of four lessons per
 // term, the live-class pattern of every term and its three graded projects; plus the career roles and the
 // skills each uses from the website's data (web/data), for the portal's goals and competency gaps.
 import { writeFileSync } from 'node:fs';
@@ -49,8 +49,8 @@ for (const p of PROGRAMS) {
   TERMS[p.id].forEach((t, ti) => {
     for (let w = 1; w <= L.weeks; w++) {
       const lesson = t.lessons[Math.min(t.lessons.length - 1, Math.floor(((w - 1) * t.lessons.length) / L.weeks))][1];
-      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.classDay}, ${q(L.classTime)}, ${L.classMinutes}, ${q(`Live class Â· Week ${w} Â· ${lesson}`)})`);
-      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.officeDay}, ${q(L.officeTime)}, ${L.officeMinutes}, ${q(`Office hours Â· Week ${w}`)})`);
+      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.classDay}, ${q(L.classTime)}, ${L.classMinutes}, ${q(`Live class · Week ${w} · ${lesson}`)})`);
+      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.officeDay}, ${q(L.officeTime)}, ${L.officeMinutes}, ${q(`Office hours · Week ${w}`)})`);
     }
   });
 }
@@ -86,6 +86,6 @@ out.push(roleIds.flatMap((id) => ROLES[id].skills.map(([skill, code], i) => `  (
 out.push('insert into public.program_roles (program_id, role_id, position) values');
 out.push(WEB_PROGRAMS.flatMap((p) => p.roles.map((role, i) => `  (${q(p.id)}, ${q(role)}, ${i + 1})`)).join(',\n') + ';', '');
 
-writeFileSync(new URL('../supabase/seed.sql', import.meta.url), out.join('\n'));
+  writeFileSync(new URL('../supabase/seed.sql', import.meta.url), out.join('\n'), { encoding: 'utf8' });
 const terms = PROGRAMS.reduce((n, p) => n + TERMS[p.id].length, 0);
 console.log(`seed.sql written: ${PROGRAMS.length} programs, ${terms} terms, ${sessionRows.length} session templates, ${projectRows.length} projects`);

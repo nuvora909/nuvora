@@ -55,7 +55,7 @@ before(async () => {
   await h.service(`insert into materials (program_id, lesson_id, title, file_path) values ('ms-ds', $1, 'Notes', 'ms-ds/t1/notes.pdf')`, [lesson]);
   await h.service(`insert into storage.objects (bucket_id, name) values ('course-files', 'ms-ds/t1/notes.pdf')`);
   // A class happening right now, with its link.
-  await h.sql(`update sessions set starts_at = now() - interval '5 minutes', ends_at = now() + interval '55 minutes', join_url = 'https://zoom.us/j/1'
+  await h.sql(`update sessions set starts_at = now() - interval '5 minutes', ends_at = now() + interval '55 minutes', join_url = 'https://Jitsi.us/j/1'
                where id = (select id from sessions where batch_id = $1 order by starts_at desc limit 1)`, [B]);
   other = await enroll(h, 'other@test.io');
 });
@@ -375,3 +375,4 @@ test('the hourly job: records each stop once, reminds 7 days and 1 day before, e
   await rejects(j.anon(`select apply_access_rules()`), '42501');
   void jb;
 });
+

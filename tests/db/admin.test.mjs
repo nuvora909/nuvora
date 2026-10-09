@@ -186,17 +186,17 @@ test('batches: list with seats and instructors; update capacity, status and the 
   await rejects(upd({ capacity: 4 }), '5 students already hold seats');
   await rejects(upd({ capacity: 501 }), 'between 1 and 500');
   await rejects(upd({ status: 'running' }), 'Invalid status');
-  for (const url of ['http://zoom.us/j/1', 'https://zoom.us/j/1 2', 'zoom.us/j/1', `https://${'a'.repeat(500)}`]) await rejects(upd({ url }), 'Join links');
+  for (const url of ['http://Jitsi.us/j/1', 'https://Jitsi.us/j/1 2', 'Jitsi.us/j/1', `https://${'a'.repeat(500)}`]) await rejects(upd({ url }), 'Join links');
   await rejects(ask(`select admin_update_batch(gen_random_uuid(), 10)`), 'Unknown batch');
 
   // A class starting in 5 minutes: students get the link only inside the window, by the server's clock.
   const live = await h.one(h.sql, `select id from sessions where batch_id = $1 and starts_at > now() order by starts_at limit 1`, [B]);
   await h.sql(`update sessions set starts_at = now() + interval '5 minutes', ends_at = now() + interval '65 minutes' where id = $1`, [live]);
-  const u = await upd({ capacity: 40, url: ' https://zoom.us/j/123456789?pwd=abc ' });
+  const u = await upd({ capacity: 40, url: ' https://Jitsi.us/j/123456789?pwd=abc ' });
   assert.deepEqual([u.capacity, u.seats_left, u.sessions.upcoming_with_link === u.sessions.upcoming, u.next_session.join_url],
-                   [40, 35, true, 'https://zoom.us/j/123456789?pwd=abc']);
+                   [40, 35, true, 'https://Jitsi.us/j/123456789?pwd=abc']);
   const mine = await h.one(h.as(S.maya.id), `select my_sessions($1)`, [B]);
-  assert.deepEqual(mine.filter((s) => s.join_url).map((s) => [s.id, s.join_url]), [[live, 'https://zoom.us/j/123456789?pwd=abc']]);
+  assert.deepEqual(mine.filter((s) => s.join_url).map((s) => [s.id, s.join_url]), [[live, 'https://Jitsi.us/j/123456789?pwd=abc']]);
   assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1 and ends_at < now() and join_url is not null`, [B]), 0,
                'past classes are not changed');
   const a = await lastAudit();
@@ -352,3 +352,4 @@ test('audit log: one entry for every change, none for reading; admins only; pagi
   await rejects(ask(`update admin_audit set action = 'x'`), '42501');
   await rejects(ask(`delete from admin_audit`), '42501');
 });
+

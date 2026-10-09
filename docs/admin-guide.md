@@ -151,7 +151,7 @@ New batches for every program are created automatically each month, on the first
 3. Press **Create batch**. The new batch appears in the list below.
 
 To change a batch, open **Edit capacity, status or live-class link** on its card: change the number of seats,
-the status, or paste the Zoom (or other) link for its live classes, then **Save changes**. The link is used for
+the status, or paste the Jitsi (or other) link for its live classes, then **Save changes**. The link is used for
 every upcoming class of that batch. Students see it only from 15 minutes before each class until it ends.
 
 ### Assign an instructor
@@ -213,3 +213,4 @@ gets a notification for each new one).
 | Card payments | Razorpay, connected in Phase 4. Until then, record payments by hand (above). |
 | Raw database tables | The Supabase dashboard's **Table Editor**, after go-live. Prefer the admin area: it checks every change and writes the audit log; the Table Editor does neither. |
 | Scheduled jobs (the hourly access check, class reminders) | Set up once on hosted Supabase; the exact lines are in `docs/admin-api.md`. |
+

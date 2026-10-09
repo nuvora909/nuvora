@@ -1,4 +1,4 @@
-﻿// Reusable page sections. Each returns html``; behaviour is added by the browser modules in web/assets/js.
+// Reusable page sections. Each returns html``; behaviour is added by the browser modules in web/assets/js.
 import { html, raw, accent } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
 import { liveDate } from './layout.mjs';
@@ -25,8 +25,8 @@ export const photo = (key, { cls = 'photo', eager = false, label = true } = {}) 
 
 // The Nuvora ring mark, small, for the brand row of a program card.
 const mark = () => raw('<svg class="ccard-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle class="r" cx="19" cy="23" r="13.5"/><circle class="d" cx="34" cy="7" r="4.5"/></svg>');
-const LEVEL_SHORT = { Certificate: 'Certificate', Bachelor: 'Bachelorâ€™s-level', Master: 'Masterâ€™s-level' };
-const needs = (p) => (p.needsBachelor ? 'Bachelorâ€™s degree to join' : p.requiresCoding ? 'Python to start' : 'No coding to start');
+const LEVEL_SHORT = { Certificate: 'Certificate', Bachelor: 'Bachelor’s-level', Master: 'Master’s-level' };
+const needs = (p) => (p.needsBachelor ? 'Bachelor’s degree to join' : p.requiresCoding ? 'Python to start' : 'No coding to start');
 
 // A program card with its portrait vector brochure art, brand row, title, meta line and two true chips that tell
 // programs apart (the credential is the same for every program, so it is shown on program pages and certificates).
@@ -55,7 +55,7 @@ export const programCard = (p) => html`
     <p class="ccard-brochure">
       <button class="btn ghost" data-brochure-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="Request the ${p.name} brochure">Brochure</button>
     </p>
-    <p class="ccard-meta"><span>${p.duration}</span> Â· <span>${p.weeklyHours} hrs/week</span></p>
+    <p class="ccard-meta"><span>${p.duration}</span> · <span>${p.weeklyHours} hrs/week</span></p>
     <ul class="ccard-chips">
       <li class="c1">Live twice a week</li><li>${needs(p)}</li>
     </ul>
@@ -107,7 +107,7 @@ const certCard = (p, cls = '') => html`
     <span class="certcard-wm">${wordmark()}</span>
     <span class="certcard-kind">Certificate of completion</span>
     <span class="certcard-title">${p.name}</span>
-    <span class="certcard-sign">${signature()}<span>Issued by Nuvora Â· not an accredited degree</span></span>
+    <span class="certcard-sign">${signature()}<span>Issued by Nuvora · not an accredited degree</span></span>
   </div>
   <span class="certcard-ribbon">${seal()}</span>
 </div>`;
@@ -126,13 +126,13 @@ export const industryCerts = () => html`
 <div class="indcerts">
   <div class="indcerts-head">
     <h3>Industry certifications to aim for <span class="serif">next</span></h3>
-    <p>Certifications from leading technology companies whose official exam topics overlap what a Nuvora program teaches. Each name and its exam areas were checked on the companyâ€™s official page on ${CHECKED_ON}.</p>
+    <p>Certifications from leading technology companies whose official exam topics overlap what a Nuvora program teaches. Each name and its exam areas were checked on the company’s official page on ${CHECKED_ON}.</p>
   </div>
   <div class="indcerts-grid">${PROGRAMS.map((p) => html`
     <div class="indcert">
       <h4><a href="${p.url}#credential">${p.short}</a></h4>
       <p class="indcert-k">Topics overlap with</p>
-      <ul>${certsFor(p.id).map((c) => html`<li><b>${c.name}</b><span>${c.vendor}${c.exam ? ` Â· exam ${c.exam}` : ''}</span></li>`)}</ul>
+      <ul>${certsFor(p.id).map((c) => html`<li><b>${c.name}</b><span>${c.vendor}${c.exam ? ` · exam ${c.exam}` : ''}</span></li>`)}</ul>
     </div>`)}</div>
   <p class="note indcerts-note">${CERT_DISCLAIMER}</p>
 </div>`;
@@ -141,10 +141,10 @@ export const industryCerts = () => html`
 export const programCerts = (p) => html`
 <div class="indcerts one">
   <h3>Industry certifications to aim for <span class="serif">next</span></h3>
-  <p class="muted">Certifications from leading technology companies whose official exam topics overlap this program. Checked on each companyâ€™s official page on ${CHECKED_ON}.</p>
+  <p class="muted">Certifications from leading technology companies whose official exam topics overlap this program. Checked on each company’s official page on ${CHECKED_ON}.</p>
   <ul class="indlist">${certsFor(p.id).map((c) => html`
     <li class="indrow">
-      <p class="indrow-name"><b>${c.name}</b><span>${c.vendor}${c.exam ? ` Â· exam ${c.exam}` : ''}</span></p>
+      <p class="indrow-name"><b>${c.name}</b><span>${c.vendor}${c.exam ? ` · exam ${c.exam}` : ''}</span></p>
       <p><span class="indrow-k">Topics overlap with</span> ${c.lessons.map((code, i) => html`${i ? ', ' : ''}<span class="mono">${code}</span> ${lessonTitle(p, code)}`)}.</p>
       <p class="indrow-areas">${c.summarised ? 'Exam areas (summarised)' : 'Official exam areas'}: ${c.overlapAreas.join('; ')}.</p>
       ${c.status && html`<p class="indrow-status">${icon('info')}<span>${c.status}</span></p>`}
@@ -163,7 +163,7 @@ export const proofSection = () => html`
         <h2 id="proof-title">${accent('Turn your learning into *proof*')}</h2>
         <p class="lede">When you complete your program, Nuvora issues a ${CREDENTIAL.short} for it. It is not an accredited degree: its weight comes from the graded projects behind it, which you can show to anyone.</p>
         <ul class="proof-list">
-          <li>${icon('check')}<span><b>On your rÃ©sumÃ©:</b> list it under Certifications as â€œNuvora certificate of completionâ€ with the program name and year, and link two or three of your graded projects.</span></li>
+          <li>${icon('check')}<span><b>On your résumé:</b> list it under Certifications as “Nuvora certificate of completion” with the program name and year, and link two or three of your graded projects.</span></li>
           <li>${icon('check')}<span><b>On LinkedIn:</b> add it under Licenses &amp; certifications, with Nuvora as the issuing organization.</span></li>
           <li>${icon('check')}<span><b>Describe it plainly:</b> a certificate of completion from an online school, not a degree and not a vendor certification.</span></li>
         </ul>
@@ -176,7 +176,7 @@ export const proofSection = () => html`
 
 // ---------------------------------------------------------------- careers
 
-// "Where can this take you?" â€” interactive career ladders.
+// "Where can this take you?" — interactive career ladders.
 const STEP_ICONS = ['chart', 'target', 'spark', 'rocket'];
 export function careerLadder() {
   const tracks = Object.entries(TRACKS);
@@ -193,7 +193,7 @@ export function careerLadder() {
         const title = n === t.steps.length - 1 && t.last ? t.last : r.title;
         return html`<li class="lstep"><button type="button" aria-expanded="${n === 0 ? 'true' : 'false'}" aria-controls="ld-${id}-${rid}" data-step>
           <span class="dot"><span class="n">${n + 1}</span>${icon(STEP_ICONS[n])}</span>
-          <span class="txt"><span class="lt">${title}</span><span class="ls">${r.skills.slice(0, 2).map(([s]) => s).join(' Â· ')}</span></span></button></li>`;
+          <span class="txt"><span class="lt">${title}</span><span class="ls">${r.skills.slice(0, 2).map(([s]) => s).join(' · ')}</span></span></button></li>`;
       })}
     </ol>
     ${t.steps.map((rid, n) => roleDetail(`ld-${id}-${rid}`, rid, n === 0))}
@@ -224,7 +224,7 @@ export const roleDetail = (domId, rid, open = false) => {
     <span class="eyebrow">Programs for this role</span>
     <div class="progs">${r.programs.map((id) => html`<a class="has-k" href="${P(id).url}"><span>${P(id).name}</span><span class="k">${covered(P(id))}</span></a>`)}</div>
     <span class="eyebrow">Common tools in this role</span>
-    <p class="muted">${r.tools.join(' Â· ')}</p>
+    <p class="muted">${r.tools.join(' · ')}</p>
   </div>
 </div>`;
 };
@@ -249,8 +249,8 @@ export const factsBand = () => html`
 // The live schedule with the visitor's local time filled in by the browser.
 export const schedule = () => html`
 <div class="schedule">
-  <div class="sched">${icon('live')}<b>Live class Â· ${SCHEDULE.classDay}s</b><span>${SCHEDULE.classTime} US time Â· ${SCHEDULE.classMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.classDayNo}|${SCHEDULE.classTime}"></span></div>
-  <div class="sched">${icon('users')}<b>Office hours Â· ${SCHEDULE.officeDay}s</b><span>${SCHEDULE.officeTime} US time Â· ${SCHEDULE.officeMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.officeDayNo}|${SCHEDULE.officeTime}"></span></div>
+  <div class="sched">${icon('live')}<b>Live class · ${SCHEDULE.classDay}s</b><span>${SCHEDULE.classTime} US time · ${SCHEDULE.classMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.classDayNo}|${SCHEDULE.classTime}"></span></div>
+  <div class="sched">${icon('users')}<b>Office hours · ${SCHEDULE.officeDay}s</b><span>${SCHEDULE.officeTime} US time · ${SCHEDULE.officeMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.officeDayNo}|${SCHEDULE.officeTime}"></span></div>
   <div class="sched">${icon('video')}<b>Lessons and recordings</b><span>Watch lessons any time. Sessions are recorded and stream in the portal; videos are never downloadable.</span></div>
   <div class="sched">${icon('doc')}<b>PDF notes and briefs</b><span>Lesson notes, exercise sheets and project briefs download as PDFs to keep.</span></div>
 </div>`;
@@ -258,8 +258,8 @@ export const schedule = () => html`
 export const weekView = () => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const cell = (d) => {
-    if (d === 'Tue') return html`<div class="live"><b>${d}</b><strong>Live class</strong><span>${SCHEDULE.classTime} IST Â· ${SCHEDULE.classMinutes} min</span></div>`;
-    if (d === 'Thu') return html`<div class="live"><b>${d}</b><strong>Office hours</strong><span>${SCHEDULE.officeTime} IST Â· ${SCHEDULE.officeMinutes} min</span></div>`;
+    if (d === 'Tue') return html`<div class="live"><b>${d}</b><strong>Live class</strong><span>${SCHEDULE.classTime} US time · ${SCHEDULE.classMinutes} min</span></div>`;
+    if (d === 'Thu') return html`<div class="live"><b>${d}</b><strong>Office hours</strong><span>${SCHEDULE.officeTime} US time · ${SCHEDULE.officeMinutes} min</span></div>`;
     return html`<div class="${d === 'Sat' || d === 'Sun' ? 'rest' : ''}"><b>${d}</b><span>Lessons and project work, at your own time</span></div>`;
   };
   return html`<div class="week" aria-label="A typical week">${days.map(cell)}</div>`;
@@ -279,7 +279,7 @@ export const ctaBand = ({ title = 'Ready to find your *next step*?', program } =
 <section class="sec tight"><div class="wrap">
   <div class="ctaband rv" data-test="next-batch-cta">
     <div><h2>${accent(title)}</h2>
-      <p class="dates">Next start ${liveDate('start', 0)} Â· seat requests close ${liveDate('applyBy', 0)}. Batches start on the first Monday of every month.</p></div>
+      <p class="dates">Next start ${liveDate('start', 0)} · seat requests close ${liveDate('applyBy', 0)}. Batches start on the first Monday of every month.</p></div>
     <div class="row">
       <a class="btn gold" href="/find-your-program/" data-cta="band-find">Find my program ${icon('arrow')}</a>
       <a class="btn ghost" href="/admissions/${program ? `?program=${program.id}` : ''}#request" data-cta="band-request">Request a seat</a>
@@ -296,7 +296,7 @@ export const foundingPanel = () => html`
     <a class="link" href="/about/#outcomes">How we will report results ${icon('arrow')}</a>
   </div>
   <ul>
-    <li>${icon('check')}<span>Live Jitsi class on ${SCHEDULE.classDay}s and office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} IST, every week of the term.</span></li>
+    <li>${icon('check')}<span>Live Jitsi class on ${SCHEDULE.classDay}s and office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} US time, every week of the term.</span></li>
     <li>${icon('check')}<span>Every project graded by an instructor on a four-level rubric, with written feedback and resubmission.</span></li>
     <li>${icon('check')}<span>Lessons streamed in the portal, with downloadable PDF notes and briefs.</span></li>
     <li>${icon('check')}<span>After each batch: completion and pass rates, with how they were measured and how many learners they cover.</span></li>

@@ -113,7 +113,7 @@ export function footer({ social = OWNER.social } = {}) {
       </div>`)}
     </nav>
     <div class="sitefoot-bar">
-      <p class="sitefoot-legal"><span>Â© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span>Nuvora certificate of completion Â· not an accredited degree</span></p>
+      <p class="sitefoot-legal"><span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span> certificate of completion · not an accredited degree</span></p>
       ${links.length ? html`<ul class="sitefoot-social">${links.map(([k, name, url]) => html`
         <li><a href="${url}" rel="noopener noreferrer me" aria-label="Nuvora on ${name}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${SOCIAL[k][1]}"/></svg></a></li>`)}</ul>` : ''}
     </div>
@@ -124,7 +124,7 @@ export function footer({ social = OWNER.social } = {}) {
 // The advisor answers from the published catalog unless an AI model is connected, so its labels start honest;
 // site.js switches to the AI labels only when a model is present.
 const advisor = () => html`
-<button class="advisor-pill" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-label>Ask Nuvora</span><span class="more" data-advisor-more>Â· catalog answers</span></button>
+<button class="advisor-pill" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-label>Ask Nuvora</span><span class="more" data-advisor-more>· catalog answers</span></button>
 <button class="askbar-m" type="button" data-advisor-open hidden aria-haspopup="dialog">${icon('spark')}<span data-advisor-mlabel>Ask Nuvora</span></button>`;
 
 // The logo intro: a white overlay that plays the wordmark once per visit (web/assets/css/intro.css). Decorative and

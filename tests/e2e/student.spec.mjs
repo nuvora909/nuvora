@@ -126,7 +126,7 @@ test('lesson player has no video file to download', async ({ page, request }) =>
   expect(media).toEqual([]);
 });
 
-test('the Join button appears 15 minutes before class, with the batch\'s Zoom link', async ({ page, request }) => {
+test('the Join button appears 15 minutes before class, with the batch\'s Jitsi link', async ({ page, request }) => {
   const next = (await sql(request, `select id, join_url from sessions where batch_id = $1 and starts_at > now() order by starts_at limit 1`, [demo.batch.current]))[0];
   await loginAs(page, 'student');
   await page.locator('[data-nav="live"]').click();
@@ -270,3 +270,4 @@ test('PDF access ends the moment an enrollment is paused, and never crosses prog
   });
   expect(status).toBe(400);
 });
+

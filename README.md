@@ -21,7 +21,7 @@ Online Data Science and AI/ML school: public website, student portal, database a
 - A new batch of every active program starts on the **first Monday of each month**. Applications close 7 days before.
 - Creating a batch copies the program's templates into dated classes (Tuesday live class and Thursday office hours at 19:00 India time, for 12 weeks) and assignment due dates.
 - A student sees a batch only while their enrollment in it is **active** and the access rule below lets them in. Pausing, withdrawing, transferring or stopping access changes what they see immediately.
-- Zoom links are handed out only from 15 minutes before a class until it ends, judged by the server's clock.
+- Jitsi links are handed out only from 15 minutes before a class until it ends, judged by the server's clock.
 - Watch time counts only the parts of a video actually played. A lesson counts as complete at 90%.
 - **Videos are never downloadable.** Lesson and assessment **PDFs are**: they sit in a private, PDF-only storage bucket, and each download uses a link that works for 60 seconds, issued only to students enrolled in that program and term.
 - Assignments use a mastery rubric. *Distinguished* or *Proficient* passes; *Basic* or *Not yet* asks for a resubmission.

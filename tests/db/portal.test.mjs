@@ -1,4 +1,4 @@
-// Portal pages: every read is limited to the caller's own batch, Zoom links unlock only near class time,
+// Portal pages: every read is limited to the caller's own batch, Jitsi links unlock only near class time,
 // and staff pages show only the batches a person teaches.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,7 +24,7 @@ before(async () => {
   await h.service(`select enroll_student($1, 'ms-ds', '2026-10-05')`, [d]);
   await h.as(admin)(`select admin_assign_staff($1, $2)`, [oct, iOct]);
   await h.as(admin)(`select admin_assign_staff($1, $2)`, [nov, iNov]);
-  await h.sql(`update sessions set join_url = 'https://zoom.us/j/' || substr(md5(id::text), 1, 10)`);
+  await h.sql(`update sessions set join_url = 'https://Jitsi.us/j/' || substr(md5(id::text), 1, 10)`);
   lessons = (await h.sql(`select l.id from lessons l join modules m on m.id = l.module_id
                           where m.program_id = 'bs-aiml' and m.term_no = 1 order by l.position`)).rows.map((r) => r.id);
   octSessions = (await h.sql(`select id from sessions where batch_id = $1 order by starts_at`, [oct])).rows.map((r) => r.id);
@@ -84,7 +84,7 @@ test('lesson page knows its neighbours and whether progress is tracked', async (
   await rejects(h.as(iNone)(`select my_lesson($1)`, [lessons[0]]), 'Lesson not found');
 });
 
-test('Zoom links appear only from 15 minutes before a class until it ends', async () => {
+test('Jitsi links appear only from 15 minutes before a class until it ends', async () => {
   const [s1, s2, s3, s4] = octSessions;
   await startIn(s1, 10);    // opens in -5 min: joinable
   await startIn(s2, 20);    // too early
@@ -92,7 +92,7 @@ test('Zoom links appear only from 15 minutes before a class until it ends', asyn
   await h.sql(`update sessions set starts_at = now() - interval '3 hours', ends_at = now() - interval '2 hours' where id = $1`, [s4]);
   const list = await h.one(h.as(a), `select my_sessions($1)`, [oct]);
   const by = Object.fromEntries(list.map((s) => [s.id, s]));
-  assert.match(by[s1].join_url, /^https:\/\/zoom\.us\/j\//);
+  assert.match(by[s1].join_url, /^https:\/\/Jitsi\.us\/j\//);
   assert.equal(by[s1].phase, 'upcoming');
   assert.equal(by[s2].join_url, null);
   assert.equal(by[s3].phase, 'live');
@@ -219,3 +219,4 @@ test('signed-out visitors cannot call any portal function', async () => {
     await rejects(h.anon(`select ${call}`), '42501');
   }
 });
+

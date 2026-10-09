@@ -1,6 +1,6 @@
 // The student home (my_home): learning path, streak, achievements and badges, competency gaps for a goal,
 // the next best action and today's targets. Everything comes from verified learning events and only the
-// caller's own data; time-gated things (Zoom links) follow the real clock, never the caller's p_now.
+// caller's own data; time-gated things (Jitsi links) follow the real clock, never the caller's p_now.
 // Fixed dates: the batch below ran March-May 2026 (India time, +05:30).
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -319,18 +319,19 @@ test('my_home: the caller\'s own data only, for batches they may open', async ()
   await rejects(h.as(b)(`select my_home($1)`, [mar]), 'Batch not found');
 });
 
-test('a made-up p_now never unlocks a Zoom link on the home page', async () => {
+test('a made-up p_now never unlocks a Jitsi link on the home page', async () => {
   const u = await h.user('clock@test.io');
   const live = await h.one(h.service, `select create_batch('bs-ds', '2026-03-02')`);
   await h.service(`select enroll_student($1, 'bs-ds', '2026-03-02')`, [u]);
   const [soon, later] = (await h.sql(`select id from sessions where batch_id = $1 order by starts_at limit 2`, [live])).rows.map((r) => r.id);
-  await h.sql(`update sessions set join_url = 'https://zoom.us/j/' || substr(md5(id::text), 1, 10) where batch_id = $1`, [live]);
+  await h.sql(`update sessions set join_url = 'https://Jitsi.us/j/' || substr(md5(id::text), 1, 10) where batch_id = $1`, [live]);
   await h.sql(`update sessions set starts_at = now() + interval '10 minutes', ends_at = now() + interval '70 minutes' where id = $1`, [soon]);
   await h.sql(`update sessions set starts_at = now() + interval '3 hours', ends_at = now() + interval '4 hours' where id = $1`, [later]);
   const open = await h.one(h.as(u), `select my_home($1)`, [live]);
-  assert.match(open.batch.next_sessions.find((s) => s.id === soon).join_url, /^https:\/\/zoom\.us\/j\//, 'opens 15 minutes before, by the real clock');
+  assert.match(open.batch.next_sessions.find((s) => s.id === soon).join_url, /^https:\/\/Jitsi\.us\/j\//, 'opens 15 minutes before, by the real clock');
   const faked = await h.one(h.as(u), `select my_home($1, now() + interval '3 hours 5 minutes')`, [live]);
   assert.ok(faked.batch.next_sessions.some((s) => s.id === later), 'the later class is listed');
   assert.equal(faked.batch.next_sessions.find((s) => s.id === later).join_url, null);
-  assert.doesNotMatch(JSON.stringify(faked), /zoom\.us/, 'no link anywhere in the reply');
+  assert.doesNotMatch(JSON.stringify(faked), /Jitsi\.us/, 'no link anywhere in the reply');
 });
+

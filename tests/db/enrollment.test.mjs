@@ -46,7 +46,7 @@ test('admins enroll by email; unknown emails are reported clearly', async () => 
   await rejects(h.as(admin)(`select admin_enroll('nobody@test.io', 'ms-aml', '2026-11-02')`), 'No account');
 });
 
-test('Zoom attendance is recorded for enrolled students only and adds up across rejoins', async () => {
+test('Jitsi attendance is recorded for enrolled students only and adds up across rejoins', async () => {
   const h = await freshDb();
   const bid = await h.one(h.service, `select create_batch('bs-aiml', '2026-10-05')`);
   const inBatch = await h.user('in@test.io');
@@ -96,3 +96,4 @@ test('inactive students are flagged to staff, never visible to students', async 
   assert.equal(flagged[0].days_inactive, 24);
   await rejects(h.as(quiet)(`select * from staff_at_risk()`), 'Staff only');
 });
+

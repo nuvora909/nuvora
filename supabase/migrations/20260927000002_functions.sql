@@ -413,7 +413,7 @@ begin
 end $$;
 
 -- ============================================================================
--- Live classes: attendance and recordings (internal: Zoom webhook handler calls these)
+-- Live classes: attendance and recordings (internal: Jitsi webhook handler calls these)
 -- ============================================================================
 create function public.record_attendance(p_session uuid, p_email text, p_joined timestamptz, p_left timestamptz)
 returns boolean
@@ -582,4 +582,6 @@ grant execute on function
   public.attach_recording(uuid, text),
   public.queue_session_reminders(int, timestamptz)
   to service_role;
+
+
 
