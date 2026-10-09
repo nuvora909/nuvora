@@ -44,10 +44,6 @@ export const programCard = (p) => html`
     </div>
     <span class="ccard-3d-tag" aria-hidden="true">3D PROGRAM GUIDE</span>
     <span class="ccard-match" data-match-badge hidden><span class="chip gold">${icon('spark')} Your match</span></span>
-    <!-- AR Enhancement: AR preview button -->
-    <button class="ar-preview-btn" data-program-id="${p.id}" aria-label="Preview ${p.name} in AR">
-      ${icon('cube')} AR Preview
-    </button>
   </div>
   <div class="ccard-body">
     <p class="ccard-brand">${mark()}<span class="ccard-org">Nuvora</span><span class="ccard-lvl">${LEVEL_SHORT[p.level]}</span></p>
