@@ -1,17 +1,9 @@
-function coverGlow(p) {
-  return "0";
-}
-function brochureCoverUrl(p) {
-  return "/images/brochure.jpg";
-}
-function brochureCoverAlt(p) {
-  return "Brochure cover";
-}
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, breadcrumbs, liveDate } from '../lib/layout.mjs';
 import { schedule, rubric, faqList, ctaBand, certFan, programCerts } from '../lib/components.mjs';
 import { course, breadcrumbList, faqPage } from '../lib/schema.mjs';
+import { coverGlow, brochureCoverUrl, brochureCoverAlt } from '../lib/covers.mjs';
 import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay } from '../data/programs.mjs';
 import { ROLES, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE } from '../data/site.mjs';

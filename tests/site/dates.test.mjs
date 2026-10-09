@@ -4,7 +4,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { freshDb } from '../db/helpers.mjs';
 import {
-  nextStarts, firstMonday, firstMondayOnOrAfter, termDates, todayInKolkata, weeklyTimeIn, applyByFor, isoDay, fromIso, fmtDay, TERM_WEEKS, TIMEZONE,
+  nextStarts, firstMonday, firstMondayOnOrAfter, termDates, todayInBatchZone, weeklyTimeIn, applyByFor, isoDay, fromIso, fmtDay, TERM_WEEKS, TIMEZONE,
 } from '../../web/assets/js/dates.mjs';
 import { PROGRAMS, LIVE_PATTERN } from '../../web/data/programs.mjs';
 
@@ -95,25 +95,27 @@ test('first Mondays across month and year ends', () => {
   assert.equal(fmtDay(fromIso('2027-01-04')), 'Jan 4, 2027');
 });
 
-test('today is the calendar date in India', () => {
-  assert.equal(TIMEZONE, 'Asia/Kolkata');
-  assert.equal(isoDay(todayInKolkata(new Date('2026-10-01T18:29:00Z'))), '2026-10-01', '23:59 IST');
-  assert.equal(isoDay(todayInKolkata(new Date('2026-10-01T18:30:00Z'))), '2026-10-02', '00:00 IST');
-  assert.equal(isoDay(todayInKolkata(new Date('2026-12-31T19:00:00Z'))), '2027-01-01', 'new year arrives in India first');
+test('today is the calendar date in the batch time zone (US Eastern)', () => {
+  assert.equal(TIMEZONE, 'America/New_York');
+  assert.equal(isoDay(todayInBatchZone(new Date('2026-10-02T03:59:00Z'))), '2026-10-01', '23:59 EDT');
+  assert.equal(isoDay(todayInBatchZone(new Date('2026-10-02T04:00:00Z'))), '2026-10-02', '00:00 EDT');
+  assert.equal(isoDay(todayInBatchZone(new Date('2027-01-01T04:59:00Z'))), '2026-12-31', 'still 31 December in New York (EST)');
+  assert.equal(isoDay(todayInBatchZone(new Date('2027-01-01T05:00:00Z'))), '2027-01-01', 'midnight EST');
 });
 
-test('the Tuesday 19:00 IST class in other time zones, on both sides of daylight saving', () => {
+test('the Tuesday 19:00 class (US Eastern time) in other time zones, on both sides of daylight saving', () => {
   const cases = [
     // [reference instant, zone, weekday, time, 24h hour, UTC instant of the class]
-    ['2026-07-01T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '6:30 AM', 6, '2026-07-07T13:30:00.000Z'],   // PDT, UTC-7
-    ['2026-12-01T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '5:30 AM', 5, '2026-12-01T13:30:00.000Z'],   // PST, UTC-8
-    ['2026-10-28T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '5:30 AM', 5, '2026-11-03T13:30:00.000Z'],   // DST ends 1 Nov in between
-    ['2026-07-01T12:00:00Z', 'Asia/Kolkata', 'Tuesday', '7:00 PM', 19, '2026-07-07T13:30:00.000Z'],
-    ['2026-12-01T12:00:00Z', 'Asia/Kolkata', 'Tuesday', '7:00 PM', 19, '2026-12-01T13:30:00.000Z'],
-    ['2026-07-01T12:00:00Z', 'Europe/London', 'Tuesday', '2:30 PM', 14, '2026-07-07T13:30:00.000Z'],
-    ['2026-12-01T12:00:00Z', 'Europe/London', 'Tuesday', '1:30 PM', 13, '2026-12-01T13:30:00.000Z'],
-    ['2026-07-01T12:00:00Z', 'Pacific/Auckland', 'Wednesday', '1:30 AM', 1, '2026-07-07T13:30:00.000Z'],
-    ['2026-12-01T12:00:00Z', 'Pacific/Auckland', 'Wednesday', '2:30 AM', 2, '2026-12-01T13:30:00.000Z'],
+    ['2026-07-01T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '4:00 PM', 16, '2026-07-07T23:00:00.000Z'],    // EDT and PDT
+    ['2026-12-01T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '4:00 PM', 16, '2026-12-02T00:00:00.000Z'],    // EST and PST
+    ['2026-10-28T12:00:00Z', 'America/Los_Angeles', 'Tuesday', '4:00 PM', 16, '2026-11-04T00:00:00.000Z'],    // DST ends 1 Nov in between
+    ['2026-07-01T12:00:00Z', 'Asia/Kolkata', 'Wednesday', '4:30 AM', 4, '2026-07-07T23:00:00.000Z'],
+    ['2026-12-01T12:00:00Z', 'Asia/Kolkata', 'Wednesday', '5:30 AM', 5, '2026-12-02T00:00:00.000Z'],          // US DST moves it, India does not
+    ['2026-07-01T12:00:00Z', 'Europe/London', 'Wednesday', '12:00 AM', 0, '2026-07-07T23:00:00.000Z'],
+    ['2026-12-01T12:00:00Z', 'Europe/London', 'Wednesday', '12:00 AM', 0, '2026-12-02T00:00:00.000Z'],
+    ['2026-07-01T12:00:00Z', 'Pacific/Auckland', 'Wednesday', '11:00 AM', 11, '2026-07-07T23:00:00.000Z'],
+    ['2026-12-01T12:00:00Z', 'Pacific/Auckland', 'Wednesday', '1:00 PM', 13, '2026-12-02T00:00:00.000Z'],
+    ['2026-07-01T12:00:00Z', 'America/New_York', 'Tuesday', '7:00 PM', 19, '2026-07-07T23:00:00.000Z'],
   ];
   for (const [ref, zone, weekday, time, hour24, utc] of cases) {
     const t = weeklyTimeIn(LIVE_PATTERN.classDay, LIVE_PATTERN.classTime, zone, new Date(ref));
@@ -122,7 +124,8 @@ test('the Tuesday 19:00 IST class in other time zones, on both sides of daylight
     assert.equal(t.hour24, hour24, `${zone} from ${ref}`);
     assert.equal(t.utc.toISOString(), utc, `${zone} from ${ref}`);
   }
-  // Thursday office hours, from a Wednesday evening in India.
+  // Thursday office hours, from a Wednesday morning in New York.
   const oh = weeklyTimeIn(LIVE_PATTERN.officeDay, LIVE_PATTERN.officeTime, 'America/New_York', new Date('2026-10-07T15:00:00Z'));
-  assert.deepEqual([oh.weekday, oh.time.replace(/ /g, ' '), oh.utc.toISOString()], ['Thursday', '9:30 AM', '2026-10-08T13:30:00.000Z']);
+  assert.deepEqual([oh.weekday, oh.time.replace(/ /g, ' '), oh.utc.toISOString()], ['Thursday', '7:00 PM', '2026-10-08T23:00:00.000Z']);
 });
+

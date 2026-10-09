@@ -145,7 +145,7 @@ function mount(form) {
     const term = termDates(fromIso(iso), 1)[0];
     const more = p && p.termCount > 1 ? ` The program continues term after term (${p.termCount} terms).` : '';
     const closes = new Date(term.start.getTime() - 7 * 86400000);
-    startHint.textContent = `Requests close ${fmtDay(closes)}. Term 1 runs ${fmtDay(term.start)} to ${fmtDay(term.end)}.${more} Dates are in US time (America/New_York).`;
+    startHint.textContent = `Requests close ${fmtDay(closes)}. Term 1 runs ${fmtDay(term.start)} to ${fmtDay(term.end)}.${more} Dates are in US Eastern Time (ET) (America/New_York).`;
   };
   showProgram();
   showStart();

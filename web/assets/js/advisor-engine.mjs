@@ -22,7 +22,7 @@ export function catalogText(C, today) {
   return [
     `Status: pre-launch. No batch has run yet: there are no graduates, reviews, ratings, completion rates, job placements, salary data or employer partners.`,
     `Credential: a Nuvora certificate of completion. Not an accredited degree; B.S./M.S. names describe level and scope. Nuvora credits describe workload and may not transfer. No transfer credit or test-outs.`,
-    `Format: each term is a 12-week batch starting on the first Monday of a month. Lessons on demand in the portal; live ${s.classMinutes}-minute class on ${s.classDay}s and ${s.officeMinutes}-minute office hours on ${s.officeDay}s at ${s.classTime} US time (America/New_York) on Jitsi, recorded. Videos stream only and are never downloadable; lesson notes and project briefs are downloadable PDFs.`,
+    `Format: each term is a 12-week batch starting on the first Monday of a month. Lessons on demand in the portal; live ${s.classMinutes}-minute class on ${s.classDay}s and ${s.officeMinutes}-minute office hours on ${s.officeDay}s at ${s.classTime} US Eastern Time (ET) (America/New_York) on Jitsi, recorded. Videos stream only and are never downloadable; lesson notes and project briefs are downloadable PDFs.`,
     `Assessment: 3 instructor-graded projects per term on a 4-level rubric (Distinguished, Proficient, Basic, Not yet). Proficient or better passes; otherwise written feedback and resubmission. A lesson completes at 90% watched.`,
     `Dates: next start ${fmtDay(next.start)} (seat requests close ${fmtDay(next.applyBy)}); then ${fmtDay(after.start)}. Requests close 7 days before a start.`,
     `Tuition: launch pricing in US dollars (USD), paid one term at a time, plus a one-time ${money(C.programs[0].tuition.applicationFee)} application fee. No loans or scholarships yet. Refund policy to be published before the first batch.`,
@@ -107,7 +107,7 @@ export function catalogAnswer(question, C, today) {
     out.push(`Batches start on the first Monday of every month. The next start is **${fmtDay(next.start)}**, and seat requests for it close on ${fmtDay(next.applyBy)}. [Start dates](/admissions/)`);
   }
   if (has(q, 'live')) {
-    out.push(`Each week has a live ${s.classMinutes}-minute class on **${s.classDay}s** and ${s.officeMinutes}-minute office hours on **${s.officeDay}s**, both at ${s.classTime} US time on Jitsi. Sessions are recorded, and lessons can be watched any time. [How it works](/how-it-works/)`);
+    out.push(`Each week has a live ${s.classMinutes}-minute class on **${s.classDay}s** and ${s.officeMinutes}-minute office hours on **${s.officeDay}s**, both at ${s.classTime} US Eastern Time (ET) on Jitsi. Sessions are recorded, and lessons can be watched any time. [How it works](/how-it-works/)`);
   }
   if (has(q, 'hours')) {
     if (p) out.push(`Plan for about **${p.weeklyHours} hours a week** for the ${p.name}.`);

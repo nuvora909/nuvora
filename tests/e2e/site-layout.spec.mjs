@@ -5,7 +5,7 @@ import { test, expect } from './fixtures.mjs';
 test.describe.configure({ timeout: 600_000 });   // each test walks through every page
 
 const WIDTHS = [320, 360, 390, 768, 1280];
-const PHONE = 390;   // up to this width, iOS Jitsis into form fields with text smaller than 16px
+const PHONE = 390;   // up to this width, iOS zooms into form fields with text smaller than 16px
 
 async function sitemapPaths(request) {
   const r = await request.get('/sitemap.xml');

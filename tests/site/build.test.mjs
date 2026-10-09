@@ -6,7 +6,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { buildForTest, missingPageModules, visibleText, decode, BANNED, unnegatedAccredited, ROOT } from './helpers.mjs';
 import { SITE, OWNER, SCHEDULE } from '../../web/data/site.mjs';
-import { PROGRAMS, TUITION, money, todayInKolkata } from '../../web/data/programs.mjs';
+import { PROGRAMS, TUITION, money, todayInBatchZone } from '../../web/data/programs.mjs';
 import { fromIso } from '../../web/assets/js/dates.mjs';
 import { ACCESS_RULE } from '../../web/assets/js/access-rule.mjs';
 
@@ -185,7 +185,7 @@ test('pages that show stock photos or clips say they are stock media', () => {
 });
 
 test('every Course offers the next real batch, on the India-time schedule, at the published tuition', () => {
-  const today = todayInKolkata();
+  const today = todayInBatchZone();
   const problems = [];
   const courses = [];
   for (const { path, html } of site.pages) {
@@ -209,7 +209,7 @@ test('every Course offers the next real batch, on the India-time schedule, at th
     const dates = [['CourseInstance.startDate', inst.startDate]];
     for (const [i, sched] of scheds.entries()) {
       if (sched['@type'] !== 'Schedule' || sched.repeatFrequency !== 'P1W') problems.push(`${path}: courseSchedule[${i}] is not a weekly Schedule`);
-      if (sched.scheduleTimezone !== 'Asia/Kolkata') problems.push(`${path}: courseSchedule[${i}].scheduleTimezone is ${sched.scheduleTimezone}`);
+      if (sched.scheduleTimezone !== 'America/New_York') problems.push(`${path}: courseSchedule[${i}].scheduleTimezone is ${sched.scheduleTimezone}`);
       if (sched.startDate !== inst.startDate || sched.endDate !== inst.endDate) problems.push(`${path}: courseSchedule[${i}] does not run with the batch`);
       dates.push([`courseSchedule[${i}].startDate`, sched.startDate]);
     }

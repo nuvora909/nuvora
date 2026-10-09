@@ -3,7 +3,7 @@
 import { test, expect } from './fixtures.mjs';
 import { reset, one } from './helpers.mjs';
 import { QUESTIONS, BACHELOR_Q } from '../../web/assets/js/match.mjs';
-import { nextStarts, todayInKolkata, weeklyTimeIn, termDates, fmtDay, isoDay, fromIso } from '../../web/assets/js/dates.mjs';
+import { nextStarts, todayInBatchZone, weeklyTimeIn, termDates, fmtDay, isoDay, fromIso } from '../../web/assets/js/dates.mjs';
 import { PROGRAMS, TUITION, money } from '../../web/data/programs.mjs';
 
 const P = (id) => PROGRAMS.find((p) => p.id === id);
@@ -89,7 +89,7 @@ test('the home page finder, below the certificates, gives an explained match and
   await expect(path.getByRole('heading', { level: 2 })).toHaveText(P('c-genai').name);
   const terms = path.locator('details.term');
   await expect(terms).toHaveCount(P('c-genai').termCount);
-  const start = nextStarts(1, todayInKolkata())[0].start;
+  const start = nextStarts(1, todayInBatchZone())[0].start;
   const [first] = termDates(start, 1);
   await expect(terms.first().locator('time').first()).toHaveAttribute('datetime', isoDay(first.start));
   await expect(terms.first()).toContainText(fmtDay(first.end));
@@ -237,7 +237,7 @@ test('clean URLs: /programs redirects to /programs/', async ({ request }) => {
 });
 
 test('program key facts show the next start and an apply-by date 7 days earlier', async ({ page }) => {
-  const [next] = nextStarts(1, todayInKolkata());
+  const [next] = nextStarts(1, todayInBatchZone());
   for (const p of [P('bs-ds'), P('c-genai')]) {
     await page.goto(p.url);
     const facts = page.locator('[data-test=key-facts]');

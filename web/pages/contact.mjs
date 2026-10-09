@@ -52,7 +52,7 @@ const channels = () => html`
         <span class="abt-ico">${icon('cap')}</span>
         <h3 id="ch-portal">Current students: the student portal</h3>
         <p>Once you are enrolled, your course runs in the portal: lessons, PDF materials, live session links, project submissions, grades and written feedback, and notifications.</p>
-        <p>For questions about your coursework, ask in the live class on ${SCHEDULE.classDay}s or at office hours on ${SCHEDULE.officeDay}s, both at ${SCHEDULE.classTime} US time on Jitsi.</p>
+        <p>For questions about your coursework, ask in the live class on ${SCHEDULE.classDay}s or at office hours on ${SCHEDULE.officeDay}s, both at ${SCHEDULE.classTime} US Eastern Time (ET) on Jitsi.</p>
         <div class="row"><a class="btn ghost" href="/portal/">Student login ${icon('arrow')}</a></div>
       </article>
       <div class="abt-quick">

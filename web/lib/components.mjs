@@ -245,8 +245,8 @@ export const factsBand = () => html`
 // The live schedule with the visitor's local time filled in by the browser.
 export const schedule = () => html`
 <div class="schedule">
-  <div class="sched">${icon('live')}<b>Live class · ${SCHEDULE.classDay}s</b><span>${SCHEDULE.classTime} US time · ${SCHEDULE.classMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.classDayNo}|${SCHEDULE.classTime}"></span></div>
-  <div class="sched">${icon('users')}<b>Office hours · ${SCHEDULE.officeDay}s</b><span>${SCHEDULE.officeTime} US time · ${SCHEDULE.officeMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.officeDayNo}|${SCHEDULE.officeTime}"></span></div>
+  <div class="sched">${icon('live')}<b>Live class · ${SCHEDULE.classDay}s</b><span>${SCHEDULE.classTime} US Eastern Time (ET) · ${SCHEDULE.classMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.classDayNo}|${SCHEDULE.classTime}"></span></div>
+  <div class="sched">${icon('users')}<b>Office hours · ${SCHEDULE.officeDay}s</b><span>${SCHEDULE.officeTime} US Eastern Time (ET) · ${SCHEDULE.officeMinutes} minutes on Jitsi</span><span class="local" data-localtime="${SCHEDULE.officeDayNo}|${SCHEDULE.officeTime}"></span></div>
   <div class="sched">${icon('video')}<b>Lessons and recordings</b><span>Watch lessons any time. Sessions are recorded and stream in the portal; videos are never downloadable.</span></div>
   <div class="sched">${icon('doc')}<b>PDF notes and briefs</b><span>Lesson notes, exercise sheets and project briefs download as PDFs to keep.</span></div>
 </div>`;
@@ -254,8 +254,8 @@ export const schedule = () => html`
 export const weekView = () => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const cell = (d) => {
-    if (d === 'Tue') return html`<div class="live"><b>${d}</b><strong>Live class</strong><span>${SCHEDULE.classTime} US time · ${SCHEDULE.classMinutes} min</span></div>`;
-    if (d === 'Thu') return html`<div class="live"><b>${d}</b><strong>Office hours</strong><span>${SCHEDULE.officeTime} US time · ${SCHEDULE.officeMinutes} min</span></div>`;
+    if (d === 'Tue') return html`<div class="live"><b>${d}</b><strong>Live class</strong><span>${SCHEDULE.classTime} ET · ${SCHEDULE.classMinutes} min</span></div>`;
+    if (d === 'Thu') return html`<div class="live"><b>${d}</b><strong>Office hours</strong><span>${SCHEDULE.officeTime} ET · ${SCHEDULE.officeMinutes} min</span></div>`;
     return html`<div class="${d === 'Sat' || d === 'Sun' ? 'rest' : ''}"><b>${d}</b><span>Lessons and project work, at your own time</span></div>`;
   };
   return html`<div class="week" aria-label="A typical week">${days.map(cell)}</div>`;
@@ -292,7 +292,7 @@ export const foundingPanel = () => html`
     <a class="link" href="/about/#outcomes">How we will report results ${icon('arrow')}</a>
   </div>
   <ul>
-    <li>${icon('check')}<span>Live Jitsi class on ${SCHEDULE.classDay}s and office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} US time, every week of the term.</span></li>
+    <li>${icon('check')}<span>Live Jitsi class on ${SCHEDULE.classDay}s and office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} US Eastern Time (ET), every week of the term.</span></li>
     <li>${icon('check')}<span>Every project graded by an instructor on a four-level rubric, with written feedback and resubmission.</span></li>
     <li>${icon('check')}<span>Lessons streamed in the portal, with downloadable PDF notes and briefs.</span></li>
     <li>${icon('check')}<span>After each batch: completion and pass rates, with how they were measured and how many learners they cover.</span></li>

@@ -1,6 +1,6 @@
 // How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
 // assessment, the credential and support. Every fact comes from the data modules; nothing here describes
-// outcomes. Features are described as current only when they exUS time in the portal today; anything still being set
+// outcomes. Features are described as current only when they exist in the portal today; anything still being set
 // up (the streaming service, the real course PDFs, mentoring) says so.
 import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
@@ -35,17 +35,17 @@ const FAQ = [
   ['What happens if I miss a live session?',
     'Every live class and office-hours session is recorded and streams in the student portal, so you can catch up when it suits you.'],
   ['When are the live sessions?',
-    `A ${SCHEDULE.classMinutes}-minute class every ${SCHEDULE.classDay} and ${SCHEDULE.officeMinutes}-minute office hours every ${SCHEDULE.officeDay}, both at ${SCHEDULE.classTime} US time on Jitsi. Join links open in the portal 15 minutes before each session.`],
+    `A ${SCHEDULE.classMinutes}-minute class every ${SCHEDULE.classDay} and ${SCHEDULE.officeMinutes}-minute office hours every ${SCHEDULE.officeDay}, both at ${SCHEDULE.classTime} US Eastern Time (ET) on Jitsi. Join links open in the portal 15 minutes before each session.`],
   ['Can I download the lesson videos?',
     'No. Lessons and class recordings stream in the student portal only and can never be downloaded. Lesson notes, exercise sheets and project briefs are PDFs you can download and keep.'],
   ['When does a lesson count as complete?',
     'When you have watched 90% of it. Progress comes from the time you have really watched, not from clicks.'],
   ['What happens if my project is graded Basic or Not yet?',
-    'Your instructor writes feedback on what is missing, and you revise and resubmit the project. Proficient or DUS timeinguished is a pass.'],
+    'Your instructor writes feedback on what is missing, and you revise and resubmit the project. Proficient or Distinguished is a pass.'],
   ['How many hours a week should I plan for?',
     `Between ${HOURS[0]} and ${HOURS[1]} hours, depending on the program: the two live sessions plus lessons and project work at your own time. Each program page lists its weekly hours.`],
   ['What if I fall behind?',
-    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructor’s check-in lUS time so they can reach out.`],
+    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.`],
   ['Is the certificate an accredited degree?',
     `No. You receive a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
 ];
@@ -132,7 +132,7 @@ const term = (today) => html`
       ${exampleDates(today)}
     </div>
     <h3 class="how-sub">A typical week</h3>
-    <p class="muted how-subtext">Times are in US time; your own time zone is shown under each session when your browser shares it.</p>
+    <p class="muted how-subtext">Times are in US Eastern Time (ET); your own time zone is shown under each session when your browser shares it.</p>
     <div class="how-stack">
       ${weekView()}
       ${schedule()}
@@ -221,8 +221,8 @@ const support = () => html`
         <p class="lede">People teach you, grade your work and notice when you go quiet.</p></div>
       <ul class="ticks how-support">
         <li>${icon('check')}<span><b>Instructors teach live and grade.</b> The instructors who run your ${SCHEDULE.classDay} class also grade your projects. ${OWNER.instructors.length ? '' : 'Their names and backgrounds will be published before the first batch.'}</span></li>
-        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} US time, ${SCHEDULE.officeMinutes} minutes on Jitsi, for questions about lessons and projects.</span></li>
-        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructor’s check-in lUS time so they can reach out.</span></li>
+        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} US Eastern Time (ET), ${SCHEDULE.officeMinutes} minutes on Jitsi, for questions about lessons and projects.</span></li>
+        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.</span></li>
       </ul>
       <div class="box"><h3>${icon('clock')} Planned: mentoring and success coaching</h3>
         <p class="muted">We plan to offer mentoring and success coaching to help you plan your weeks around work and life. It is not running yet, and the details will be published before the first batch.</p></div>

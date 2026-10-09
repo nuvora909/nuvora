@@ -1,7 +1,7 @@
 // Shared behaviour for every public page. Pages work without JavaScript; this adds live dates, local class
 // times, menus, filters, the career ladder, example-screen hotspots, the saved plan and the advisor entry points.
 // cinema.js adds the pointer spotlight on dark sections; the rest of the cinematic motion is CSS (site.css).
-import { nextStarts, termDates, fmtDay, isoDay, weeklyTimeIn, fromIso } from './dates.mjs';
+import { nextStarts, termDates, fmtDay, isoDay, weeklyTimeIn, fromIso, TIMEZONE } from './dates.mjs';
 import './cinema.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -82,7 +82,7 @@ function localTimes() {
   if (!tz) return;
   for (const el of $$('[data-localtime]')) {
     const [day, time] = el.dataset.localtime.split('|');
-    if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') { el.textContent = 'That is your local time too.'; continue; }
+    if (tz === TIMEZONE) { el.textContent = 'That is your local time too.'; continue; }
     const t = weeklyTimeIn(Number(day), time, tz);
     const late = t.hour24 >= 22 || t.hour24 < 6;
     el.textContent = `Your time: ${t.weekday} ${t.time} (${tz.replace(/_/g, ' ')})${late ? '. Outside usual hours, so recordings are there when you need them.' : ''}`;

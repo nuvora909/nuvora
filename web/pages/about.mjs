@@ -20,7 +20,7 @@ const intro = () => html`
       <span class="eyebrow">What Nuvora is</span>
       <h2 id="what-title">${accent('Online programs, taught *live*, graded by people')}</h2>
       <p class="lede">We are preparing our first batch, so everything on this site describes how the programs are designed to run, not results from past students.</p>
-      <p>Every program is taught in 12-week terms. Each term is a batch that starts on the first Monday of a month. You watch lessons in the student portal when it suits you, join a live ${SCHEDULE.classMinutes}-minute class on ${SCHEDULE.classDay}s and ${SCHEDULE.officeMinutes}-minute office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} US time, and complete ${PROJECTS_PER_TERM} projects a term that instructors grade.</p>
+      <p>Every program is taught in 12-week terms. Each term is a batch that starts on the first Monday of a month. You watch lessons in the student portal when it suits you, join a live ${SCHEDULE.classMinutes}-minute class on ${SCHEDULE.classDay}s and ${SCHEDULE.officeMinutes}-minute office hours on ${SCHEDULE.officeDay}s at ${SCHEDULE.classTime} US Eastern Time (ET), and complete ${PROJECTS_PER_TERM} projects a term that instructors grade.</p>
       <p>Finishing a program earns a ${CREDENTIAL.short}. ${CREDENTIAL.note}</p>
       <div class="row">
         <a class="btn primary" href="/programs/">Browse programs ${icon('arrow')}</a>

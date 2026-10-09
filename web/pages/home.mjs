@@ -141,7 +141,7 @@ const connected = () => html`
 const batch = () => html`
 <section class="sec" id="how" aria-labelledby="how-title">
   <div class="wrap stack" style="gap:24px">
-    ${sectionHead({ id: 'how-title', eyebrow: 'How a term runs', title: 'Flexible lessons, *live* every week', lede: `Each term is a 12-week batch that starts on the first Monday of a month. Here is a typical week, with times shown in US time and your own time zone.`, action: html`<a class="link" href="/how-it-works/">How it works ${icon('arrow')}</a>` })}
+    ${sectionHead({ id: 'how-title', eyebrow: 'How a term runs', title: 'Flexible lessons, *live* every week', lede: `Each term is a 12-week batch that starts on the first Monday of a month. Here is a typical week, with times shown in US Eastern Time (ET) and your own time zone.`, action: html`<a class="link" href="/how-it-works/">How it works ${icon('arrow')}</a>` })}
     ${weekView()}
     ${schedule()}
   </div>

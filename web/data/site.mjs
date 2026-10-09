@@ -53,7 +53,7 @@
   ['Is Nuvora an accredited university?',
     'No. Nuvora awards a Nuvora certificate of completion, not an accredited degree. Program names such as B.S. and M.S. describe the level and scope of study. Nuvora credits measure workload and may not transfer to universities.'],
   ['How do classes work?',
-    `Each term is a 12-week batch. You watch lessons in the portal whenever it suits you, and join two live Jitsi sessions a week: a ${SCHEDULE.classMinutes}-minute class on ${SCHEDULE.classDay}s and ${SCHEDULE.officeMinutes}-minute office hours on ${SCHEDULE.officeDay}s, both at ${SCHEDULE.classTime} US time. Sessions are recorded so you can catch up.`],
+    `Each term is a 12-week batch. You watch lessons in the portal whenever it suits you, and join two live Jitsi sessions a week: a ${SCHEDULE.classMinutes}-minute class on ${SCHEDULE.classDay}s and ${SCHEDULE.officeMinutes}-minute office hours on ${SCHEDULE.officeDay}s, both at ${SCHEDULE.classTime} US Eastern Time (ET). Sessions are recorded so you can catch up.`],
   ['Can I download the lesson videos?',
     'No. Lessons and class recordings stream in the student portal only. Lesson notes, exercise sheets and project briefs are PDFs you can download.'],
   ['When can I start?',

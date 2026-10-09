@@ -162,7 +162,7 @@ function dates(today) {
 <section class="sec tinted" id="dates" aria-labelledby="dates-title">
   <div class="wrap">
     <div class="shead"><div><span class="eyebrow">Start dates</span><h2 id="dates-title">${accent(`The next *${TABLE_STARTS === 6 ? 'six' : TABLE_STARTS}* starts`)}</h2>
-      <p class="lede">Every term is a 12-week batch that starts on the first Monday of a month. Seat requests close 7 days before a start, and the closing day itself is still open. Dates are in US time.</p></div></div>
+      <p class="lede">Every term is a 12-week batch that starts on the first Monday of a month. Seat requests close 7 days before a start, and the closing day itself is still open. Dates are in US Eastern Time (ET).</p></div></div>
     <div class="tablewrap adm-dateswrap">
       <table class="adm-dates" data-adm-dates>
         <caption class="sr-only">The next ${TABLE_STARTS} batch start dates, when seat requests close, and when the first term ends</caption>
@@ -218,7 +218,7 @@ function form(today) {
     <select id="sr-start" name="start" required aria-describedby="sr-start-hint" data-start-select>
       ${starts.map((s) => html`<option value="${isoDay(s.start)}">${startLabel(s)}</option>`)}
     </select>
-    <p class="hint" id="sr-start-hint" data-start-hint>Batches start on the first Monday of a month. Dates are in US time.</p>
+    <p class="hint" id="sr-start-hint" data-start-hint>Batches start on the first Monday of a month. Dates are in US Eastern Time (ET).</p>
     <p class="adm-err" id="sr-start-err" hidden></p>
   </div>
   <div class="formgrid">
