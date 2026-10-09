@@ -47,7 +47,7 @@ an enrollment.
 1. **Automatic (default).** Portal access (lessons, PDFs, live-class join links, projects, recordings) is open
    while the term is **paid**, or while **fewer than 30 days** have passed since the term started, or since
    the enrollment was created if that is later (late joiners also get 30 days). The term starts at 00:00 on the
-   batch's start date in the batch's time zone (India time).
+   batch's start date in the batch's time zone (US Eastern Time).
 2. At exactly 30 days without a payment, access **stops automatically**. This is computed by the database on
    every request with `now()`, so it happens on time even if no job runs. The hourly job `apply_access_rules()`
    also records the stop in the access history and notifies the student and every admin, and sends the student
@@ -273,7 +273,7 @@ characters.
 Records a payment for the enrollment's term. `p_amount_usd`: more than 0 and at most 100000 (a `waiver` may be
 0), at most 2 decimals. `p_reference`: the bank or receipt reference, 1-100 characters, unique among payments
 that are not voided (case-insensitive). `p_note`: up to 1000 characters. `p_paid_on`: the day the money
-arrived, default today in India time, not in the future.
+arrived, default today in US Eastern Time, not in the future.
 
 ```json
 { "payment": { "...payment object..." }, "access": { "...access object..." } }

@@ -13,13 +13,13 @@ Online Data Science and AI/ML school: public website, student portal, database a
 | `scripts/` | `catalog.mjs` is the source of truth for programs; `build-seed.mjs` turns it into `seed.sql`; `build-site.mjs` builds the website |
 | `server/` | Local stand-in for Supabase (database, sign-in, API, PDF storage) used for development and tests |
 | `tests/` | Automated tests: `db/` (database rules), `server/` (API), `site/` (website build and content), `e2e/` (website and portal in Microsoft Edge) |
-| `docs/` | `admin-guide.md` (how the owner runs Nuvora day to day), `admin-api.md` (every admin database function), reviews |
+| `docs/` | `admin-guide.md` (how the owner runs Nuvora day to day), `admin-api.md` (every admin database function) |
 | `design/` | Logo concepts |
 
 ## How it works
 
 - A new batch of every active program starts on the **first Monday of each month**. Applications close 7 days before.
-- Creating a batch copies the program's templates into dated classes (Tuesday live class and Thursday office hours at 19:00 India time, for 12 weeks) and assignment due dates.
+- Creating a batch copies the program's templates into dated classes (Tuesday live class and Thursday office hours at 19:00 US Eastern Time, for 12 weeks) and assignment due dates.
 - A student sees a batch only while their enrollment in it is **active** and the access rule below lets them in. Pausing, withdrawing, transferring or stopping access changes what they see immediately.
 - Jitsi links are handed out only from 15 minutes before a class until it ends, judged by the server's clock.
 - Watch time counts only the parts of a video actually played. A lesson counts as complete at 90%.
@@ -58,7 +58,7 @@ Admins see an **Admin** section in the portal: an overview, the student database
 
 - One call, `my_home`, gives the home page everything: the whole-program and current-term progress rings, the term-by-term path, the next best action (in a fixed order: work to revise or past due, a live class within 24 hours, the lesson in progress, the next lesson, work due within a week, a gap for the student's goal, or "all caught up"), today's targets, the streak, achievements, term skill badges and the skills for the student's career goal.
 - Goals come from the website's career roles (`web/data/careers.mjs`). Each skill points to the lesson that teaches it: *mastered* when that lesson is complete and its project passed; otherwise *needs work*, *in progress*, *not started*, or *not in your program* (with the programs that teach it). Students choose a goal in Profile; until then the first role suggested for their program is used.
-- Learning days are recorded only from verified events: newly watched parts of a video, completed lessons, submitted projects and attended classes (in India time). A streak allows single rest days but never two missed days in a row, and can be switched off in Profile (then it is not even sent to the browser).
+- Learning days are recorded only from verified events: newly watched parts of a video, completed lessons, submitted projects and attended classes (in US Eastern Time). A streak allows single rest days but never two missed days in a row, and can be switched off in Profile (then it is not even sent to the browser).
 - Achievements and badges are derived from stored results only (first lesson, first project passed, distinguished work, revised to mastery, a full week of classes, 7- and 30-day streaks, each term, the program). Each one earned sends exactly one notification. There are no points, leaderboards or rankings; the rules are written at the top of the home page code and the learning-path migration.
 
 ## Run the website and portal on this computer
