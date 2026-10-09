@@ -259,16 +259,26 @@ test.describe('a visitor in Los Angeles', () => {
     const cls = weeklyTimeIn(2, '19:00', 'America/Los_Angeles');
     const oh = weeklyTimeIn(4, '19:00', 'America/Los_Angeles');
     expect(cls.weekday).toBe('Tuesday');
-    expect([5, 6]).toContain(cls.hour24);   // 13:30 UTC is 6:30 AM in summer and 5:30 AM in winter
+    expect(cls.hour24).toBe(16);   // 19:00 US Eastern is 4:00 PM Pacific all year (both sides use daylight saving)
     const local = page.locator('#workload [data-localtime]');
     await expect(local.first()).toHaveText(new RegExp(`^Your time: Tuesday ${cls.time.replace(/\s/g, '\\s')} \\(America/Los Angeles\\)`));
     await expect(local.nth(1)).toHaveText(new RegExp(`^Your time: Thursday ${oh.time.replace(/\s/g, '\\s')}`));
   });
 });
 
-test('a visitor in India is told the class times are already local', async ({ page }) => {
-  await page.goto(P('c-genai').url);
-  await expect(page.locator('#workload [data-localtime]').first()).toHaveText('That is your local time too.');
+test.describe('a visitor in New York', () => {
+  test.use({ timezoneId: 'America/New_York' });
+  test('is told the class times are already local', async ({ page }) => {
+    await page.goto(P('c-genai').url);
+    await expect(page.locator('#workload [data-localtime]').first()).toHaveText('That is your local time too.');
+  });
+});
+
+test('a visitor in India sees the Tuesday class as Wednesday morning, their time', async ({ page }) => {
+  await page.goto(P('c-genai').url);   // the test browser runs in Asia/Kolkata (playwright.config.mjs)
+  const cls = weeklyTimeIn(2, '19:00', 'Asia/Kolkata');
+  expect(cls.weekday).toBe('Wednesday');
+  await expect(page.locator('#workload [data-localtime]').first()).toHaveText(new RegExp(`^Your time: Wednesday ${cls.time.replace(/\s/g, '\\s')} \\(Asia/(Kolkata|Calcutta)\\)`));   // browsers may report either name
 });
 
 test('every Student login link goes to the portal', async ({ page }) => {

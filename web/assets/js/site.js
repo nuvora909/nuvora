@@ -11,7 +11,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 export const store = {
   get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
   set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
-  del(key) { try { localStorage.removeItem(key); } catch { return false; } },
+  del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
 };
 export const PLAN_KEY = 'nuvora.plan';
 const PLAN_DAYS = 90;
@@ -92,11 +92,11 @@ function localTimes() {
 // ---------- header menus ----------
 function menus() {
   const menusEls = $$('details[data-mega], details[data-mnav]');
-  const closeAll = (except) => menuEls.forEach((d) => { if (d !== except) d.open = false; });
+  const closeAll = (except) => menusEls.forEach((d) => { if (d !== except) d.open = false; });
   document.addEventListener('click', (e) => { if (!e.target.closest('details[data-mega], details[data-mnav]')) closeAll(); });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const open = menuEls.find((d) => d.open);
+    const open = menusEls.find((d) => d.open);
     if (open) { open.open = false; open.querySelector('summary').focus(); }
   });
   for (const d of menusEls) {
@@ -220,33 +220,6 @@ function brochureButtons() {
   buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
 }
 
-// Visual Performance Optimizations
-function optimizeVisualPerformance() {
-  // Add will-change properties for better animation performance
-  const animatedElements = $$('[class*="card"], .hero, .pillar, .ldetail, .flow li, .ccard');
-  animatedElements.forEach(el => {
-    el.style.willChange = 'transform, opacity';
-  });
-
-  // Add contain properties for layout isolation where beneficial
-  const containmentCandidates = $$('.pcard, .certcard, .hs-card, .lstep');
-  containmentCandidates.forEach(el => {
-    el.style.contain = 'content';
-  });
-
-  // Optimize touch targets for better performance on touch devices
-  const touchTargets = $$('.btn, .link, .chip, [aria-label]');
-  touchTargets.forEach(el => {
-    const computedStyle = window.getComputedStyle(el);
-    const minHeight = parseFloat(computedStyle.minHeight) || 0;
-    const minWidth = parseFloat(computedStyle.minWidth) || 0;
-    if (minHeight < 44 || minWidth < 44) {
-      el.style.minHeight = '44px';
-      el.style.minWidth = '44px';
-    }
-  });
-}
-
 // Initialize everything
 refreshDates();
 localTimes();
@@ -256,5 +229,4 @@ hotspots();
 personalize();
 advisorButtons();
 brochureButtons();
-optimizeVisualPerformance(); // New performance optimizations
 export { $, $$, fromIso };
