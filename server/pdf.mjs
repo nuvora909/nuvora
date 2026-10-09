@@ -1,4 +1,4 @@
-// Builds a small, valid one-page PDF. Used by the local server to stand in for uploaded course PDFs.
+﻿// Builds a small, valid one-page PDF. Used by the local server to stand in for uploaded course PDFs.
 const clean = (s) => String(s).replace(/[^\x20-\x7E]/g, '-').replace(/[\\()]/g, (c) => `\\${c}`);
 
 export function placeholderPdf(title, lines = []) {

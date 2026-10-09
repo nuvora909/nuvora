@@ -1,4 +1,4 @@
-// Original cover artwork for each program, drawn as SVG at build time and written to /covers/<slug>.svg by
+﻿// Original cover artwork for each program, drawn as SVG at build time and written to /covers/<slug>.svg by
 // scripts/build-site.mjs. Meta-blue led, with navy depth and small cyan, violet and gold accents, a motif for the
 // subject and a big short label. No people, no photos and no third-party logos.
 //
@@ -12,6 +12,7 @@ const C = {
   sky: '#8EC5FF', ice: '#BFD9FF', cyan: '#22D3EE', violet: '#6D5DF6', gold: '#F5B82E', gold2: '#FFD66B', white: '#FFFFFF',
 };
 const W = 640, H = 360;
+const BOOK_W = 480, BOOK_H = 640;
 const FONT = "'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif";
 
 // Approximate advance widths of bold capitals (em), to size the label pill before the browser lays it out.
@@ -235,7 +236,7 @@ const SPOKEN = { AI: 'AI', ML: 'ML', MLOPS: 'MLOps', '&': 'and' };
 export function coverAlt(p) {
   const c = COVERS[p.id];
   const words = c.label.join(' ').split(' ').map((w) => SPOKEN[w] ?? w[0] + w.slice(1).toLowerCase()).join(' ');
-  return `Cover illustration: ${c.desc}, with the label “${words}”`;
+  return `Cover illustration: ${c.desc}, with the label â€œ${words}â€`;
 }
 
 // The big label: plain lines above, the last line on a blue pill (fitted with textLength).
@@ -257,6 +258,25 @@ function label(lines) {
   // plain line) whether the label has one line or more.
   const top = lines.length === 1 ? pillY : pillY - 12 - (lines.length - 2) * (small + 6) - small * 0.72;
   out.push(`<rect x="${left}" y="${r1(top - 30)}" width="40" height="5" rx="2.5" fill="${C.gold}"/>`);
+  return out.join('');
+}
+
+// A portrait brochure cover reuses each program's original vector motif. The card then
+// adds book depth with CSS, so the artwork remains sharp at any display size.
+function brochureLabel(lines) {
+  const left = 34, big = 38, small = 26, baseline = 606;
+  const last = lines[lines.length - 1];
+  const lastW = Math.round(textWidth(last, big));
+  const pillY = baseline - (big * 0.72 + 22);
+  const pillH = baseline - pillY;
+  const out = [`<rect x="${left - 4}" y="${r1(pillY)}" width="${lastW + 32}" height="${r1(pillH)}" rx="13" fill="url(#pill)"/>`,
+    `<text x="${left + 12}" y="${r1(baseline - 13)}" font-family="${FONT}" font-size="${big}" font-weight="700" fill="${C.white}" textLength="${lastW}" lengthAdjust="spacingAndGlyphs">${esc(last)}</text>`];
+  lines.slice(0, -1).reverse().forEach((line, i) => {
+    const y = pillY - 10 - i * (small + 5);
+    out.push(`<text x="${left}" y="${r1(y)}" font-family="${FONT}" font-size="${small}" font-weight="700" fill="${C.white}" textLength="${Math.round(textWidth(line, small))}" lengthAdjust="spacingAndGlyphs">${esc(line)}</text>`);
+  });
+  const top = lines.length === 1 ? pillY : pillY - 10 - (lines.length - 2) * (small + 5) - small * 0.72;
+  out.push(`<rect x="${left}" y="${r1(top - 19)}" width="38" height="5" rx="2.5" fill="${C.gold}"/>`);
   return out.join('');
 }
 
@@ -295,3 +315,39 @@ ${label(c.label)}
 </svg>
 `;
 }
+
+/** High-resolution portrait SVG artwork for the 3D program-card brochure. */
+export function brochureCoverSvg(p) {
+  const c = COVERS[p.id];
+  if (!c) throw new Error(`No cover art for program ${p.id}`);
+  const [b0, b1, b2] = c.bg;
+  const original = coverSvg(p);
+  const defs = /<defs>[\s\S]*?<\/defs>/.exec(original)?.[0];
+  if (!defs) throw new Error(`Could not build brochure artwork for program ${p.id}`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOOK_W} ${BOOK_H}" width="${BOOK_W}" height="${BOOK_H}" role="img" aria-labelledby="t">
+<title id="t">${esc(brochureCoverAlt(p))}</title>
+${defs}
+<rect width="${BOOK_W}" height="${BOOK_H}" fill="url(#bg)"/>
+<rect width="${BOOK_W}" height="${BOOK_H}" fill="url(#g1)"/>
+<rect width="${BOOK_W}" height="${BOOK_H}" fill="url(#g2)"/>
+<rect width="${BOOK_W}" height="${BOOK_H}" fill="url(#grid)"/>
+<circle cx="480" cy="42" r="190" fill="none" stroke="${C.white}" stroke-opacity=".07" stroke-width="38"/>
+<path d="M30 88H450" stroke="${C.white}" stroke-opacity=".2"/>
+<text x="34" y="48" font-family="${FONT}" font-size="16" font-weight="700" letter-spacing="2.5" fill="${C.white}">NUVORA</text>
+<text x="34" y="70" font-family="${FONT}" font-size="9" font-weight="700" letter-spacing="2.2" fill="${C.ice}">PROGRAM GUIDE</text>
+<g transform="translate(0 185) scale(.76)">${c.motif()}</g>
+<rect width="${BOOK_W}" height="${BOOK_H}" fill="url(#g3)"/>
+${brochureLabel(c.label)}
+</svg>
+`;
+}
+
+export const brochureCoverUrl = (p) => `/covers/${p.slug}-brochure.svg`;
+
+export function brochureCoverAlt(p) {
+  const c = COVERS[p.id];
+  if (!c) throw new Error(`No cover art for program ${p.id}`);
+  return `Brochure artwork for ${p.name}: ${c.desc}.`;
+}
+
+export const coverGlow = (p) => COVERS[p.id]?.glow ?? C.blue;

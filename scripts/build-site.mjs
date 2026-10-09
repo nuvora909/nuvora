@@ -1,4 +1,4 @@
-// Builds the public website from web/ into dist/: one index.html per clean URL, plus CSS, browser modules,
+﻿// Builds the public website from web/ into dist/: one index.html per clean URL, plus CSS, browser modules,
 // media, the program cover art (covers/), a browser copy of the catalog, sitemap.xml, robots.txt and 404.html.
 //
 //   node scripts/build-site.mjs            (the dev server also runs this on start)
@@ -56,7 +56,7 @@ function catalogModule(PROGRAMS, ROLES, TRACKS, extra) {
 
 export async function buildSite({ outDir = DIST, quiet = false, media = true, artifact = false } = {}) {
   const t0 = Date.now();
-  const [{ PROGRAMS }, { ROLES, TRACKS, CAREER_NOTE }, site, { FAVICON }, { coverSvg, coverUrl }] = await Promise.all([
+  const [{ PROGRAMS }, { ROLES, TRACKS, CAREER_NOTE }, site, { FAVICON }, { coverSvg, coverUrl, brochureCoverSvg, brochureCoverUrl }] = await Promise.all([
     import(pathToFileURL(resolve(WEB, 'data/programs.mjs')).href),
     import(pathToFileURL(resolve(WEB, 'data/careers.mjs')).href),
     import(pathToFileURL(resolve(WEB, 'data/site.mjs')).href),
@@ -75,7 +75,10 @@ export async function buildSite({ outDir = DIST, quiet = false, media = true, ar
   await writeFile(join(outDir, 'favicon.svg'), FAVICON);
   // Program covers are drawn from code (web/lib/covers.mjs), so they are written on every build, media or not.
   await mkdir(join(outDir, 'covers'), { recursive: true });
-  for (const p of PROGRAMS) await writeFile(join(outDir, ...coverUrl(p).split('/').filter(Boolean)), coverSvg(p));
+  for (const p of PROGRAMS) {
+    await writeFile(join(outDir, ...coverUrl(p).split('/').filter(Boolean)), coverSvg(p));
+    await writeFile(join(outDir, ...brochureCoverUrl(p).split('/').filter(Boolean)), brochureCoverSvg(p));
+  }
   await writeFile(join(outDir, 'js/catalog.mjs'), catalogModule(PROGRAMS, ROLES, TRACKS, {
     careerNote: CAREER_NOTE, faq: site.FAQ, schedule: site.SCHEDULE, consentVersion: site.SITE.consentVersion,
   }));
@@ -124,8 +127,8 @@ async function toArtifact(outDir, pages) {
   const note = {
     path: '/portal-preview/',
     html: page({
-      path: '/portal-preview/', title: 'Student portal', description: 'The Nuvora student portal runs on Nuvora’s own server with its database, so it is not part of this website preview.',
-      body: html`${pageHead({ eyebrow: 'Student portal', title: 'The portal runs on Nuvora’s server', lede: 'Signing in, lessons, live classes and assignments need Nuvora’s database, so the student portal is not part of this website preview. It opens at /portal/ on the real site.' })}
+      path: '/portal-preview/', title: 'Student portal', description: 'The Nuvora student portal runs on Nuvoraâ€™s own server with its database, so it is not part of this website preview.',
+      body: html`${pageHead({ eyebrow: 'Student portal', title: 'The portal runs on Nuvoraâ€™s server', lede: 'Signing in, lessons, live classes and assignments need Nuvoraâ€™s database, so the student portal is not part of this website preview. It opens at /portal/ on the real site.' })}
         <section class="sec"><div class="wrap row"><a class="btn primary" href="/">Back to the website</a><a class="btn ghost" href="/how-it-works/">What the portal does</a></div></section>`,
     }),
   };

@@ -1,4 +1,4 @@
-// Line icons (24×24, stroke) and the Nuvora wordmark. All decorative: aria-hidden.
+﻿// Line icons (24Ã—24, stroke) and the Nuvora wordmark. All decorative: aria-hidden.
 import { raw } from './html.mjs';
 
 const PATHS = {
@@ -44,7 +44,7 @@ const PATHS = {
 
 export const icon = (name, cls = 'ic') => raw(`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${PATHS[name]}"/></svg>`);
 
-// The "nuv◯ra" wordmark: the o is a ring with a small orbiting dot. The ring carries the Meta logo gradient
+// The "nuvâ—¯ra" wordmark: the o is a ring with a small orbiting dot. The ring carries the Meta logo gradient
 // (#0064E0 to #0082FB, bottom left to top right); on dark backgrounds a lighter pair of the same blues.
 let ringId = 0;
 export function wordmark({ light = false } = {}) {

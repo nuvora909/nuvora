@@ -86,6 +86,16 @@ test('the whole card opens its program, and the title link is reachable by keybo
   await expect(page).toHaveURL(new RegExp(`${PROGRAMS[0].url}$`));
 });
 
+test('the brochure control opens the request dialog without following the card link', async ({ page }) => {
+  await page.goto('/programs/');
+  const card = page.locator(`#programs-catalog [data-program="${P('bs-ds').id}"]`);
+  await card.getByRole('button', { name: `Request the ${P('bs-ds').name} brochure` }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('#brochure-program')).toHaveValue(P('bs-ds').id);
+  await expect(page).toHaveURL(/\/programs\/$/);
+});
+
 test('a saved match is moved to the front of the catalog and shown with its badge', async ({ page }) => {
   const m = P('c-mlops');
   await page.addInitScript(([id, name]) => {

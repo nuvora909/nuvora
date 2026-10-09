@@ -1,4 +1,4 @@
-// Industry certifications whose official exam topics overlap a Nuvora program's curriculum. Text only: no logos,
+﻿// Industry certifications whose official exam topics overlap a Nuvora program's curriculum. Text only: no logos,
 // no endorsements. Nuvora is not affiliated with these companies and does not prepare students for, include or
 // pay for their exams; pages say "Topics overlap with", never "prepares you for".
 //
@@ -8,7 +8,7 @@
 // (lesson codes from scripts/catalog.mjs; tests/site/showcase.test.mjs checks each code is in that program).
 export const CHECKED = '2026-10-03';
 
-export const CERT_DISCLAIMER = 'Nuvora isn’t affiliated with these companies. Their exams are booked and paid for with them directly, and Nuvora doesn’t issue their certificates.';
+export const CERT_DISCLAIMER = 'Nuvora isnâ€™t affiliated with these companies. Their exams are booked and paid for with them directly, and Nuvora doesnâ€™t issue their certificates.';
 
 // name: exactly as the vendor writes it. status: anything a learner should know before booking (null when the
 // exam is simply available). areas: the vendor's official exam areas, word for word as published, except where
@@ -28,7 +28,7 @@ export const CERTS = {
     areas: ['Design data processing systems', 'Ingest and process the data', 'Store the data', 'Prepare and use data for analysis', 'Maintain and automate data workloads'],
   },
   'aws-mla': {
-    vendor: 'Amazon Web Services', name: 'AWS Certified Machine Learning Engineer – Associate',
+    vendor: 'Amazon Web Services', name: 'AWS Certified Machine Learning Engineer â€“ Associate',
     url: 'https://aws.amazon.com/certification/certified-machine-learning-engineer-associate/', checked: CHECKED,
     status: 'AWS is updating this exam: the new version (MLA-C02) has been in beta in English since 29 September 2026.',
     areas: ['Data preparation for machine learning', 'ML model development', 'Deployment and orchestration of ML workflows', 'ML solution monitoring, maintenance and security'], summarised: true,
@@ -69,12 +69,12 @@ export const CERTS = {
     areas: ['Core Machine Learning and AI Knowledge', 'Data Analysis', 'Experimentation', 'Software Development', 'Trustworthy AI'],
   },
   'pi-pcep': {
-    vendor: 'Python Institute', name: 'PCEP™ – Certified Entry-Level Python Programmer',
+    vendor: 'Python Institute', name: 'PCEPâ„¢ â€“ Certified Entry-Level Python Programmer',
     url: 'https://pythoninstitute.org/pcep', checked: CHECKED, status: null,
-    areas: ['Computer Programming and Python Fundamentals', 'Control Flow – Conditional Blocks and Loops', 'Data Collections – Tuples, Dictionaries, Lists, and Strings', 'Functions and Exceptions'],
+    areas: ['Computer Programming and Python Fundamentals', 'Control Flow â€“ Conditional Blocks and Loops', 'Data Collections â€“ Tuples, Dictionaries, Lists, and Strings', 'Functions and Exceptions'],
   },
   'pi-pced': {
-    vendor: 'Python Institute', name: 'PCED™ – Certified Entry-Level Data Analyst with Python',
+    vendor: 'Python Institute', name: 'PCEDâ„¢ â€“ Certified Entry-Level Data Analyst with Python',
     url: 'https://pythoninstitute.org/pced', checked: CHECKED, status: null,
     areas: ['Introduction to Data and Data Analysis Concepts', 'Python Basics for Data Analysis', 'Working with Data and Performing Simple Analyses', 'Communicating Insights and Reporting'],
   },
@@ -108,7 +108,7 @@ export const PROGRAM_CERTS = {
     { cert: 'dbx-de', areas: ['Data Ingestion and Loading', 'Data Transformation and Modeling', 'Governance and Security'], lessons: ['DEN-640', 'DEN-650', 'ETH-680'] },
   ],
   'c-py': [
-    { cert: 'pi-pcep', areas: ['Computer Programming and Python Fundamentals', 'Control Flow – Conditional Blocks and Loops', 'Data Collections – Tuples, Dictionaries, Lists, and Strings', 'Functions and Exceptions'], lessons: ['PRG-101'] },
+    { cert: 'pi-pcep', areas: ['Computer Programming and Python Fundamentals', 'Control Flow â€“ Conditional Blocks and Loops', 'Data Collections â€“ Tuples, Dictionaries, Lists, and Strings', 'Functions and Exceptions'], lessons: ['PRG-101'] },
     { cert: 'pi-pced', areas: ['Python Basics for Data Analysis', 'Working with Data and Performing Simple Analyses', 'Communicating Insights and Reporting'], lessons: ['PRG-101', 'DAT-210', 'VIS-220'] },
   ],
   'c-genai': [

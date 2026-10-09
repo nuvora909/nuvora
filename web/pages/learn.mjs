@@ -1,4 +1,4 @@
-// Topic guides and the free sample lesson.
+﻿// Topic guides and the free sample lesson.
 //   /learn/                 the four topics, how they fit together, the sample lesson, and where to go next
 //   /learn/<topic-slug>/    one guide per topic in TOPICS: what it is, key concepts (with the Nuvora program and
 //                           term that teaches each), roles, programs, related topics and a FAQ
@@ -88,8 +88,8 @@ const TOPIC_INFO = {
       return [
         ['What is data science?', 'Data science is the practice of answering questions with data. It combines statistics, programming (usually Python and SQL) and knowledge of a field to collect and clean data, analyse it, build models where prediction helps, and explain the results so that people can make better decisions.'],
         ['What is the difference between a data analyst and a data scientist?', 'A data analyst mostly describes what happened: querying databases, building reports and dashboards, and answering business questions. A data scientist does more statistical modelling and prediction, such as forecasting demand or designing experiments. The roles overlap a lot, and it is common to start as an analyst and move into data science.'],
-        ['Do I need to know how to code to learn data science?', `Not to start. The ${py.name} and the ${bs.name} both begin with Python fundamentals, so no coding experience is needed. The ${ms.name} is different: it expects SQL and Python or R, introductory statistics and a bachelor’s degree in any field before you join.`],
-        ['How much maths do I need for data science?', `Comfortable high-school mathematics is enough to begin. The statistics you need, such as probability, distributions, confidence intervals and hypothesis tests, can be learned along the way. In Nuvora’s ${bs.name}, term ${maths} covers linear algebra and calculus, and term ${stats} covers probability and statistics, before the modelling terms.`],
+        ['Do I need to know how to code to learn data science?', `Not to start. The ${py.name} and the ${bs.name} both begin with Python fundamentals, so no coding experience is needed. The ${ms.name} is different: it expects SQL and Python or R, introductory statistics and a bachelorâ€™s degree in any field before you join.`],
+        ['How much maths do I need for data science?', `Comfortable high-school mathematics is enough to begin. The statistics you need, such as probability, distributions, confidence intervals and hypothesis tests, can be learned along the way. In Nuvoraâ€™s ${bs.name}, term ${maths} covers linear algebra and calculus, and term ${stats} covers probability and statistics, before the modelling terms.`],
       ];
     },
   },
@@ -111,7 +111,7 @@ const TOPIC_INFO = {
       ['MTH-160', raw(`How models learn: minimizing a loss function with gradient descent and its variants. <a href="${SAMPLE}">Try it in the sample lesson</a>.`)],
       ['ML-210', 'Learning to predict a label or a number from labelled examples, with models such as linear and logistic regression and decision trees.'],
       ['ML-220', 'Finding structure in data without labels: clustering similar items and reducing many features to a few that capture most of the variation.'],
-      ['ML-230', 'Splitting data into training, validation and test sets, cross-validation, and choosing a metric so a model’s score means something.'],
+      ['ML-230', 'Splitting data into training, validation and test sets, cross-validation, and choosing a metric so a modelâ€™s score means something.'],
       ['ML-240', 'Turning raw data into inputs a model can use, such as encoding categories and scaling numbers, without leaking information from the answer.'],
       ['ML-250', 'Combining many models, as random forests and gradient boosting do, to get more accurate and more stable predictions.'],
       ['DL-310', 'Neurons, layers, activation functions and backpropagation, built step by step before relying on a framework.'],
@@ -125,7 +125,7 @@ const TOPIC_INFO = {
       const opt = termNo('bs-aiml', /optimization/i);
       return [
         ['What is machine learning?', 'Machine learning is a way of building software that learns patterns from examples instead of following hand-written rules. A model is shown data, a loss function measures how wrong its predictions are, and an optimizer such as gradient descent adjusts the model to reduce that error, so it can make predictions on new data.'],
-        ['Do I need maths for machine learning?', `Yes, but it can be learned along the way. The core is linear algebra, calculus for optimization, and probability. Nuvora’s ${bs.name} needs only high-school algebra to join, then teaches this mathematics in terms ${maths} and ${opt}, before the core machine learning terms begin.`],
+        ['Do I need maths for machine learning?', `Yes, but it can be learned along the way. The core is linear algebra, calculus for optimization, and probability. Nuvoraâ€™s ${bs.name} needs only high-school algebra to join, then teaches this mathematics in terms ${maths} and ${opt}, before the core machine learning terms begin.`],
         ['What is the difference between machine learning and deep learning?', 'Deep learning is a branch of machine learning that uses neural networks with many layers. Classic methods such as linear models and decision trees work well on tables of data. Deep learning does best on images, audio and text, where it learns useful features itself, but it usually needs more data and computing power.'],
         ['How long does it take to learn machine learning?', `It depends on where you start. At Nuvora, the ${bs.name} starts from Python and takes ${bs.termCount} terms of 12 weeks (${bs.duration}) at ${bs.weeklyHours} hours a week. The ${ms.name} is for people who already program and know the maths: ${ms.termCount} terms (${ms.duration}).`],
       ];
@@ -146,7 +146,7 @@ const TOPIC_INFO = {
       'Because LLMs can produce fluent answers that are wrong, evaluation is a core skill rather than an afterthought. Teams build test sets, automated checks and red-teaming exercises to measure accuracy, catch failures and keep systems safe, both before launch and after.',
     ],
     concepts: [
-      ['DL-330', 'How models process sequences such as text, and the attention mechanism at the heart of the transformer architecture behind today’s LLMs.'],
+      ['DL-330', 'How models process sequences such as text, and the attention mechanism at the heart of the transformer architecture behind todayâ€™s LLMs.'],
       ['DL-340', 'Adapting a model that was trained on broad data to a narrower task, using a smaller set of your own examples.'],
       ['DL-345', 'Models that produce new data, such as text or images, rather than labels, and how they are trained.'],
       ['AIS-410', 'Building features on large language models: instructions and prompts, structured outputs, and handling cost, speed and failure.'],
@@ -162,7 +162,7 @@ const TOPIC_INFO = {
       return [
         ['What is generative AI?', 'Generative AI is a type of artificial intelligence that creates new content, such as text, images, audio or code, instead of only classifying or predicting. Large language models like the ones behind chat assistants are the best-known example: trained on huge amounts of text, they generate a response one small piece at a time.'],
         ['What is retrieval-augmented generation (RAG)?', 'Retrieval-augmented generation, or RAG, is a technique where an application first searches a collection of documents for passages relevant to a question, then gives those passages to a language model along with the question. The model answers from that material, which keeps answers grounded in your sources and lets them include citations.'],
-        ['Do I need to know machine learning to build with large language models?', `Not deeply. Building LLM applications relies mostly on software skills: Python, calling web APIs, handling data and testing. Nuvora’s ${genai.name} expects Python and experience with web APIs, not a machine learning background. Understanding how models are trained and evaluated helps as your systems grow.`],
+        ['Do I need to know machine learning to build with large language models?', `Not deeply. Building LLM applications relies mostly on software skills: Python, calling web APIs, handling data and testing. Nuvoraâ€™s ${genai.name} expects Python and experience with web APIs, not a machine learning background. Understanding how models are trained and evaluated helps as your systems grow.`],
         ['What does an AI engineer do?', 'An AI engineer builds products on top of large language models and other AI models. Typical work includes designing prompts and application logic, connecting models to company data with retrieval, giving them tools, and building evaluations that catch wrong or unsafe answers before users see them. The role sits between software engineering and machine learning.'],
       ];
     },
@@ -199,8 +199,8 @@ const TOPIC_INFO = {
       return [
         ['What is MLOps?', 'MLOps, short for machine learning operations, is the practice of deploying machine learning models and keeping them reliable in production. It applies DevOps ideas such as automation, version control, testing and monitoring to models, and adds what is special about machine learning: tracking data and experiments, detecting drift, and retraining models safely.'],
         ['What is the difference between MLOps and DevOps?', 'DevOps automates how software is built, tested and released. MLOps does the same for machine learning, where behaviour depends on data as well as code. That adds work DevOps rarely needs: versioning datasets, tracking training runs, validating model quality before release, and watching for data drift that quietly makes a deployed model worse.'],
-        ['What skills do I need to start in MLOps?', `Solid Python, comfort with the command line and Git, and basic cloud concepts are the usual starting point, and Docker helps. Nuvora’s ${mlops.name} expects those starting skills. Its single 12-week term has ${lessons.length} lessons (${lessons.join('; ')}) and three graded projects.`],
-        ['Is MLOps the same as data engineering?', 'No, but they overlap. Data engineering builds the pipelines that collect, clean and move data for analysts and applications. MLOps focuses on the machine learning lifecycle: training, deploying, monitoring and retraining models. MLOps depends on good data pipelines, which is why many teams, and Nuvora’s MLOps certificate, treat the two together.'],
+        ['What skills do I need to start in MLOps?', `Solid Python, comfort with the command line and Git, and basic cloud concepts are the usual starting point, and Docker helps. Nuvoraâ€™s ${mlops.name} expects those starting skills. Its single 12-week term has ${lessons.length} lessons (${lessons.join('; ')}) and three graded projects.`],
+        ['Is MLOps the same as data engineering?', 'No, but they overlap. Data engineering builds the pipelines that collect, clean and move data for analysts and applications. MLOps focuses on the machine learning lifecycle: training, deploying, monitoring and retraining models. MLOps depends on good data pipelines, which is why many teams, and Nuvoraâ€™s MLOps certificate, treat the two together.'],
       ];
     },
   },
@@ -274,7 +274,7 @@ ${pageHead({ eyebrow: 'Topics', title: accent('Data and AI, *explained*'), crumb
       <div class="row"><a class="btn gold" href="${SAMPLE}" data-cta="learn-promo-sample">Start the sample lesson ${icon('arrow')}</a></div>
     </div>
     <figure class="lrn-chartcard">
-      ${chart(0.2, 'gdp', 'Preview: the curve f(x) = x² with gradient descent steps moving from x = 2.6 down toward the minimum at 0')}
+      ${chart(0.2, 'gdp', 'Preview: the curve f(x) = xÂ² with gradient descent steps moving from x = 2.6 down toward the minimum at 0')}
       <figcaption>A preview of the chart in the lesson, at learning rate 0.2</figcaption>
     </figure>
   </div>
@@ -285,7 +285,7 @@ ${pageHead({ eyebrow: 'Topics', title: accent('Data and AI, *explained*'), crumb
     ${head({ id: 'lrn-next-title', eyebrow: 'Where next', title: 'From topics to *programs and careers*' })}
     <div class="lrn-next">
       <a class="lrn-nextcard" href="/careers/"><span class="lrn-nico">${icon('ladder')}</span><b>Career paths</b><span>Typical roles in data and AI, the skills each one uses, and the Nuvora lessons that teach them.</span><span class="link">Explore careers ${icon('arrow')}</span></a>
-      <a class="lrn-nextcard" href="/programs/"><span class="lrn-nico">${icon('layers')}</span><b>All ${PROGRAMS.length} programs</b><span>Certificates, bachelor’s-level and master’s-level programs, compared side by side.</span><span class="link">Compare programs ${icon('arrow')}</span></a>
+      <a class="lrn-nextcard" href="/programs/"><span class="lrn-nico">${icon('layers')}</span><b>All ${PROGRAMS.length} programs</b><span>Certificates, bachelorâ€™s-level and masterâ€™s-level programs, compared side by side.</span><span class="link">Compare programs ${icon('arrow')}</span></a>
       <a class="lrn-nextcard" href="/find-your-program/"><span class="lrn-nico">${icon('target')}</span><b>Find my program</b><span>Four questions about your background, goal and time, and a match with the reasons behind it.</span><span class="link">Find my program ${icon('arrow')}</span></a>
     </div>
   </div>
@@ -430,28 +430,28 @@ function sampleLesson(today) {
   const body = html`
 ${pageHead({ eyebrow: html`${icon('play')} Free sample lesson`, title: accent('Gradient descent, *step by step*'), crumbs,
     lede: 'A sample lesson in the style of our courses: a short explanation, an interactive chart you control, and a three-question practice check. It is text and an interactive, not a video. No sign-up needed.',
-    extra: html`<div class="row lrn-chips"><span class="chip frost">${icon('book')} Topic: ${ml ? ml.name : 'Machine Learning'}</span>${opt && html`<span class="chip frost">${icon('layers')} Taught in MTH-160 ${opt.title}</span>`}<span class="chip frost">${icon('lock')} Not graded · nothing is saved</span></div>` })}
+    extra: html`<div class="row lrn-chips"><span class="chip frost">${icon('book')} Topic: ${ml ? ml.name : 'Machine Learning'}</span>${opt && html`<span class="chip frost">${icon('layers')} Taught in MTH-160 ${opt.title}</span>`}<span class="chip frost">${icon('lock')} Not graded Â· nothing is saved</span></div>` })}
 
 <section class="sec" aria-labelledby="lrn-idea-title">
   <div class="wrap">
     ${head({ id: 'lrn-idea-title', eyebrow: 'The idea', title: 'Learning means going *downhill*',
       lede: 'Training a model means adjusting its numbers until its predictions are as good as they can get. Gradient descent is the method behind most of that adjusting, and it fits in one line.' })}
     <ol class="lrn-steps">
-      <li><span class="lrn-sn" aria-hidden="true">1</span><h3>Measure the error</h3><p>A <b>loss function</b> turns “how wrong is the model?” into one number, where lower is better. Here we use the simplest one there is, <span class="mono">f(x) = x²</span>, whose lowest point is at x = 0.</p></li>
-      <li><span class="lrn-sn" aria-hidden="true">2</span><h3>Find the slope</h3><p>The <b>derivative</b> <span class="mono">f′(x)</span> says which way is uphill and how steep it is. For x² it is <span class="mono">2x</span>, so at x = ${num(START, 1)} the slope is ${num(ex.slope, 1)}: steeply uphill to the right.</p></li>
-      <li><span class="lrn-sn" aria-hidden="true">3</span><h3>Step the other way</h3><p>Move x a little in the direction opposite to the slope, then repeat. The <b>learning rate</b> <span class="mono">η</span> (the Greek letter eta) sets how big each step is.</p></li>
+      <li><span class="lrn-sn" aria-hidden="true">1</span><h3>Measure the error</h3><p>A <b>loss function</b> turns â€œhow wrong is the model?â€ into one number, where lower is better. Here we use the simplest one there is, <span class="mono">f(x) = xÂ²</span>, whose lowest point is at x = 0.</p></li>
+      <li><span class="lrn-sn" aria-hidden="true">2</span><h3>Find the slope</h3><p>The <b>derivative</b> <span class="mono">fâ€²(x)</span> says which way is uphill and how steep it is. For xÂ² it is <span class="mono">2x</span>, so at x = ${num(START, 1)} the slope is ${num(ex.slope, 1)}: steeply uphill to the right.</p></li>
+      <li><span class="lrn-sn" aria-hidden="true">3</span><h3>Step the other way</h3><p>Move x a little in the direction opposite to the slope, then repeat. The <b>learning rate</b> <span class="mono">Î·</span> (the Greek letter eta) sets how big each step is.</p></li>
     </ol>
     <div class="lrn-formula">
-      <p class="lrn-eq"><span class="sr-only">x becomes x minus eta times f prime of x</span><span aria-hidden="true">x</span><span class="lrn-op" aria-hidden="true">←</span><span aria-hidden="true">x</span><span class="lrn-op" aria-hidden="true">−</span><span class="lrn-eta" aria-hidden="true">η</span><span class="lrn-op" aria-hidden="true">·</span><span aria-hidden="true">f′(x)</span></p>
+      <p class="lrn-eq"><span class="sr-only">x becomes x minus eta times f prime of x</span><span aria-hidden="true">x</span><span class="lrn-op" aria-hidden="true">â†</span><span aria-hidden="true">x</span><span class="lrn-op" aria-hidden="true">âˆ’</span><span class="lrn-eta" aria-hidden="true">Î·</span><span class="lrn-op" aria-hidden="true">Â·</span><span aria-hidden="true">fâ€²(x)</span></p>
       <dl>
         <div><dt class="mono">x</dt><dd>The number being adjusted. A real model adjusts millions of them at once, each with the same rule.</dd></div>
-        <div><dt class="mono">η</dt><dd>The learning rate: how far to step each time.</dd></div>
-        <div><dt class="mono">f′(x)</dt><dd>The slope of the loss at x. Stepping against it goes downhill.</dd></div>
+        <div><dt class="mono">Î·</dt><dd>The learning rate: how far to step each time.</dd></div>
+        <div><dt class="mono">fâ€²(x)</dt><dd>The slope of the loss at x. Stepping against it goes downhill.</dd></div>
       </dl>
     </div>
     <div class="box lrn-worked">
       <h3>${icon('doc')} Worked example</h3>
-      <p>Start at x = ${num(START, 1)} with η = ${ex.lr.toFixed(1)}. The slope is 2 × ${num(START, 1)} = ${num(ex.slope, 1)}, so the step is ${ex.lr.toFixed(1)} × ${num(ex.slope, 1)} = ${num(ex.step, 2)}, and x moves to ${num(START, 1)} − ${num(ex.step, 2)} = ${num(ex.next, 2)}. The loss falls from ${num(START ** 2, 2)} to about ${num(ex.next ** 2, 2)}. Do that again and again, and x closes in on 0.</p>
+      <p>Start at x = ${num(START, 1)} with Î· = ${ex.lr.toFixed(1)}. The slope is 2 Ã— ${num(START, 1)} = ${num(ex.slope, 1)}, so the step is ${ex.lr.toFixed(1)} Ã— ${num(ex.slope, 1)} = ${num(ex.step, 2)}, and x moves to ${num(START, 1)} âˆ’ ${num(ex.step, 2)} = ${num(ex.next, 2)}. The loss falls from ${num(START ** 2, 2)} to about ${num(ex.next ** 2, 2)}. Do that again and again, and x closes in on 0.</p>
     </div>
   </div>
 </section>
@@ -463,7 +463,7 @@ ${pageHead({ eyebrow: html`${icon('play')} Free sample lesson`, title: accent('G
     <div class="lrn-gd" data-gd>
       <div class="lrn-gd-controls" data-gd-js hidden>
         <div class="lrn-gd-lr">
-          <label for="gd-lr">Learning rate <span class="mono">η</span> = <output class="mono" for="gd-lr" data-gd-value>${LR.initial.toFixed(2)}</output></label>
+          <label for="gd-lr">Learning rate <span class="mono">Î·</span> = <output class="mono" for="gd-lr" data-gd-value>${LR.initial.toFixed(2)}</output></label>
           <input id="gd-lr" type="range" min="${LR.min}" max="${LR.max}" step="${LR.step}" value="${LR.initial}" data-gd-lr aria-describedby="gd-lr-hint">
           <p class="small muted" id="gd-lr-hint">From ${LR.min} to ${LR.max}. With a keyboard, use the arrow keys to move in steps of ${LR.step}.</p>
         </div>
@@ -477,20 +477,20 @@ ${pageHead({ eyebrow: html`${icon('play')} Free sample lesson`, title: accent('G
         </div>
       </div>
       <figure class="lrn-gd-fig">
-        ${chart(LR.initial, 'gd', 'The curve f(x) = x² with the gradient descent steps for the chosen learning rate. The same steps are listed in the table of numbers below the chart.')}
+        ${chart(LR.initial, 'gd', 'The curve f(x) = xÂ² with the gradient descent steps for the chosen learning rate. The same steps are listed in the table of numbers below the chart.')}
         <figcaption class="lrn-legend">
           <span><i class="lrn-dot lrn-dot-start" aria-hidden="true"></i>Start, x = ${num(START, 1)}</span>
           <span><i class="lrn-dot lrn-dot-pt" aria-hidden="true"></i>Each step</span>
           <span><i class="lrn-dot lrn-dot-end" aria-hidden="true"></i>Where it ends</span>
         </figcaption>
-        <noscript><p class="note">This chart shows η = ${LR.initial.toFixed(2)}. Turn on JavaScript to change the learning rate and step through the updates.</p></noscript>
+        <noscript><p class="note">This chart shows Î· = ${LR.initial.toFixed(2)}. Turn on JavaScript to change the learning rate and step through the updates.</p></noscript>
       </figure>
       <p class="lrn-gd-read" data-gd-readout aria-live="polite">${readout(LR.initial)}</p>
       <details class="lrn-gd-table">
         <summary>The numbers behind the chart ${icon('down')}</summary>
         <div class="tablewrap"><table>
-          <caption data-gd-caption>The numbers behind the chart at η = ${LR.initial.toFixed(2)}</caption>
-          <thead><tr><th scope="col">Step</th><th scope="col">x</th><th scope="col">Slope 2x</th><th scope="col">Loss x²</th></tr></thead>
+          <caption data-gd-caption>The numbers behind the chart at Î· = ${LR.initial.toFixed(2)}</caption>
+          <thead><tr><th scope="col">Step</th><th scope="col">x</th><th scope="col">Slope 2x</th><th scope="col">Loss xÂ²</th></tr></thead>
           <tbody data-gd-rows>${stepRows(LR.initial).map(([k, x, s, l]) => html`<tr><th scope="row">${k}</th><td>${x}</td><td>${s}</td><td>${l}</td></tr>`)}</tbody>
         </table></div>
       </details>
@@ -502,9 +502,9 @@ ${pageHead({ eyebrow: html`${icon('play')} Free sample lesson`, title: accent('G
   <div class="wrap">
     ${head({ id: 'lrn-shows-title', eyebrow: 'What to notice', title: 'Why the step size *matters*' })}
     <div class="lrn-regimes">
-      <div class="box"><span class="chip blue">η below 0.5</span><h3>Small steps: steady but slow</h3><p>Every step lands on the same side of the minimum and the loss falls each time. At η = 0.05, ten steps still leave the loss at about ${num(slowLoss, 2)}.</p></div>
-      <div class="box"><span class="chip blue">η between 0.5 and 1</span><h3>Big steps: zigzag</h3><p>Each step overshoots to the other side of the minimum. The jumps still shrink, so x settles, but it takes a wasteful route. At exactly 1 it bounces back and forth for ever.</p></div>
-      <div class="box"><span class="chip blue">η above 1</span><h3>Too big: divergence</h3><p>Each overshoot is bigger than the last, so the loss grows instead of falling. In real training this looks like a loss that suddenly shoots up, and it is one of the first things to check.</p></div>
+      <div class="box"><span class="chip blue">Î· below 0.5</span><h3>Small steps: steady but slow</h3><p>Every step lands on the same side of the minimum and the loss falls each time. At Î· = 0.05, ten steps still leave the loss at about ${num(slowLoss, 2)}.</p></div>
+      <div class="box"><span class="chip blue">Î· between 0.5 and 1</span><h3>Big steps: zigzag</h3><p>Each step overshoots to the other side of the minimum. The jumps still shrink, so x settles, but it takes a wasteful route. At exactly 1 it bounces back and forth for ever.</p></div>
+      <div class="box"><span class="chip blue">Î· above 1</span><h3>Too big: divergence</h3><p>Each overshoot is bigger than the last, so the loss grows instead of falling. In real training this looks like a loss that suddenly shoots up, and it is one of the first things to check.</p></div>
     </div>
     <div class="lrn-real">
       <h3>${icon('layers')} In real models</h3>
@@ -544,7 +544,7 @@ ${hp && html`
     <div class="stack">
       <span class="eyebrow">Where Nuvora teaches this</span>
       <h2 id="lrn-taught-title">${accent('Go deeper in *MTH-160*')}</h2>
-      <p class="lede">In the ${hp.name}, lesson MTH-160 ${opt.title} is part of term ${home.n} of ${hp.termCount}, ${home.term.title}.${firstProject ? ` The term’s first graded project, “${firstProject[0]}”, is due in week ${week(firstProject[1])}.` : ''}</p>
+      <p class="lede">In the ${hp.name}, lesson MTH-160 ${opt.title} is part of term ${home.n} of ${hp.termCount}, ${home.term.title}.${firstProject ? ` The termâ€™s first graded project, â€œ${firstProject[0]}â€, is due in week ${week(firstProject[1])}.` : ''}</p>
       <ul class="ticks">
         <li>${icon('check')}<span>Course lessons are videos that stream in the portal and cannot be downloaded. Lesson notes, exercise sheets and project briefs are PDFs you can keep.</span></li>
         <li>${icon('check')}<span>Projects are graded by an instructor on a four-level rubric. Proficient or better passes; below that you get written feedback and resubmit.</span></li>

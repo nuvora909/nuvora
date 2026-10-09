@@ -1,4 +1,4 @@
-// Website view of the catalog. Curriculum, terms, schedule and tuition come from scripts/catalog.mjs (the same
+﻿// Website view of the catalog. Curriculum, terms, schedule and tuition come from scripts/catalog.mjs (the same
 // source the database uses); this file adds the decision-making facts a prospective student needs.
 // Every statement here must be true today. No outcome numbers, ratings or popularity claims.
 import { PROGRAMS as CORE, TERMS, TUITION, LIVE_PATTERN, TIMEZONE } from '../../scripts/catalog.mjs';
@@ -8,7 +8,7 @@ export { TUITION, LIVE_PATTERN, TIMEZONE };
 // Owner decisions (2026-10-02): flexible + live pace; Nuvora certificate of completion, not an accredited degree.
 export const PACE = {
   short: 'Flexible + live',
-  long: 'Watch lessons any time, plus two live Zoom sessions a week (recorded)',
+  long: 'Watch lessons any time, plus two live Jitsi sessions a week (recorded)',
 };
 export const CREDENTIAL = {
   short: 'Nuvora certificate of completion',
@@ -16,9 +16,9 @@ export const CREDENTIAL = {
 };
 
 const LEVEL = {
-  Bachelor: { label: 'Bachelor’s-level program', weekly: '8–12', length: '3–4 years part-time' },
-  Master: { label: 'Master’s-level program', weekly: '10–14', length: '12–18 months part-time' },
-  Certificate: { label: 'Certificate', weekly: '8–10', length: '12 weeks (one term)' },
+  Bachelor: { label: 'Bachelorâ€™s-level program', weekly: '8â€“12', length: '3â€“4 years part-time' },
+  Master: { label: 'Masterâ€™s-level program', weekly: '10â€“14', length: '12â€“18 months part-time' },
+  Certificate: { label: 'Certificate', weekly: '8â€“10', length: '12 weeks (one term)' },
 };
 
 const EXTRA = {
@@ -46,7 +46,7 @@ const EXTRA = {
     slug: 'ms-applied-machine-learning', topics: ['Machine Learning', 'MLOps'], track: 'engineering-to-ai',
     tagline: 'Production machine learning, deep learning architectures and responsible deployment, for working engineers.',
     audience: ['Software engineers and analysts who already use Python', 'ML practitioners moving into production ML'],
-    required: ['A bachelor’s degree in any field', 'Python programming', 'Linear algebra and probability'], requiresCoding: true,
+    required: ['A bachelorâ€™s degree in any field', 'Python programming', 'Linear algebra and probability'], requiresCoding: true,
     helpful: ['Experience training a machine learning model'],
     roles: ['ml-engineer', 'ai-engineer', 'ai-product-lead'],
     tools: ['PyTorch', 'Ray', 'Kubernetes', 'MLflow', 'Spark'],
@@ -56,7 +56,7 @@ const EXTRA = {
     slug: 'ms-data-science-analytics', topics: ['Data Science'], track: 'data-science',
     tagline: 'Advanced statistics, experimentation and data strategy for people who lead analytics work.',
     audience: ['Analysts and data scientists stepping into senior or lead roles', 'Managers who make decisions with data'],
-    required: ['A bachelor’s degree in any field', 'SQL and Python or R', 'Introductory statistics'], requiresCoding: true,
+    required: ['A bachelorâ€™s degree in any field', 'SQL and Python or R', 'Introductory statistics'], requiresCoding: true,
     helpful: ['Experience running analyses for stakeholders'],
     roles: ['data-scientist', 'analytics-manager', 'ai-product-lead'],
     tools: ['Python', 'R', 'SQL', 'Spark', 'Stan', 'Looker'],
@@ -83,7 +83,7 @@ const EXTRA = {
     capstone: 'Ship a working LLM application with an automated evaluation suite.',
   },
   'c-mlops': {
-    slug: 'certificate-mlops-data-engineering', topics: ['MLOps'], track: 'engineering-to-ai', weekly: '10–12',
+    slug: 'certificate-mlops-data-engineering', topics: ['MLOps'], track: 'engineering-to-ai', weekly: '10â€“12',
     tagline: 'Pipelines, orchestration, model serving and monitoring: the skills that get models into production.',
     audience: ['Data engineers and backend developers', 'Data scientists who deploy their own models'],
     required: ['Python', 'The command line and Git', 'Basic cloud concepts'], requiresCoding: true,
@@ -118,7 +118,7 @@ export const PROGRAMS = CORE.map((p) => {
     tagline: x.tagline, audience: x.audience, required: x.required, helpful: x.helpful,
     roles: x.roles, tools: x.tools, capstone: x.capstone,
     weeklyHours: x.weekly ?? lvl.weekly,
-    weeklyMin: Number((x.weekly ?? lvl.weekly).split('–')[0]),
+    weeklyMin: Number((x.weekly ?? lvl.weekly).split('â€“')[0]),
     requiresCoding: Boolean(x.requiresCoding),
     duration: lvl.length,
     terms,
@@ -133,7 +133,7 @@ export const PROGRAMS = CORE.map((p) => {
 
 export const P = (id) => PROGRAMS.find((p) => p.id === id);
 export const TOPICS = ['Data Science', 'Machine Learning', 'Generative AI', 'MLOps'];
-export const LEVELS = [['Certificate', 'Certificates'], ['Bachelor', 'Bachelor’s-level'], ['Master', 'Master’s-level']];
+export const LEVELS = [['Certificate', 'Certificates'], ['Bachelor', 'Bachelorâ€™s-level'], ['Master', 'Masterâ€™s-level']];
 
 export const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 export { nextStarts, todayInKolkata, termDates, fmtDay, fmtLong, isoDay } from '../assets/js/dates.mjs';

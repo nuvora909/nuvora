@@ -1,4 +1,4 @@
-// Demo scenario for the local server, built through the same database functions production uses
+﻿// Demo scenario for the local server, built through the same database functions production uses
 // (enrollment, submissions, grading, the daily term progression, recordings).
 // Dates are relative to today, so there are always past classes, upcoming classes and due dates.
 //
@@ -121,9 +121,9 @@ export async function loadDemo(db) {
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.earlier, id.instructor2]);
   await service(`select update_batch_statuses(current_date)`);
 
-  // Placeholder Zoom links (not real meetings).
-  await db.query(`update public.sessions s set join_url = 'https://zoom.us/j/9' || lpad(n::text, 9, '0')
-                  from (select id, row_number() over (order by starts_at, id) n from public.sessions) x where x.id = s.id`);
+    // Placeholder Jitsi links (not real meetings).
+    await db.query(`update public.sessions s set join_url = 'https://meet.jit.si/nuvora-' || lpad(n::text, 4, '0')
+                    from (select id, row_number() over (order by starts_at, id) n from public.sessions) x where x.id = s.id`);
 
   // Term 2 so far: Maya finished the first two lessons and is 40% into the third.
   for (const [i, l] of (await lessonsOf(2)).slice(0, 3).entries()) {
@@ -169,13 +169,13 @@ export async function loadDemo(db) {
   // admins upload it.)
   for (const program of ['bs-aiml', 'ms-ds']) {
     await db.query(`insert into public.materials (program_id, lesson_id, title, file_path, size_bytes, position)
-                    select m.program_id, l.id, 'Lecture notes · ' || l.title, m.program_id || '/lessons/' || lower(l.code) || '/notes.pdf', 180000 + l.duration_seconds * 40, 1
+                    select m.program_id, l.id, 'Lecture notes Â· ' || l.title, m.program_id || '/lessons/' || lower(l.code) || '/notes.pdf', 180000 + l.duration_seconds * 40, 1
                     from public.lessons l join public.modules m on m.id = l.module_id where m.program_id = $1`, [program]);
     await db.query(`insert into public.materials (program_id, lesson_id, title, file_path, size_bytes, position)
-                    select m.program_id, l.id, 'Exercise sheet · ' || l.title, m.program_id || '/lessons/' || lower(l.code) || '/exercises.pdf', 64000, 2
+                    select m.program_id, l.id, 'Exercise sheet Â· ' || l.title, m.program_id || '/lessons/' || lower(l.code) || '/exercises.pdf', 64000, 2
                     from public.lessons l join public.modules m on m.id = l.module_id where m.program_id = $1 and l.position <= 2`, [program]);
     await db.query(`insert into public.materials (program_id, assignment_template_id, title, file_path, size_bytes)
-                    select program_id, id, 'Assessment brief · ' || title,
+                    select program_id, id, 'Assessment brief Â· ' || title,
                            program_id || '/assignments/t' || term_no || '-' || row_number() over (partition by term_no order by due_offset_days) || '/brief.pdf', 96000
                     from public.assignment_templates where program_id = $1`, [program]);
   }

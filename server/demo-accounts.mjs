@@ -1,4 +1,4 @@
-// Demo accounts for the LOCAL development server and automated tests only.
+﻿// Demo accounts for the LOCAL development server and automated tests only.
 // They exist only in the in-memory database on this computer and are recreated on every start.
 // They are never created in the real (Supabase) project. The .test domain is reserved and cannot receive mail.
 export const DEMO_PASSWORD = 'nuvora-local-demo-2026';

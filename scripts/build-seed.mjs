@@ -1,4 +1,4 @@
-// Builds supabase/seed.sql from scripts/catalog.mjs: programs (with the tuition per term), their terms, one module of four lessons per
+﻿// Builds supabase/seed.sql from scripts/catalog.mjs: programs (with the tuition per term), their terms, one module of four lessons per
 // term, the live-class pattern of every term and its three graded projects; plus the career roles and the
 // skills each uses from the website's data (web/data), for the portal's goals and competency gaps.
 import { writeFileSync } from 'node:fs';
@@ -49,8 +49,8 @@ for (const p of PROGRAMS) {
   TERMS[p.id].forEach((t, ti) => {
     for (let w = 1; w <= L.weeks; w++) {
       const lesson = t.lessons[Math.min(t.lessons.length - 1, Math.floor(((w - 1) * t.lessons.length) / L.weeks))][1];
-      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.classDay}, ${q(L.classTime)}, ${L.classMinutes}, ${q(`Live class · Week ${w} · ${lesson}`)})`);
-      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.officeDay}, ${q(L.officeTime)}, ${L.officeMinutes}, ${q(`Office hours · Week ${w}`)})`);
+      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.classDay}, ${q(L.classTime)}, ${L.classMinutes}, ${q(`Live class Â· Week ${w} Â· ${lesson}`)})`);
+      sessionRows.push(`  (${q(p.id)}, ${ti + 1}, ${w}, ${L.officeDay}, ${q(L.officeTime)}, ${L.officeMinutes}, ${q(`Office hours Â· Week ${w}`)})`);
     }
   });
 }

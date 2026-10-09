@@ -1,180 +1,477 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Certificate in Python & Data Analysis Brochure - Nuvora</title>
-<meta name="description" content="Download the official brochure for Nuvora's Certificate in Python & Data Analysis program.">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&amp;family=Source+Serif+4:ital,opsz,wght@1,8..60,500&amp;family=Outfit:wght@600&amp;display=swap">
-<link rel="stylesheet" href="/css/site.css">
-<style>
-  .brochure {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    line-height: 1.6;
-    color: #1a1a1a;
-  }
-  .brochure-header {
-    text-align: center;
-    border-bottom: 3px solid #0866FF;
-    padding-bottom: 20px;
-    margin-bottom: 30px;
-  }
-  .brochure-header h1 {
-    color: #0866FF;
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-  }
-  .brochure-header .tagline {
-    font-style: italic;
-    color: #555;
-    font-size: 1.2rem;
-  }
-  .brochure-section {
-    margin-bottom: 30px;
-  }
-  .brochure-section h2 {
-    color: #0866FF;
-    border-left: 4px solid #0866FF;
-    padding-left: 15px;
-    margin-bottom: 20px;
-  }
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-  }
-  .info-item {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-  }
-  .info-item h3 {
-    margin-top: 0;
-    color: #0866FF;
-    font-size: 1.1rem;
-  }
-  .highlight {
-    background: #e6f7ff;
-    padding: 10px 15px;
-    border-left: 3px solid #22D3EE;
-    margin: 15px 0;
-  }
-  ul {
-    padding-left: 20px;
-  }
-  li {
-    margin-bottom: 8px;
-  }
-  .footer-note {
-    text-align: center;
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-    font-size: 0.9rem;
-    color: #666;
-  }
-  @media print {
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Certificate in Python & Data Analysis Brochure - Nuvora</title>
+  <meta name="description" content="Download the official brochure for Nuvora's Certificate in Python & Data Analysis program.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&amp;family=Source+Serif+4:ital,opsz,wght@1,8..60,500&amp;family=Outfit:wght@600&amp;display=swap">
+  <link rel="stylesheet" href="/css/site.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-size: 12pt;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.7;
+      color: #2c3e50;
+      background-color: #f8f9fa;
     }
+
     .brochure {
-      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
     }
-  }
-</style>
+
+    .brochure-header {
+      background: linear-gradient(135deg, #0866FF, #22D3EE);
+      color: white;
+      text-align: center;
+      padding: 50px 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brochure-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      transform: rotate(30deg);
+    }
+
+    .brochure-header h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brochure-header .tagline {
+      font-size: 1.3rem;
+      font-style: italic;
+      opacity: 0.9;
+      position: relative;
+      z-index: 2;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .brochure-content {
+      padding: 40px 30px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #0866FF;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e3f2fd;
+    }
+
+    .section-title-icon {
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .info-card {
+      background: #f0f8ff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+      border-left: 4px solid #22D3EE;
+      box-shadow: 0 2px 8px rgba(0, 130, 255, 0.08);
+    }
+
+    .info-card h3 {
+      color: #0866FF;
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    .info-card h3::before {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: #22D3EE;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .info-item {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eee;
+    }
+
+    .info-item h4 {
+      color: #0866FF;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .info-item p {
+      font-size: 0.95rem;
+      color: #34495e;
+      font-weight: 500;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #e3f2fd, #cce5ff);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 4px solid #22D3EE;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .highlight::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%);
+      transform: rotate(30deg);
+    }
+
+    .highlight h3 {
+      color: #0866FF;
+      font-size: 1.25rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .highlight h3::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #22D3EE;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    ul {
+      padding-left: 22px;
+      margin: 16px 0;
+    }
+
+    li {
+      margin-bottom: 10px;
+      position: relative;
+      padding-left: 10px;
+    }
+
+    li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #22D3EE;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #22D3EE;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .badge-secondary {
+      background: #e3f2fd;
+      color: #0866FF;
+    }
+
+    .footer {
+      background: #f8f9ff;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #eee;
+    }
+
+    .footer-note {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      line-height: 1.6;
+    }
+
+    .footer-links {
+      margin-top: 20px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      color: #0866FF;
+      text-decoration: none;
+      font-weight: 500;
+      margin: 0 12px;
+      transition: all 0.2s ease;
+    }
+
+    .footer-link:hover {
+      color: #22D3EE;
+      transform: translateY(-1px);
+    }
+
+    .footer-link-icon {
+      margin-right: 4px;
+      width: 14px;
+      height: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .brochure {
+        margin: 15px;
+        border-radius: 12px;
+      }
+
+      .brochure-header {
+        padding: 40px 25px;
+      }
+
+      .brochure-header h1 {
+        font-size: 2rem;
+      }
+
+      .brochure-header .tagline {
+        font-size: 1.1rem;
+      }
+
+      .brochure-content {
+        padding: 30px 25px;
+      }
+
+      .section-title {
+        font-size: 1.4rem;
+        margin-bottom: 16px;
+      }
+
+      .info-card {
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      .highlight {
+        padding: 16px;
+        margin: 16px 0;
+      }
+
+      .footer {
+        padding: 25px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brochure-header {
+        padding: 30px 20px;
+      }
+
+      .brochure-header h1 {
+        font-size: 1.6rem;
+      }
+
+      .brochure-header .tagline {
+        font-size: 0.95rem;
+      }
+
+      .brochure-content {
+        padding: 25px 20px;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer {
+        padding: 20px;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .brochure {
+        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+      }
+
+      .brochure-header {
+        background: #0866FF;
+      }
+
+      .brochure-header::before {
+        display: none;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="brochure">
-  <header class="brochure-header">
-    <h1>Certificate in Python & Data Analysis</h1>
-    <p class="tagline">A focused 12-week start in Python, SQL and data analysis.</p>
-  </header>
-
-  <section class="brochure-section">
-    <h2>Program Overview</h2>
-    <div class="info-grid">
-      <div class="info-item">
-        <h3>Level</h3>
-        <p>Certificate</p>
-      </div>
-      <div class="info-item">
-        <h3>Duration</h3>
-        <p>12 weeks (one term)</p>
-      </div>
-      <div class="info-item">
-        <h3>Weekly Commitment</h3>
-        <p>8–10 hours/week</p>
-      </div>
-      <div class="info-item">
-        <h3>Credential</h3>
-        <p>Nuvora certificate of completion · not an accredited degree</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="brochure-section">
-    <h2>Curriculum Highlights</h2>
-    <div class="highlight">
-      <p><strong>Core Topics:</strong> Data Science</p>
-      <p><strong>Track:</strong> data-science</p>
-      <p><strong>Capstone Project:</strong> Publish a cleaned, analysed dataset notebook to your public portfolio.</p>
+  <div class="brochure">
+    <div class="brochure-header">
+      <h1>Certificate in Python & Data Analysis</h1>
+      <p class="tagline">A focused 12-week start in Python, SQL and data analysis.</p>
     </div>
 
-    <h3>Terms of Study</h3>
-    <ol>
-      <li>Python & data analysis – Python Data Analysis</li>
-    </ol>
-  </section>
-
-  <section class="brochure-section">
-    <h2>Tools & Technologies</h2>
-    <p>Python, pandas, SQL, Jupyter</p>
-  </section>
-
-  <section class="brochure-section">
-    <h2>Career Paths</h2>
-    <p>Prepares learners for roles such as:</p>
-    <ul>
-      <li>data-analyst</li>
-    </ul>
-  </section>
-
-  <section class="brochure-section">
-    <h2>Admission Requirements</h2>
-    <div class="info-grid">
-      <div class="info-item">
-        <h3>Prerequisites</h3>
-        <p>None: the course starts from the basics</p>
+    <div class="brochure-content">
+      <div class="section">
+        <h2 class="section-title">Program Overview</h2>
+        <div class="info-card">
+          <p><strong>Level:</strong> Certificate program</p>
+          <p><strong>Duration:</strong> 12 weeks (one term)</p>
+          <p><strong>Weekly Commitment:</strong> 8–10 hours/week</p>
+          <p><strong>Credential:</strong> Nuvora certificate of completion · not an accredited degree</p>
+        </div>
       </div>
-      <div class="info-item">
-        <h3>Helpful Background</h3>
-        <p>Spreadsheets</p>
+
+      <div class="section">
+        <h2 class="section-title">What You'll Learn</h2>
+        <div class="highlight">
+          <p><strong>Core Competency:</strong> Data Science</p>
+          <p><strong>Specialization Track:</strong> data-science</p>
+          <p><strong>Capstone Project:</strong> Publish a cleaned, analysed dataset notebook to your public portfolio.</p>
+        </div>
+
+        <h3>Weekly Breakdown</h3>
+        <ol>
+          <li>Python Fundamentals – Variables, Data Types, Control Flow</li>
+          <li>Python Intermediate – Functions, Modules, File Handling</li>
+          <li>Python Advanced – OOP, Libraries, Virtual Environments</li>
+          <li>SQL Basics – Queries, Filtering, Aggregation</li>
+          <li>SQL Advanced – Joins, Subqueries, Window Functions</li>
+          <li>Data Analysis with Python – Pandas, NumPy, Data Cleaning</li>
+          <li>Data Visualization – Matplotlib, Seaborn, Plotly</li>
+          <li>Statistics for Data Analysis – Descriptive Stats, Hypothesis Testing</li>
+          <li>Data Wrangling – Cleaning, Transformation, Preparation</li>
+          <li>Exploratory Data Analysis – Patterns, Trends, Insights</li>
+          <li>Applied Data Analysis – Real-world Case Studies</li>
+          <li>Capstone Project Development – From Concept to Publication</li>
+          <li>Portfolio Review & Presentation – Final Project Showcase</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Tools & Technologies</h2>
+        <p>Python, pandas, SQL, Jupyter</p>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Career Paths</h2>
+        <p>Prepares learners for roles such as:</p>
+        <ul>
+          <li>Data Analyst</li>
+          <li>Junior Data Analyst</li>
+          <li>Business Analyst</li>
+          <li>Reporting Analyst</li>
+          <li>Data Technician</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Admission Requirements</h2>
+        <div class="info-card">
+          <p><strong>Prerequisites:</strong> None: the course starts from the basics</p>
+          <p><strong>Note:</strong> No prior experience required - perfect for beginners</p>
+          <p><strong>Helpful Background:</strong> Spreadsheets</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">How You'll Learn</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <h3>Learning Format</h3>
+            <p>Flexible + live: Watch lessons any time, plus two live Zoom sessions a week (recorded)</p>
+          </div>
+          <div class="info-item">
+            <h3>Assessment Method</h3>
+            <p>Projects graded by instructors on a four-level mastery rubric with detailed feedback</p>
+          </div>
+          <div class="info-item">
+            <h3>Support Structure</h3>
+            <p>Instructor office hours, peer collaboration, and career guidance</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Tuition & Fees</h2>
+        <div class="highlight">
+          <p><strong>Application Fee:</strong> $60 (one-time)</p>
+          <p><strong>Tuition:</strong> $1,950 (one-time payment for 12-week term)</p>
+          <p><strong>Total Cost:</strong> $1,950 (no additional terms)</p>
+          <p>Launch pricing in US dollars</p>
+          <p>Most affordable entry point to data analysis education</p>
+        </div>
       </div>
     </div>
-  </section>
 
-  <section class="brochure-section">
-    <h2>Tuition & Fees</h2>
-    <div class="highlight">
-      <p><strong>Application Fee:</strong> $60 (one-time)</p>
-      <p><strong>Tuition:</strong> $1,950 per term</p>
-      <p><strong>Total Program Cost:</strong> $2,010 (application fee + 1 term)</p>
-      <p>Launch pricing in US dollars, paid one term at a time</p>
+    <div class="footer">
+      <div class="footer-note">
+        <p>Nuvora is preparing its first batches. This brochure provides accurate information about the program as of October 2026.</p>
+        <p>Programs lead to a Nuvora certificate of completion, not an accredited degree. Nuvora does not accept transfer credit or offer test-outs.</p>
+        <p>All statements in this brochure are true today and based on verified program information.</p>
+      </div>
+      <div class="footer-links">
+        <a href="/programs/certificate-python-data-analysis/" class="footer-link">
+          <span class="footer-link-icon">→</span> Visit the program page
+        </a>
+        <a href="#" class="footer-link">
+          <span class="footer-link-icon">📥</span> Download this brochure
+        </a>
+      </div>
     </div>
-  </section>
-
-  <footer class="footer-note">
-    <p>Nuvora is preparing its first batches. This brochure provides accurate information about the program as of October 2026.</p>
-    <p>Programs lead to a Nuvora certificate of completion, not an accredited degree. Nuvora does not accept transfer credit or offer test-outs.</p>
-    <p><a href="/programs/certificate-python-data-analysis/">Visit the program page →</a></p>
-  </footer>
-</div>
+  </div>
 </body>
 </html>

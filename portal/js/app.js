@@ -7,6 +7,7 @@ import * as student from './pages/student.js';
 import * as staff from './pages/staff.js';
 import * as admin from './pages/admin.js';
 import * as adminOps from './pages/admin-ops.js';
+import * as adminAssistant from './pages/admin-assistant.js';
 
 const root = document.getElementById('app');
 const STAFF_ROLES = new Set(['instructor', 'admin']);
@@ -38,6 +39,7 @@ const ROUTES = [
   { path: 'admin/staff', page: adminOps.staff, who: 'admin', title: 'Staff' },
   { path: 'admin/requests', page: adminOps.requests, who: 'admin', title: 'Seat requests' },
   { path: 'admin/materials', page: adminOps.materials, who: 'admin', title: 'Materials' },
+  { path: 'admin/assistant', page: adminAssistant.assistant, who: 'admin', title: 'Admin Assistant' },
 ];
 
 const state = {
@@ -138,13 +140,7 @@ async function runPage(r, ctx) {
   state.focus = null;
   try {
     // Show a spinner when arriving on a page, not when the same page refreshes itself.
-    // Arriving on another page starts at its top, not at the old page's scroll position.
-    if (ctx.main !== root && arrived) { ctx.render(loading()); window.scrollTo(0, 0); }
-    state.lastHash = location.hash;
-    await r.page(ctx);
-    if (ctx.stale()) return;
-    state.lastLoad = Date.now();
-    // Not on the very first page of a visit: there the browser starts at the top, as on any website.
+    // Arriving on another page starts at its top, not at the old file: the browser starts at the top, as on any website.
     if (state.routed && (wanted || trail.length || arrived)) restoreFocus(ctx.main, wanted, trail);
     state.routed = true;
   } catch (e) {
@@ -184,11 +180,13 @@ function restoreFocus(main, wanted, trail) {
   target.focus();
 }
 
+// ---------------------------------------------------------------- misc
 function runCleanups() {
   const list = state.cleanups.splice(0);
   for (const fn of list) { try { fn(); } catch (e) { console.error(e); } }
 }
 
+// ---------------------------------------------------------------- error handling
 function errorView(e) {
   const missing = e?.code === 'P0002' || e?.status === 404;
   const offline = e?.code === 'network';
@@ -239,7 +237,8 @@ function ensureShell() {
   const staffNav = [['teach', 'board', 'Teaching'], ['grading', 'grade', 'Grading', 'grade'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
   const studentNav = [['home', 'home', 'Home'], ['course', 'book', 'My course'], ['live', 'live', 'Live classes'], ['assignments', 'task', 'Assignments'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
   const adminNav = [['admin', 'gauge', 'Overview'], ['admin/students', 'users', 'Students'], ['admin/batches', 'calendar', 'Batches'],
-    ['admin/staff', 'shield', 'Staff'], ['admin/requests', 'inbox', 'Seat requests'], ['admin/materials', 'pdf', 'Materials']];
+    ['admin/staff', 'shield', 'Staff'], ['admin/requests', 'inbox', 'Seat requests'], ['admin/materials', 'pdf', 'Materials'],
+    ['admin/assistant', 'robot', 'Admin Assistant']];
   const link = ([p, ic, label, badge]) => html`<a class="snav" href="#/${p}" data-nav="${p}">${icon(ic)}<span>${label}</span>${badge ? html`<span class="count" data-badge="${badge}" hidden></span>` : ''}</a>`;
   const nav = isAdmin()
     ? html`<p class="navhead">Admin</p>${adminNav.map(link)}<p class="navhead">Teaching</p>${staffNav.map(link)}`
@@ -275,27 +274,6 @@ function ensureShell() {
   startPolling();
 }
 
-// Tuition access, from the student's dashboard (the database decides it with its own clock): a calm notice
-// during the last 7 days before access pauses, and for a paused program while another one is still open.
-// When every program is paused, the pages themselves explain it instead (pausedView in pages/student.js).
-const BAR_DAYS = 7;
-function renderAccessBar() {
-  const host = root.querySelector('[data-accessbar]');
-  if (!host) return;
-  const list = isStaff() ? [] : state.dash?.access ?? [];
-  const soon = list.filter((a) => a.open && a.ends_at && a.days_left !== null && a.days_left <= BAR_DAYS);
-  const paused = state.dash?.batches?.length ? list.filter((a) => !a.open) : [];
-  const days = (n) => (n <= 0 ? 'today' : n === 1 ? 'in 1 day' : `in ${n} days`);
-  host.innerHTML = String(html`${soon.map((a) => html`<div class="accessbar warn" role="status">${icon('clock')}
-      <p><b>Your portal access to ${a.program} pauses ${days(a.days_left)}, on ${fmtDateTime(a.ends_at)}.</b>
-        ${a.state === 'grace' ? `Term ${a.term} hasn’t been paid yet. Access continues as soon as your payment is recorded.`
-          : 'Your extended access ends then, and the usual tuition rule applies again.'}</p>
-      <a class="btn ghost sm" href="#/access">What this means</a></div>`)}
-    ${paused.map((a) => html`<div class="accessbar bad" role="status">${icon('lock')}
-      <p><b>Your portal access to ${a.program} is paused.</b> ${a.state === 'stopped_unpaid' ? `Term ${a.term} hasn’t been paid yet.` : 'Nuvora paused it.'}</p>
-      <a class="btn ghost sm" href="#/access?paused=1">Details</a></div>`)}`);
-}
-
 function teardownShell() {
   if (!state.shell) return;
   state.shell = false;
@@ -307,7 +285,8 @@ function markNav(key) {
     if (a.dataset.nav === key) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
-  // On phones the menu is one sideways strip: bring the current page's item into view (only the strip scrolls).
+  // On phones the menu is one sideways strip: there are more items that way (.more-l / .more-r in portal.css),
+  // so nobody takes the visible items for the whole menu.
   const bar = root.querySelector('.sidebar');
   const cur = bar?.querySelector('[aria-current="page"]');
   if (cur && bar.scrollWidth > bar.clientWidth) {
@@ -317,8 +296,6 @@ function markNav(key) {
   menuEdges();
 }
 
-// The phone strip fades out at an edge while there are more items that way (.more-l / .more-r in portal.css),
-// so nobody takes the visible items for the whole menu.
 function menuEdges() {
   const bar = root.querySelector('.sidebar');
   if (!bar) return;
@@ -337,6 +314,7 @@ function menuFocus(e) {
   else if (c.right > b.right - FADE) bar.scrollLeft += c.right - (b.right - FADE);
 }
 
+// ---------------------------------------------------------------- assistant
 function renderBatchPicker() {
   const host = root.querySelector('[data-batchpick]');
   if (!host) return;
@@ -353,6 +331,7 @@ function renderBatchPicker() {
   }
 }
 
+// ---------------------------------------------------------------- user account button
 function renderUserButton() {
   const host = root.querySelector('[data-user]');
   if (!host || !state.me) return;
@@ -387,8 +366,9 @@ function closeUserMenu() {
   host.querySelector('[data-usermenu]').setAttribute('aria-expanded', 'false');
 }
 document.addEventListener('click', (e) => { if (!root.querySelector('[data-user]')?.contains(e.target)) closeUserMenu(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeUserMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeUserMenu(); }
 
+// ---------------------------------------------------------------- badges
 function renderBadges() {
   for (const el of root.querySelectorAll('[data-badge]')) {
     const n = el.dataset.badge === 'grade' ? state.toGrade : state.unread;
@@ -399,6 +379,27 @@ function renderBadges() {
   if (bell) bell.setAttribute('aria-label', state.unread ? `Notifications, ${state.unread} unread` : 'Notifications');
 }
 
+// ---------------------------------------------------------------- access bar
+function renderAccessBar() {
+  const host = root.querySelector('[data-accessbar]');
+  if (!host) return;
+  const list = isStaff() ? [] : state.dash?.access ?? [];
+  const soon = list.filter((a) => a.open && a.ends_at && a.days_left !== null && a.days_left <= BAR_DAYS);
+  const paused = state.dash?.batches?.length ? list.filter((a) => !a.open) : [];
+  const days = (n) => (n <= 0 ? 'today' : n === 1 ? 'in 1 day' : `in ${n} days`);
+  host.innerHTML = String(html`${soon.map((a) => html`<div class="accessbar warn" role="status">${icon('clock')}
+      <p><b>Your portal access to ${a.program} pauses ${days(a.days_left)}, on ${fmtDateTime(a.ends_at)}.</b>
+        ${a.state === 'grace' ? `Term ${a.term} hasn’t been paid yet. Access continues as soon as your payment is recorded.`
+          : 'Your extended access ends then, and the usual tuition rule applies again.'}</p>
+      <a class="btn ghost sm" href="#/access">What this means</a></div>`)}
+    ${paused.map((a) => html`<div class="accessbar bad" role="status">${icon('lock')}
+      <p><b>Your portal access to ${a.program} is paused.</b> ${a.state === 'stopped_unpaid' ? `Term ${a.term} hasn’t been paid yet.` : 'Nuvora paused it.'</p>
+      <a class="btn ghost sm" href="#/access?paused=1">Details</a></div>`)`);
+}
+
+const BAR_DAYS = 7;
+
+// ---------------------------------------------------------------- polling
 // Keep badges current; refresh the page when the student comes back to the tab after a while.
 let pollTimer = null;
 function startPolling() {

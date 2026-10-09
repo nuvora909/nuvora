@@ -8,7 +8,7 @@ import { buildForTest, visibleText, decode } from './helpers.mjs';
 import { PROGRAMS, TOPICS } from '../../web/data/programs.mjs';
 import { OWNER } from '../../web/data/site.mjs';
 import { CERTS, PROGRAM_CERTS, CHECKED, CERT_DISCLAIMER, certsFor } from '../../web/data/certs.mjs';
-import { COVERS, coverUrl, coverAlt } from '../../web/lib/covers.mjs';
+import { COVERS, coverUrl, coverAlt, brochureCoverUrl, brochureCoverAlt } from '../../web/lib/covers.mjs';
 import { footer, socialLinks, FOOTER_COLUMNS } from '../../web/lib/layout.mjs';
 
 let site;
@@ -46,7 +46,9 @@ test('every catalog card links to its built program page and every program appea
       assert.deepEqual(links, [p.url], `${path}: the ${id} card has one link, to its program page`);
       assert.equal(linkProblem(p.url), null);
       assert.match(card, /data-match-badge hidden/, 'the "Your match" hook site.js uses is there');
-      assert.match(card, new RegExp(`<img src="${coverUrl(p)}" alt="[^"]{30,}"`), `${id}: the cover has alt text`);
+      assert.match(card, new RegExp(`<img class="ccard-book-face" src="${brochureCoverUrl(p)}" alt="[^"]{30,}"`), `${id}: the portrait brochure cover has alt text`);
+      assert.match(card, /class="ccard-book-pages"/, `${id}: the cover has 3D page depth`);
+      assert.match(card, /class="ccard-3d-tag"/, `${id}: the card identifies its 3D program guide`);
     }
     // Topic tabs come from the programs' topics, each a toggle button; no JavaScript means every card shows.
     for (const t of TOPICS) assert.match(cat, new RegExp(`<button type="button" aria-pressed="false" data-topic="${t}">`));
@@ -65,6 +67,16 @@ test('each program has a cover file: original SVG art, no photos, people or outs
     for (const line of COVERS[p.id].label) assert.ok(svg.includes(`>${line.replace(/&/g, '&amp;')}</text>`), `${p.id}: label "${line}"`);
     assert.doesNotMatch(coverAlt(p), /student|person|people|learner/i, `${p.id}: the alt text describes artwork, not people`);
     assert.doesNotMatch(coverAlt(p), /\bAi\b|\bMl\b|Mlops/, `${p.id}: acronyms keep their capitals in the alt text`);
+  }
+});
+
+test('each program card has a high-definition portrait SVG brochure cover with its own vector motif', async () => {
+  for (const p of PROGRAMS) {
+    const svg = await readFile(join(site.outDir, ...brochureCoverUrl(p).split('/').filter(Boolean)), 'utf8');
+    assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 480 640"/);
+    assert.ok(svg.includes(`<title id="t">${brochureCoverAlt(p).replace(/&/g, '&amp;')}</title>`), `${p.id}: the SVG has descriptive title text`);
+    assert.doesNotMatch(svg, /<image|<foreignObject|<script|href="http|url\(http/i, `${p.id}: artwork is vector-only and local`);
+    for (const line of COVERS[p.id].label) assert.ok(svg.includes(`>${line.replace(/&/g, '&amp;')}</text>`), `${p.id}: includes its ${line} motif label`);
   }
 });
 

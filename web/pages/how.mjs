@@ -1,4 +1,4 @@
-// How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
+﻿// How it works (/how-it-works/): the Nuvora Learning System, a 12-week term week by week, the student portal,
 // assessment, the credential and support. Every fact comes from the data modules; nothing here describes
 // outcomes. Features are described as current only when they exist in the portal today; anything still being set
 // up (the streaming service, the real course PDFs, mentoring) says so.
@@ -20,7 +20,7 @@ const PROJECT_WEEKS = PROGRAMS[0].terms[0].projects.map(([, day]) => Math.ceil(d
 const PROJECTS = PROJECT_WEEKS.length;
 const listWeeks = (ws) => `${ws.slice(0, -1).join(', ')} and ${ws[ws.length - 1]}`;
 const DUE_WEEKS = listWeeks(PROJECT_WEEKS);
-const hours = PROGRAMS.flatMap((p) => p.weeklyHours.split('–').map(Number));
+const hours = PROGRAMS.flatMap((p) => p.weeklyHours.split('â€“').map(Number));
 const HOURS = [Math.min(...hours), Math.max(...hours)];
 const credits = PROGRAMS.map((p) => p.credits);
 const CREDITS = [Math.min(...credits), Math.max(...credits)];
@@ -35,7 +35,7 @@ const FAQ = [
   ['What happens if I miss a live session?',
     'Every live class and office-hours session is recorded and streams in the student portal, so you can catch up when it suits you.'],
   ['When are the live sessions?',
-    `A ${SCHEDULE.classMinutes}-minute class every ${SCHEDULE.classDay} and ${SCHEDULE.officeMinutes}-minute office hours every ${SCHEDULE.officeDay}, both at ${SCHEDULE.classTime} India time (IST) on Zoom. Join links open in the portal 15 minutes before each session.`],
+    `A ${SCHEDULE.classMinutes}-minute class every ${SCHEDULE.classDay} and ${SCHEDULE.officeMinutes}-minute office hours every ${SCHEDULE.officeDay}, both at ${SCHEDULE.classTime} US time on Jitsi. Join links open in the portal 15 minutes before each session.`],
   ['Can I download the lesson videos?',
     'No. Lessons and class recordings stream in the student portal only and can never be downloaded. Lesson notes, exercise sheets and project briefs are PDFs you can download and keep.'],
   ['When does a lesson count as complete?',
@@ -45,7 +45,7 @@ const FAQ = [
   ['How many hours a week should I plan for?',
     `Between ${HOURS[0]} and ${HOURS[1]} hours, depending on the program: the two live sessions plus lessons and project work at your own time. Each program page lists its weekly hours.`],
   ['What if I fall behind?',
-    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.`],
+    `Watch the recordings and bring questions to ${SCHEDULE.officeDay} office hours. If you have not been active for 14 days, you appear on your instructorâ€™s check-in list so they can reach out.`],
   ['Is the certificate an accredited degree?',
     `No. You receive a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
 ];
@@ -64,7 +64,7 @@ const PILLARS = [
     points: [`Projects due in weeks ${DUE_WEEKS}`, 'Written feedback on every submission', 'Proficient or better passes; below that, revise and resubmit'] },
   { n: '03', title: 'Stay *supported*',
     lede: 'Instructors teach live and grade your work, office hours run every week, and your instructor sees when you go quiet.',
-    points: [`Live class on ${CLASS}, office hours on ${OFFICE}`, 'Instructors who teach your classes and grade your projects', 'Inactive for 14 days? You appear on your instructor’s check-in list'] },
+    points: [`Live class on ${CLASS}, office hours on ${OFFICE}`, 'Instructors who teach your classes and grade your projects', 'Inactive for 14 days? You appear on your instructorâ€™s check-in list'] },
 ];
 
 const learningSystem = () => html`
@@ -132,7 +132,7 @@ const term = (today) => html`
       ${exampleDates(today)}
     </div>
     <h3 class="how-sub">A typical week</h3>
-    <p class="muted how-subtext">Times are in India time (IST); your own time zone is shown under each session when your browser shares it.</p>
+    <p class="muted how-subtext">Times are in US time; your own time zone is shown under each session when your browser shares it.</p>
     <div class="how-stack">
       ${weekView()}
       ${schedule()}
@@ -148,7 +148,7 @@ const PORTAL = [
   ['doc', 'PDF notes and briefs', 'Lesson notes, exercise sheets and project briefs download as PDFs you can keep. The course PDFs in the portal today are placeholders while the real ones are written.'],
   ['live', 'Live session links', `Join links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours open 15 minutes before each session, with times in your time zone.`],
   ['video', 'Recordings', 'Every live session is recorded and streams in the portal, so you can catch up or watch again.'],
-  ['folder', 'Assignments and feedback', 'Submit projects, see your rubric level and your instructor’s written feedback, and resubmit when a project needs more work.'],
+  ['folder', 'Assignments and feedback', 'Submit projects, see your rubric level and your instructorâ€™s written feedback, and resubmit when a project needs more work.'],
   ['chat', 'Notifications', 'Class reminders, new recordings and feedback on your work, gathered in one place.'],
 ];
 
@@ -221,8 +221,8 @@ const support = () => html`
         <p class="lede">People teach you, grade your work and notice when you go quiet.</p></div>
       <ul class="ticks how-support">
         <li>${icon('check')}<span><b>Instructors teach live and grade.</b> The instructors who run your ${SCHEDULE.classDay} class also grade your projects. ${OWNER.instructors.length ? '' : 'Their names and backgrounds will be published before the first batch.'}</span></li>
-        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} IST, ${SCHEDULE.officeMinutes} minutes on Zoom, for questions about lessons and projects.</span></li>
-        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructor’s check-in list so they can reach out.</span></li>
+        <li>${icon('check')}<span><b>Weekly office hours.</b> Every ${SCHEDULE.officeDay} at ${SCHEDULE.officeTime} IST, ${SCHEDULE.officeMinutes} minutes on Jitsi, for questions about lessons and projects.</span></li>
+        <li>${icon('check')}<span><b>A check-in when you go quiet.</b> If you have not been active for 14 days, you appear on your instructorâ€™s check-in list so they can reach out.</span></li>
       </ul>
       <div class="box"><h3>${icon('clock')} Planned: mentoring and success coaching</h3>
         <p class="muted">We plan to offer mentoring and success coaching to help you plan your weeks around work and life. It is not running yet, and the details will be published before the first batch.</p></div>
@@ -236,7 +236,7 @@ const body = (today) => html`
 ${pageHead({
     eyebrow: 'How it works',
     title: accent('How learning at Nuvora *works*'),
-    lede: `Lessons you watch when it suits you, two live Zoom sessions every week, and ${NUM[PROJECTS]} projects a term graded by instructors. Here is a term from start to finish, and the support around it.`,
+    lede: `Lessons you watch when it suits you, two live Jitsi sessions every week, and ${NUM[PROJECTS]} projects a term graded by instructors. Here is a term from start to finish, and the support around it.`,
     crumbs: CRUMBS,
     extra: html`<div class="row how-chips">
       <span class="chip frost">${icon('cal')} ${WEEKS}-week terms</span>
@@ -264,7 +264,7 @@ export default function how({ today } = {}) {
     html: page({
       path: PATH, today,
       title: 'How it works: 12-week terms, live classes and projects',
-      description: `Each Nuvora term runs ${WEEKS} weeks: lessons on demand, a live Zoom class and office hours every week, and ${NUM[PROJECTS]} instructor-graded projects with written feedback.`,
+      description: `Each Nuvora term runs ${WEEKS} weeks: lessons on demand, a live Jitsi class and office hours every week, and ${NUM[PROJECTS]} instructor-graded projects with written feedback.`,
       body: body(today),
       schema: [breadcrumbList(CRUMBS), faqPage(FAQ)],
       scripts: ['/js/how.js'],

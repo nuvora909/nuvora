@@ -1,4 +1,4 @@
-// Batch calendar rules, shared by the site build (Node) and the browser.
+﻿// Batch calendar rules, shared by the site build (Node) and the browser.
 // Batches start on the first Monday of each month. Applications close 7 days before a start, and the closing
 // day itself is still open (the same rule as the database function next_start_date). All dates are calendar
 // dates in the batch time zone (Asia/Kolkata), represented as Date objects at 00:00 UTC.

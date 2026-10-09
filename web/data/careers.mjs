@@ -1,4 +1,4 @@
-// Career pathways: typical role progressions in the industry and the skills each role uses, mapped to the
+﻿// Career pathways: typical role progressions in the industry and the skills each role uses, mapped to the
 // Nuvora lessons that teach them. These describe the field, not results: Nuvora does not promise jobs,
 // promotions or salaries.
 export const CAREER_NOTE = 'Typical progressions in the industry. Your path depends on your experience and the market; Nuvora does not guarantee jobs or promotions.';

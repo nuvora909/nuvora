@@ -58,8 +58,9 @@ begin
     return bid;
   end if;
 
-  insert into public.sessions (batch_id, template_id, title, starts_at, ends_at)
+  insert into public.sessions (batch_id, template_id, title, join_url, starts_at, ends_at)
   select bid, t.id, t.title,
+         'https://meet.jit.si/nuvora-' || bid::text || '-' || t.id::text,
          ((p_starts_on + (t.week - 1) * 7 + (t.weekday - 1)) + t.start_time) at time zone prog.timezone,
          ((p_starts_on + (t.week - 1) * 7 + (t.weekday - 1)) + t.start_time) at time zone prog.timezone
            + make_interval(mins => t.duration_minutes)
