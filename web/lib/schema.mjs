@@ -1,4 +1,4 @@
-﻿// JSON-LD structured data. Only facts that are true today: no reviews, ratings, events, people, videos or
+// JSON-LD structured data. Only facts that are true today: no reviews, ratings, events, people, videos or
 // credential markup (the credential wording needs legal sign-off first).
 import { SITE, SCHEDULE, FAQ } from '../data/site.mjs';
 import { nextStarts, isoDay, TIMEZONE } from '../data/programs.mjs';

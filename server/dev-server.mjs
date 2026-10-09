@@ -1,4 +1,4 @@
-﻿// Local development server for Nuvora.
+// Local development server for Nuvora.
 // Serves the public site at / (built from web/ into dist/ on start) and the portal at /portal/, and stands in for
 // Supabase's Auth API (/auth/v1),
 // REST API (/rest/v1/rpc) and Storage (/storage/v1: admin PDF uploads, signed downloads) on top of an in-memory PostgreSQL

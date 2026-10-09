@@ -1,4 +1,4 @@
-﻿-- Programs as sequences of 12-week terms.
+-- Programs as sequences of 12-week terms.
 -- Owner decision (2026-10-02): Bachelor's programs run 12 terms (3-4 years part-time), Master's 4 terms
 -- (12-18 months), certificates 1 term. Each term is one batch: 12 weeks from a first Monday, the usual
 -- Tuesday class and Thursday office hours, four competency lessons and three graded projects.

@@ -1,4 +1,4 @@
-﻿// Builds the public website from web/ into dist/: one index.html per clean URL, plus CSS, browser modules,
+// Builds the public website from web/ into dist/: one index.html per clean URL, plus CSS, browser modules,
 // media, the program cover art (covers/), a browser copy of the catalog, sitemap.xml, robots.txt and 404.html.
 //
 //   node scripts/build-site.mjs            (the dev server also runs this on start)
@@ -127,8 +127,8 @@ async function toArtifact(outDir, pages) {
   const note = {
     path: '/portal-preview/',
     html: page({
-      path: '/portal-preview/', title: 'Student portal', description: 'The Nuvora student portal runs on Nuvoraâ€™s own server with its database, so it is not part of this website preview.',
-      body: html`${pageHead({ eyebrow: 'Student portal', title: 'The portal runs on Nuvoraâ€™s server', lede: 'Signing in, lessons, live classes and assignments need Nuvoraâ€™s database, so the student portal is not part of this website preview. It opens at /portal/ on the real site.' })}
+      path: '/portal-preview/', title: 'Student portal', description: 'The Nuvora student portal runs on Nuvora’s own server with its database, so it is not part of this website preview.',
+      body: html`${pageHead({ eyebrow: 'Student portal', title: 'The portal runs on Nuvora’s server', lede: 'Signing in, lessons, live classes and assignments need Nuvora’s database, so the student portal is not part of this website preview. It opens at /portal/ on the real site.' })}
         <section class="sec"><div class="wrap row"><a class="btn primary" href="/">Back to the website</a><a class="btn ghost" href="/how-it-works/">What the portal does</a></div></section>`,
     }),
   };

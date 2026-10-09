@@ -1,4 +1,4 @@
-﻿// Tuition (/tuition/): launch pricing per level and per program, the application fee, paying one term at a time,
+// Tuition (/tuition/): launch pricing per level and per program, the application fee, paying one term at a time,
 // what tuition includes, financing, currency, taxes and the refund and deferral policy. Every price comes from
 // TUITION and PROGRAMS; nothing that the owner has not decided (refunds, financing) is described as if it were.
 // The access rule for unpaid terms is the owner's public wording, shared with the other pages (access-rule.mjs).
@@ -21,14 +21,14 @@ const LATER = 'will be published before the first batch';
 
 const span = (nums, fmt = String) => {
   const lo = Math.min(...nums), hi = Math.max(...nums);
-  return lo === hi ? fmt(lo) : `${fmt(lo)}â€“${fmt(hi)}`;
+  return lo === hi ? fmt(lo) : `${fmt(lo)}–${fmt(hi)}`;
 };
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const termsText = (n) => plural(n, 'term', 'terms');
 
 // One entry per level, built from the programs at that level.
-const LEVEL_TITLES = { Certificate: 'Certificates', Bachelor: 'Bachelorâ€™s-level programs', Master: 'Masterâ€™s-level programs' };
-const LEVEL_NOTE = { Master: 'Needs a bachelorâ€™s degree in any field' };
+const LEVEL_TITLES = { Certificate: 'Certificates', Bachelor: 'Bachelor’s-level programs', Master: 'Master’s-level programs' };
+const LEVEL_NOTE = { Master: 'Needs a bachelor’s degree in any field' };
 const BY_LEVEL = LEVELS.map(([lvl]) => {
   const programs = PROGRAMS.filter((p) => p.level === lvl);
   return {
@@ -47,8 +47,8 @@ const MAX_TERMS = Math.max(...PROGRAMS.map((p) => p.termCount));
 const PROJECTS = PROGRAMS[0].terms[0].projects.length;
 const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
 
-// "$1,950 per term for certificates and bachelorâ€™s-level programs, $2,450 per term for masterâ€™s-level programs"
-const LEVEL_PLURAL = { Certificate: 'certificates', Bachelor: 'bachelorâ€™s-level programs', Master: 'masterâ€™s-level programs' };
+// "$1,950 per term for certificates and bachelor’s-level programs, $2,450 per term for master’s-level programs"
+const LEVEL_PLURAL = { Certificate: 'certificates', Bachelor: 'bachelor’s-level programs', Master: 'master’s-level programs' };
 const priceLine = () => {
   const byPrice = new Map();
   for (const { lvl, perTerm } of BY_LEVEL) byPrice.set(perTerm, [...(byPrice.get(perTerm) ?? []), LEVEL_PLURAL[lvl]]);
@@ -67,12 +67,12 @@ const FAQ = [
     `Multiply the price per term by the number of terms, then add the one-time ${FEE} application fee. ${PROGRAMS.map((p) => `${p.name}: ${termsText(p.termCount)}, ${money(p.tuition.total)} in tuition`).join('. ')}.`],
   ['Do I pay for the whole program up front?',
     `No. You pay tuition one ${WEEKS}-week term at a time, so you never pay for more than one term in advance.`],
-  ['What happens if a term isnâ€™t paid?',
+  ['What happens if a term isn’t paid?',
     ACCESS_RULE],
   ['What is the application fee?',
     `A one-time ${FEE} fee, paid once when you apply. It is not charged again for later terms.`],
   ['Does requesting a seat cost anything?',
-    `No. A seat request is free and is not an application. The ${FEE} application fee and your first termâ€™s tuition are paid later, when you apply and enrol.`],
+    `No. A seat request is free and is not an application. The ${FEE} application fee and your first term’s tuition are paid later, when you apply and enrol.`],
   ['Can I pay in instalments, take a loan or get a scholarship?',
     'Not yet. Nuvora does not offer loans, instalments within a term or scholarships at the moment. Paying one term at a time is the way to spread the cost.'],
   ['Which currency are the prices in?',
@@ -125,7 +125,7 @@ const programs = () => html`
         <thead><tr><th scope="col">Program</th><th scope="col">Per term</th><th scope="col">Terms</th><th scope="col">Tuition total</th><th scope="col">With application fee</th></tr></thead>
         <tbody>
           ${PROGRAMS.map((p) => html`<tr>
-            <th scope="row"><a href="${p.url}">${p.name}</a><span class="how-pmeta">${p.levelLabel} Â· ${p.duration}</span></th>
+            <th scope="row"><a href="${p.url}">${p.name}</a><span class="how-pmeta">${p.levelLabel} · ${p.duration}</span></th>
             <td data-label="Per term">${money(p.tuition.perTerm)}</td>
             <td data-label="Terms">${termsText(p.termCount)} of ${WEEKS} weeks</td>
             <td data-label="Tuition total" class="how-tot">${money(p.tuition.total)}</td>
@@ -152,7 +152,7 @@ const included = () => html`
 <section class="sec" id="included" aria-labelledby="incl-title">
   <div class="wrap">
     <div class="shead"><div><span class="eyebrow">${icon('check')} Included</span><h2 id="incl-title">${accent('What your tuition *covers*')}</h2>
-      <p class="lede">Every termâ€™s tuition includes the same things, whichever program you take.</p></div>
+      <p class="lede">Every term’s tuition includes the same things, whichever program you take.</p></div>
       <a class="link" href="/how-it-works/">How a term works ${icon('arrow')}</a></div>
     <ul class="how-incl">
       ${INCLUDED.map(([ic, t, d]) => html`<li><span class="how-fi">${icon(ic)}</span><div><h3>${t}</h3><p>${d}</p></div></li>`)}
@@ -183,7 +183,7 @@ const paying = () => html`
     </div>
     <div class="how-access" id="access">
       ${icon('pause')}
-      <div><h3>If a term isnâ€™t paid</h3><p>${ACCESS_RULE}</p></div>
+      <div><h3>If a term isn’t paid</h3><p>${ACCESS_RULE}</p></div>
     </div>
   </div>
 </section>`;
@@ -234,7 +234,7 @@ export default function tuition({ today } = {}) {
     html: page({
       path: PATH, today,
       title: 'Tuition and fees: launch pricing per term',
-      description: `Nuvora tuition is ${PRICE_RANGE} per ${WEEKS}-week term in ${CURRENCY_SHORT}, paid one term at a time, plus a one-time ${FEE} application fee. See every programâ€™s total.`,
+      description: `Nuvora tuition is ${PRICE_RANGE} per ${WEEKS}-week term in ${CURRENCY_SHORT}, paid one term at a time, plus a one-time ${FEE} application fee. See every program’s total.`,
       body: body(),
       schema: [breadcrumbList(CRUMBS), faqPage(FAQ)],
       scripts: ['/js/how.js'],

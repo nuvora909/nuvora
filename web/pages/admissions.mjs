@@ -1,4 +1,4 @@
-﻿// /admissions/: how joining works before launch, who can join, the next start dates and the seat request form.
+// /admissions/: how joining works before launch, who can join, the next start dates and the seat request form.
 // The form is sent by web/assets/js/lead.js to the request_seat database function. Without JavaScript the submit
 // button stays disabled, so personal details can never end up in a URL or be posted anywhere else. Every accepted
 // request gets the same message, so the page never reveals whether the same request was sent before.
@@ -18,8 +18,8 @@ const TABLE_STARTS = 6;  // the table lists the next six
 const LATER = 'to be published before the first batch';
 const FEE = money(TUITION.applicationFee);
 
-// "$1,950 per term for certificates and bachelorâ€™s-level programs, $2,450 per term for masterâ€™s-level programs"
-const LEVEL_PLURAL = { Certificate: 'certificates', Bachelor: 'bachelorâ€™s-level programs', Master: 'masterâ€™s-level programs' };
+// "$1,950 per term for certificates and bachelor’s-level programs, $2,450 per term for master’s-level programs"
+const LEVEL_PLURAL = { Certificate: 'certificates', Bachelor: 'bachelor’s-level programs', Master: 'master’s-level programs' };
 const priceLine = () => {
   const byPrice = new Map();
   for (const [lvl] of LEVELS) byPrice.set(TUITION.perTerm[lvl], [...(byPrice.get(TUITION.perTerm[lvl]) ?? []), LEVEL_PLURAL[lvl]]);
@@ -32,7 +32,7 @@ const GROUPS = [
     test: (p) => !p.needsBachelor && !p.requiresCoding },
   { key: 'code', ic: 'layers', title: 'No degree, but you code already', text: 'No degree needed. You should already be comfortable writing code.',
     test: (p) => !p.needsBachelor && p.requiresCoding },
-  { key: 'degree', ic: 'cap', title: 'A bachelorâ€™s degree in any field', text: 'Masterâ€™s-level programs need a completed bachelorâ€™s degree, plus the skills listed.',
+  { key: 'degree', ic: 'cap', title: 'A bachelor’s degree in any field', text: 'Master’s-level programs need a completed bachelor’s degree, plus the skills listed.',
     test: (p) => p.needsBachelor },
 ].map((g) => ({ ...g, programs: PROGRAMS.filter(g.test) })).filter((g) => g.programs.length);
 
@@ -42,18 +42,18 @@ const FAQ = [
   ['Is requesting a seat the same as applying?',
     'No. A seat request is not an application or an admission decision. It tells Nuvora which program and start date you want. Nuvora replies by email with next steps, and the application opens later.'],
   ['Does it cost anything to request a seat?',
-    `No. Nothing is charged when you request a seat. The one-time ${FEE} application fee and your first termâ€™s tuition are paid later, when enrolment opens. Tuition is ${priceLine()}, in US dollars at launch pricing, paid one term at a time.`],
+    `No. Nothing is charged when you request a seat. The one-time ${FEE} application fee and your first term’s tuition are paid later, when enrolment opens. Tuition is ${priceLine()}, in US dollars at launch pricing, paid one term at a time.`],
   ['When will Nuvora reply?',
     `By email, to the address you give in the form. ${OWNER.supportHours ? `Support hours: ${OWNER.supportHours}.` : `Support hours and reply times are ${LATER}.`}`],
   ['Can I choose a different start date later?',
     'You can send another request for a different start date while its requests are open. Deferring after you have paid is covered by the refund and deferral policy, which will be published before the first batch, and you will see it before you pay.'],
   ['Who can join?',
-    `Masterâ€™s-level programs need a bachelorâ€™s degree in any field. Certificates and bachelorâ€™s-level programs need no degree, and the beginner programs teach Python from the start.${codingCerts.length ? ` ${codingCerts.length === 1 ? 'One certificate expects' : 'Some certificates expect'} you to code already; each program lists what you need.` : ''}`],
+    `Master’s-level programs need a bachelor’s degree in any field. Certificates and bachelor’s-level programs need no degree, and the beginner programs teach Python from the start.${codingCerts.length ? ` ${codingCerts.length === 1 ? 'One certificate expects' : 'Some certificates expect'} you to code already; each program lists what you need.` : ''}`],
   ['What happens to the details I send?',
-    'The form sends them only to Nuvoraâ€™s database, and Nuvora uses them to reply to your request, as described in the privacy notice. If you saved a plan in Find my program, it is sent only if you tick the box to include it.'],
+    'The form sends them only to Nuvora’s database, and Nuvora uses them to reply to your request, as described in the privacy notice. If you saved a plan in Find my program, it is sent only if you tick the box to include it.'],
   ['How do I know my request arrived?',
-    'The page says â€œRequest receivedâ€ as soon as Nuvoraâ€™s database accepts it, and Nuvora replies by email to the address you gave. The page shows the same message every time, so a request can only be confirmed through that email address.'],
-  ['What happens if I donâ€™t pay for a term?',
+    'The page says “Request received” as soon as Nuvora’s database accepts it, and Nuvora replies by email to the address you gave. The page shows the same message every time, so a request can only be confirmed through that email address.'],
+  ['What happens if I don’t pay for a term?',
     ACCESS_RULE],
   ['Will I receive a degree?',
     `No. Programs lead to a ${CREDENTIAL.short}, not an accredited degree. Nuvora credits describe workload and may not transfer to universities, and Nuvora does not accept transfer credit or offer test-outs.`],
@@ -73,8 +73,8 @@ const STEPS = [
     links: [['/tuition/', 'Tuition']] },
 ];
 
-// "Mon, Nov 2, 2026 Â· requests close Oct 26" (lead.js builds the same label in the browser)
-const startLabel = ({ start, applyBy }) => `${fmtLong(start)} Â· requests close ${fmtDay(applyBy, { year: undefined })}`;
+// "Mon, Nov 2, 2026 · requests close Oct 26" (lead.js builds the same label in the browser)
+const startLabel = ({ start, applyBy }) => `${fmtLong(start)} · requests close ${fmtDay(applyBy, { year: undefined })}`;
 
 const hero = (today) => pageHead({
   eyebrow: 'Admissions',
@@ -142,14 +142,14 @@ const eligibility = () => html`
 <section class="sec" id="eligibility" aria-labelledby="elig-title">
   <div class="wrap">
     <div class="shead"><div><span class="eyebrow">Eligibility</span><h2 id="elig-title">${accent('Who can *join*')}</h2>
-      <p class="lede">Only the masterâ€™s-level programs need a degree. Everything else is open to anyone who can give the weekly hours, and the beginner programs teach Python from the start.</p></div></div>
+      <p class="lede">Only the master’s-level programs need a degree. Everything else is open to anyone who can give the weekly hours, and the beginner programs teach Python from the start.</p></div></div>
     <div class="adm-elig">
       ${GROUPS.map((g) => html`
       <div class="box adm-group adm-g-${g.key}">
         <h3>${icon(g.ic)} ${g.title}</h3>
         <p class="muted">${g.text}</p>
         <ul class="adm-plist">${g.programs.map((p) => html`
-          <li><a href="${p.url}">${p.name}</a><span>${p.required.join(' Â· ')}</span><span class="adm-hours">${p.duration} Â· ${p.weeklyHours} hrs/week</span></li>`)}</ul>
+          <li><a href="${p.url}">${p.name}</a><span>${p.required.join(' · ')}</span><span class="adm-hours">${p.duration} · ${p.weeklyHours} hrs/week</span></li>`)}</ul>
       </div>`)}
     </div>
     <p class="note adm-cred">Programs lead to a ${CREDENTIAL.short}. ${CREDENTIAL.note} Nuvora does not accept transfer credit or offer test-outs: every learner completes every term.</p>
@@ -230,7 +230,7 @@ function form(today) {
   <div class="adm-plan" data-plan-box hidden>
     <label class="check"><input type="checkbox" name="include_plan" data-include-plan aria-describedby="sr-plan-hint">
       <span>Include my saved plan. Best match: <b data-plan-name></b> <span class="adm-planmeta" data-plan-meta></span></span></label>
-    <p class="hint adm-planhint" id="sr-plan-hint">If you tick this, the request also sends your Find my program answers about your background, goal, weekly time and coding, your answer about a bachelorâ€™s degree (if you gave one), and your best match and its score, so the reply can fit your plan. Nothing from the plan is sent unless you tick it.</p>
+    <p class="hint adm-planhint" id="sr-plan-hint">If you tick this, the request also sends your Find my program answers about your background, goal, weekly time and coding, your answer about a bachelor’s degree (if you gave one), and your best match and its score, so the reply can fit your plan. Nothing from the plan is sent unless you tick it.</p>
   </div>
   <div class="field adm-field" data-field="consent">
     <label class="check adm-consent"><input type="checkbox" id="sr-consent" name="consent" required>
@@ -278,8 +278,8 @@ const request = (today) => html`
       <p class="lede">Tell us the program and start date you want, and Nuvora replies by email with next steps. This is not an application and is free to request. The one-time application fee is paid later when enrolment opens.</p>
       <ul class="adm-reqfacts">
         <li>${icon('doc')}<span><b>What you send:</b> the program and start date, your name, email and country, a phone number if you want to add one, and your saved Find my program plan only if you tick the box to include it.</span></li>
-        <li>${icon('lock')}<span><b>Where it goes:</b> only to Nuvoraâ€™s database, so that Nuvora can reply to you.</span></li>
-        <li>${icon('mail')}<span><b>What comes back:</b> â€œRequest receivedâ€ on this page, then an email from Nuvora with next steps to the address you gave.</span></li>
+        <li>${icon('lock')}<span><b>Where it goes:</b> only to Nuvora’s database, so that Nuvora can reply to you.</span></li>
+        <li>${icon('mail')}<span><b>What comes back:</b> “Request received” on this page, then an email from Nuvora with next steps to the address you gave.</span></li>
       </ul>
       <p class="small adm-reqmore">Questions first? <a href="/contact/">Contact Nuvora</a> or <a href="#faq">read the answers below</a>.</p>
     </div>

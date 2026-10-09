@@ -1,4 +1,4 @@
-﻿// The page shell shared by every public page: document head (SEO, social, schema), skip link, status strip,
+// The page shell shared by every public page: document head (SEO, social, schema), skip link, status strip,
 // header with the programs menu and phone menu, footer, and the advisor entry points.
 import { html, raw, jsonBlock } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
@@ -25,7 +25,7 @@ function header(path) {
   const current = (href) => (path === href || (href !== '/' && path.startsWith(href)) ? 'page' : null);
   const byLevel = LEVELS.map(([lvl, title]) => html`
     <div><h3>${title}</h3>${PROGRAMS.filter((p) => p.level === lvl).map((p) => html`
-      <a class="mp" href="${p.url}"><b>${p.name}</b><span>${p.duration} Â· ${p.weeklyHours} hrs/week</span></a>`)}</div>`);
+      <a class="mp" href="${p.url}"><b>${p.name}</b><span>${p.duration} · ${p.weeklyHours} hrs/week</span></a>`)}</div>`);
   return html`
 <header class="top">
   <div class="bar">
@@ -82,7 +82,7 @@ export const FOOTER_COLUMNS = [
   ['Legal', [['/legal/privacy/', 'Privacy'], ['/legal/terms/', 'Terms'], ['/legal/credits/', 'Media credits'], ['/legal/accessibility/', 'Accessibility']]],
 ];
 
-// Simple line glyphs (24Ã—24, stroke), drawn for this site, for the round social buttons.
+// Simple line glyphs (24×24, stroke), drawn for this site, for the round social buttons.
 const SOCIAL = {
   linkedin: ['LinkedIn', 'M7 10.5V17 M7 7.2v.1 M11 17v-6.5 M11 13.2a2.6 2.6 0 0 1 5.2 0V17'],
   youtube: ['YouTube', 'M4 9.2C4 7.4 5.2 6.4 7 6.3c3.3-.2 6.7-.2 10 0 1.8.1 3 1.1 3 2.9v5.6c0 1.8-1.2 2.8-3 2.9-3.3.2-6.7.2-10 0-1.8-.1-3-1.1-3-2.9z M10.4 9.6l4.6 2.4-4.6 2.4z'],
@@ -113,7 +113,7 @@ export function footer({ social = OWNER.social } = {}) {
       </div>`)}
     </nav>
     <div class="sitefoot-bar">
-      <p class="sitefoot-legal"><span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span> certificate of completion · not an accredited degree</span></p>
+      <p class="sitefoot-legal"><span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span>Nuvora certificate of completion · not an accredited degree</span></p>
       ${links.length ? html`<ul class="sitefoot-social">${links.map(([k, name, url]) => html`
         <li><a href="${url}" rel="noopener noreferrer me" aria-label="Nuvora on ${name}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${SOCIAL[k][1]}"/></svg></a></li>`)}</ul>` : ''}
     </div>
@@ -199,7 +199,7 @@ ${ld.map((o) => `<script type="application/ld+json">${jsonBlock(o)}</script>`).j
 <body class="${bodyClass}">
 ${intro()}
 <a class="skip" href="#main">Skip to content</a>
-<div class="topstrip" data-strip><div class="wrap"><span><b>${SITE.status}</b> Â· Next start ${liveDate('start', 0, today)} Â· Seat requests close ${liveDate('applyBy', 0, today)}</span><a href="/admissions/">How joining works â†’</a></div></div>
+<div class="topstrip" data-strip><div class="wrap"><span><b>${SITE.status}</b> · Next start ${liveDate('start', 0, today)} · Seat requests close ${liveDate('applyBy', 0, today)}</span><a href="/admissions/">How joining works →</a></div></div>
 ${header(path)}
 <main id="main" tabindex="-1">
 ${body}

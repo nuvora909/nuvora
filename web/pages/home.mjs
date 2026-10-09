@@ -1,4 +1,4 @@
-﻿import { html, accent } from '../lib/html.mjs';
+import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page } from '../lib/layout.mjs';
 import { sectionHead, programCatalog, proofSection, careerLadder, finder, factsBand, schedule, weekView, faqList, ctaBand, foundingPanel, photo } from '../lib/components.mjs';
@@ -15,7 +15,7 @@ const hero = () => html`
   </div>
   <div class="wrap hero-in">
     <div class="hero-copy">
-      <span class="eyebrow">${icon('spark')} Data science &amp; AI programs Â· online</span>
+      <span class="eyebrow">${icon('spark')} Data science &amp; AI programs · online</span>
       <h1 id="hero-title">${accent('Build the skills your next *career* demands.')}</h1>
       <p class="lede">Programs in data science, machine learning and generative AI, taught in 12-week terms. Watch lessons when it suits you, join two live Jitsi sessions a week, and prove what you can do with projects graded by instructors.</p>
       <div class="hero-facts">
@@ -32,7 +32,7 @@ const hero = () => html`
   </div>
   <div class="vbar">
     <button class="vbtn" type="button" data-video-toggle aria-pressed="false" hidden>${icon('pause')}<span>Pause video</span></button>
-    <span class="stocklabel">Stock media Â· not Nuvora students</span>
+    <span class="stocklabel">Stock media · not Nuvora students</span>
   </div>
 </section>`;
 
@@ -93,7 +93,7 @@ const learningSystem = () => html`
       ${pillar({ n: '01', title: 'Learn *smarter*', photoKey: 'home',
         lede: 'Your portal home is built around you: your learning path term by term with its dates, progress counted from what you have actually watched and submitted, and one next step with the reason for it.',
         points: ['A learning path with every term and its dates', 'Progress measured from real watch time, not clicks', 'Skill gaps for your career goal, with the lessons that close them'],
-        glass: html`<div class="floatcard g1"><span class="ex">Example screen</span><b>Your learning path</b><div class="mini-bar"><i style="width:18%"></i></div><span>Term 2 of 12 Â· 18% of lessons complete</span></div>
+        glass: html`<div class="floatcard g1"><span class="ex">Example screen</span><b>Your learning path</b><div class="mini-bar"><i style="width:18%"></i></div><span>Term 2 of 12 · 18% of lessons complete</span></div>
           <div class="floatcard g2"><span class="ex">Next step</span><b>Model evaluation &amp; validation</b><span>Keep going: you are 60% of the way through this lesson.</span></div>` })}
       ${pillar({ n: '02', title: 'Prove *mastery*', photoKey: 'duo',
         lede: 'Competency is shown, not assumed. Every term has three projects assessed by instructors against a four-level rubric. Proficient or better passes; below that you get written feedback and resubmit.',
@@ -101,8 +101,8 @@ const learningSystem = () => html`
         glass: html`<div class="floatcard g1"><span class="ex">Mastery rubric</span><div class="rub"><div><span>Distinguished</span><i style="width:100%"></i></div><div><span>Proficient</span><i style="width:78%"></i></div><div><span>Basic</span><i style="width:46%"></i></div><div><span>Not yet</span><i style="width:20%"></i></div></div></div>` })}
       ${pillar({ n: '03', title: 'Stay *supported*', photoKey: 'mentor',
         lede: 'Instructors teach live and grade your work, and office hours run every week. Mentoring and success coaching are planned; what they include will be published before the first batch.',
-        points: [`Live class every ${SCHEDULE.classDay} and office hours every ${SCHEDULE.officeDay}`, 'Instructors who teach your classes and grade your projects', 'After 14 days without activity, you appear on your instructorâ€™s check-in list'],
-        glass: html`<div class="floatcard g2"><span class="ex">This week</span><b>Office hours Â· ${SCHEDULE.officeDay}</b><span>${SCHEDULE.officeTime} IST Â· ${SCHEDULE.officeMinutes} min on Jitsi</span></div>` })}
+        points: [`Live class every ${SCHEDULE.classDay} and office hours every ${SCHEDULE.officeDay}`, 'Instructors who teach your classes and grade your projects', 'After 14 days without activity, you appear on your instructor’s check-in list'],
+        glass: html`<div class="floatcard g2"><span class="ex">This week</span><b>Office hours · ${SCHEDULE.officeDay}</b><span>${SCHEDULE.officeTime} IST · ${SCHEDULE.officeMinutes} min on Jitsi</span></div>` })}
     </div>
   </div>
 </section>`;
@@ -124,12 +124,12 @@ const connected = () => html`
       <button class="btn ghost" type="button" data-advisor-open hidden>${icon('spark')} Ask the advisor</button></div>
     <ol class="flow">${STEPS.map(([ic, t, d, how]) => html`<li class="rv"><span class="fi">${icon(ic)}</span><b>${t}</b><p>${d}</p><span class="how">${how}</span></li>`)}</ol>
     <div class="hotspot-demo" data-hotspots>
-      <span class="chip gold tag">Example screen Â· sample data</span>
+      <span class="chip gold tag">Example screen · sample data</span>
       <div class="hs-card"><button class="hs" type="button" aria-expanded="false" aria-controls="hs1" aria-label="What is the learning path ring?">1</button>
         <b>Your learning path</b><div class="row"><span class="ring-sm" style="--v:18" role="img" aria-label="18% of the program complete"><b>18%</b></span><span>Term 2 of 12<br>Goal: ML Engineer</span></div>
         <p class="hs-tip" id="hs1" hidden>The share of all lessons in your program you have completed. A lesson counts once you have watched 90% of it.</p></div>
       <div class="hs-card"><button class="hs" type="button" aria-expanded="false" aria-controls="hs2" aria-label="How do streaks work?">2</button>
-        <b>Learning streak</b><span>${icon('spark')} 6 days Â· a single rest day never breaks it</span><span class="muted" style="color:var(--on-deep-muted)">You can turn streaks off at any time.</span>
+        <b>Learning streak</b><span>${icon('spark')} 6 days · a single rest day never breaks it</span><span class="muted" style="color:var(--on-deep-muted)">You can turn streaks off at any time.</span>
         <p class="hs-tip" id="hs2" hidden>Days with real learning activity in a row: watching lessons, submitting projects or attending class. One rest day between active days keeps the streak going, and streaks can be switched off in your profile.</p></div>
       <div class="hs-card"><button class="hs" type="button" aria-expanded="false" aria-controls="hs3" aria-label="What is the next step?">3</button>
         <b>Next step</b><span>Revise and resubmit Project 2</span><span class="muted" style="color:var(--on-deep-muted)">Your instructor reviewed it and asked for a revision.</span>
@@ -169,7 +169,7 @@ export default function home({ today } = {}) {
     path: '/',
     html: page({
       path: '/', today,
-      title: 'Nuvora Â· Data science and AI programs, taught live online',
+      title: 'Nuvora · Data science and AI programs, taught live online',
       description: SITE.description,
       body: body(),
       schema: [faqPage(FAQ), itemList(PROGRAMS.map((p) => [p.url, p.name]))],

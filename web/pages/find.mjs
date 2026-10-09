@@ -1,13 +1,13 @@
-﻿import { html, accent } from '../lib/html.mjs';
+import { html, accent } from '../lib/html.mjs';
 import { icon } from '../lib/icons.mjs';
 import { page, pageHead } from '../lib/layout.mjs';
 import { finder, faqList } from '../lib/components.mjs';
 import { breadcrumbList, faqPage } from '../lib/schema.mjs';
 
 const FAQ = [
-  ['Is the match score a prediction of how I will do?', 'No. It is calculated from your answers with fixed rules: how well a program fits your goal (up to 40 points), your background (25), the prerequisites (15) and your weekly time (20). Open â€œHow this score is calculatedâ€ under your result to see every point.'],
-  ['Why does it ask about a bachelorâ€™s degree?', 'Only when a masterâ€™s-level program is your best fit, because those programs need a bachelorâ€™s degree in any field. If you do not have one, we never recommend them.'],
-  ['What happens to my answers?', 'They stay in this browser tab. Nothing is sent to Nuvora unless you request a seat and choose to include your saved plan. If you tick â€œSave my plan on this deviceâ€, your answers and match are kept in this browser for 90 days so the site can show your match; â€œForget my planâ€ removes them.'],
+  ['Is the match score a prediction of how I will do?', 'No. It is calculated from your answers with fixed rules: how well a program fits your goal (up to 40 points), your background (25), the prerequisites (15) and your weekly time (20). Open “How this score is calculated” under your result to see every point.'],
+  ['Why does it ask about a bachelor’s degree?', 'Only when a master’s-level program is your best fit, because those programs need a bachelor’s degree in any field. If you do not have one, we never recommend them.'],
+  ['What happens to my answers?', 'They stay in this browser tab. Nothing is sent to Nuvora unless you request a seat and choose to include your saved plan. If you tick “Save my plan on this device”, your answers and match are kept in this browser for 90 days so the site can show your match; “Forget my plan” removes them.'],
   ['Can I change my answers?', 'Yes. Use Back to change one answer, or Start over.'],
 ];
 
@@ -30,9 +30,9 @@ ${pageHead({ eyebrow: 'Find my program', title: accent('Find the program that fi
           <li>${icon('check')}<span><b>Goal fit, up to 40:</b> how directly the program serves the goal you chose.</span></li>
           <li>${icon('check')}<span><b>Background, up to 25:</b> how well it suits where you are starting from.</span></li>
           <li>${icon('check')}<span><b>Prerequisites, up to 15:</b> whether you have the coding the program expects.</span></li>
-          <li>${icon('check')}<span><b>Weekly time, up to 20:</b> whether your hours cover the programâ€™s workload.</span></li>
+          <li>${icon('check')}<span><b>Weekly time, up to 20:</b> whether your hours cover the program’s workload.</span></li>
         </ul>
-        <p class="small muted">Masterâ€™s-level programs are never suggested to someone without a bachelorâ€™s degree. If you have not coded yet, the programs that teach Python from the start always come first.</p></div>
+        <p class="small muted">Master’s-level programs are never suggested to someone without a bachelor’s degree. If you have not coded yet, the programs that teach Python from the start always come first.</p></div>
       <div class="box"><h3>${icon('lock')} Private by default</h3><p class="muted">Your answers stay in this browser. Nothing is sent to Nuvora unless you request a seat and choose to include your saved plan.</p></div>
     </div>
   </div>

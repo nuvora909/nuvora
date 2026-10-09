@@ -1,4 +1,4 @@
-﻿// /about/: what Nuvora is, why it exists, who is behind it, what is real today, its principles and how results
+// /about/: what Nuvora is, why it exists, who is behind it, what is real today, its principles and how results
 // will be reported (#outcomes, linked from the founding panel). Pre-launch facts only: no people, numbers or proof
 // that do not exist yet.
 import { html, accent } from '../lib/html.mjs';
@@ -33,7 +33,7 @@ const intro = () => html`
         const list = PROGRAMS.filter((p) => p.level === lvl);
         return html`<li class="abt-lv"><span class="n" aria-hidden="true">${list.length}</span>
           <div><b><span class="sr-only">${list.length} </span>${title}${lvl === 'Certificate' ? '' : ' programs'}</b>
-          <span>${list[0].duration} Â· ${money(TUITION.perTerm[lvl])} per term</span></div></li>`;
+          <span>${list[0].duration} · ${money(TUITION.perTerm[lvl])} per term</span></div></li>`;
       })}</ul>
       <p class="small">Plus a one-time ${money(TUITION.applicationFee)} application fee. Launch pricing in US dollars, paid one term at a time.</p>
       <a class="link" href="/programs/#compare">Compare every program ${icon('arrow')}</a>
@@ -78,7 +78,7 @@ const team = () => html`
       <div class="abt-teamnote">
         <span class="abt-ico">${icon('users')}</span>
         <strong>Founder and instructor profiles will be published with their permission before the first batch.</strong>
-        <p>We do not show anyoneâ€™s name, photo or job title until they have agreed to it, and we do not use placeholder people. The people in photos on this site are stock models, not Nuvora students or staff.</p>
+        <p>We do not show anyone’s name, photo or job title until they have agreed to it, and we do not use placeholder people. The people in photos on this site are stock models, not Nuvora students or staff.</p>
       </div>
       ${people()}
     </div>
@@ -89,13 +89,13 @@ const team = () => html`
 // "In progress" means it exists only in part, or is being built now; "Not yet" means it does not exist.
 const BUILT = [
   ['The program and term plans', `${PROGRAMS.length} programs, each planned term by term: lessons, live sessions and ${PROJECTS_PER_TERM} graded projects per term.`],
-  ['Live session links', `The Jitsi links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours appear in the portal from 15 minutes before each session until it ends, timed by the serverâ€™s clock.`],
+  ['Live session links', `The Jitsi links for the ${SCHEDULE.classDay} class and ${SCHEDULE.officeDay} office hours appear in the portal from 15 minutes before each session until it ends, timed by the server’s clock.`],
   ['Assignments and grading', 'Project submission, instructor grading on the four-level rubric, written feedback and resubmission.'],
   ['Lesson progress', 'A lesson completes at 90% watched, measured from the time really watched, not from clicks.'],
   ['Learning path and next step', 'Your program term by term with its dates, one recommended next step with the reason shown, and the skills your career goal still needs.'],
   ['Streaks and skill badges', 'A learning streak you can switch off, and skill badges earned only from graded work.'],
   ['Notifications', 'New grades, recordings and achievements, listed in the portal.'],
-  ['Staff admin area', 'Nuvora staff enrol students, record tuition payments by hand and pause or restore a studentâ€™s portal access in the portal. Every admin action is written to an audit log.'],
+  ['Staff admin area', 'Nuvora staff enrol students, record tuition payments by hand and pause or restore a student’s portal access in the portal. Every admin action is written to an audit log.'],
   ['Access rule for unpaid terms', 'The database applies the published rule on every request, using its own clock. The hourly job that records each pause and sends the reminders before one is built and tested, and is switched on at go-live.', ['/tuition/#access', 'The published rule']],
 ];
 const IN_PROGRESS = [
@@ -115,7 +115,7 @@ const NOT_YET = [
 const real = () => html`
 <section class="sec tinted" id="real-today">
   <div class="wrap">
-    ${sectionHead({ eyebrow: 'Status', title: 'Whatâ€™s *real* today', lede: 'A plain list of what exists and has been tested, what is in progress, and what does not exist yet. We will update it as things change.' })}
+    ${sectionHead({ eyebrow: 'Status', title: 'What’s *real* today', lede: 'A plain list of what exists and has been tested, what is in progress, and what does not exist yet. We will update it as things change.' })}
     <div class="tablewrap abt-real">
       <table>
         <caption class="sr-only">What Nuvora has built and tested, what is in progress, and what does not exist yet</caption>
@@ -139,7 +139,7 @@ const real = () => html`
 const PRINCIPLES = [
   ['spark', 'No made-up proof', 'No invented reviews, quotes, ratings, numbers, logos or popularity claims. Stock photos are labelled, and the people in them are models.', ['/legal/credits/', 'Media credits']],
   ['chart', 'Publish results with methods', 'Every figure we publish will come with its definition, the dates it covers and how many learners it counts.', ['#outcomes', 'Reporting methods']],
-  ['video', 'Protect instructorsâ€™ work', 'Lessons and recordings stream in the portal and can never be downloaded. Lesson notes and project briefs are PDFs you keep.', ['/legal/terms/#content', 'Course content rules']],
+  ['video', 'Protect instructors’ work', 'Lessons and recordings stream in the portal and can never be downloaded. Lesson notes and project briefs are PDFs you keep.', ['/legal/terms/#content', 'Course content rules']],
   ['lock', 'Privacy by default', 'No cookies, analytics or ad trackers on this website. Your Find my program answers stay in your browser unless you choose to send them.', ['/legal/privacy/', 'Privacy notice']],
 ];
 
@@ -154,11 +154,11 @@ const principles = () => html`
 </section>`;
 
 const MEASURES = [
-  ['Completion rate', 'Of everyone enrolled when a term starts, the share who complete it. Learners who withdraw stay in the count, as not completed, so leaving early can never make the rate look better.', 'Learners who completed the term Ã· learners enrolled on its first day'],
-  ['First-attempt pass rate', 'The share of first submissions graded Proficient or better, before any feedback or resubmission.', 'First submissions at Proficient or Distinguished Ã· all first submissions'],
-  ['Final pass rate', 'The share of projects that reach Proficient or better by the end of the term, after feedback and resubmission.', 'Projects at Proficient or better Ã· all projects due, including those never submitted'],
-  ['Live attendance', 'How many of the live classes and office hours learners joined, from Jitsi attendance records. Watching a recording later does not count as attending.', 'Sessions joined Ã· sessions held, averaged across learners'],
-  ['Lesson completion', 'How many lessons learners completed. A lesson counts once 90% of it has really been watched, so skipping ahead does not count.', 'Lessons completed Ã· lessons released, averaged across learners'],
+  ['Completion rate', 'Of everyone enrolled when a term starts, the share who complete it. Learners who withdraw stay in the count, as not completed, so leaving early can never make the rate look better.', 'Learners who completed the term ÷ learners enrolled on its first day'],
+  ['First-attempt pass rate', 'The share of first submissions graded Proficient or better, before any feedback or resubmission.', 'First submissions at Proficient or Distinguished ÷ all first submissions'],
+  ['Final pass rate', 'The share of projects that reach Proficient or better by the end of the term, after feedback and resubmission.', 'Projects at Proficient or better ÷ all projects due, including those never submitted'],
+  ['Live attendance', 'How many of the live classes and office hours learners joined, from Jitsi attendance records. Watching a recording later does not count as attending.', 'Sessions joined ÷ sessions held, averaged across learners'],
+  ['Lesson completion', 'How many lessons learners completed. A lesson counts once 90% of it has really been watched, so skipping ahead does not count.', 'Lessons completed ÷ lessons released, averaged across learners'],
 ];
 
 const outcomes = () => html`

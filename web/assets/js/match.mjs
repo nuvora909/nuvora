@@ -1,4 +1,4 @@
-﻿// "Find my program": a transparent, rule-based match between a visitor's answers and the programs.
+// "Find my program": a transparent, rule-based match between a visitor's answers and the programs.
 // Pure functions with no DOM access, used by the browser and by the Node tests.
 //
 // The match score is calculated, not predicted: goal fit (40) + background fit (25) + prerequisites (15) +
@@ -8,17 +8,17 @@
 
 export const QUESTIONS = [
   { id: 'role', q: 'What describes you?', options: [
-    ['student', 'Iâ€™m a student'], ['tech', 'I work in tech'], ['nontech', 'I work outside tech'],
-    ['manager', 'I manage people or projects'], ['changer', 'Iâ€™m changing careers'], ['growth', 'Iâ€™m learning for personal growth']] },
-  { id: 'goal', q: 'Whatâ€™s your main goal?', options: [
+    ['student', 'I’m a student'], ['tech', 'I work in tech'], ['nontech', 'I work outside tech'],
+    ['manager', 'I manage people or projects'], ['changer', 'I’m changing careers'], ['growth', 'I’m learning for personal growth']] },
+  { id: 'goal', q: 'What’s your main goal?', options: [
     ['promoted', 'Get promoted'], ['switch', 'Change careers'], ['ai', 'Build AI skills'],
     ['degree', 'Get a degree'], ['stronger', 'Become technically stronger']] },
   { id: 'hours', q: 'How much time can you give each week?', options: [
-    ['3-5', '3â€“5 hours'], ['5-10', '5â€“10 hours'], ['10+', '10+ hours']] },
+    ['3-5', '3–5 hours'], ['5-10', '5–10 hours'], ['10+', '10+ hours']] },
   { id: 'coding', q: 'Have you written code before?', options: [
     ['none', 'Not yet'], ['some', 'A little'], ['regular', 'Yes, regularly']] },
 ];
-export const BACHELOR_Q = { id: 'bachelor', q: 'Masterâ€™s-level programs need a bachelorâ€™s degree. Do you have one?', options: [['yes', 'Yes'], ['no', 'No, not yet']] };
+export const BACHELOR_Q = { id: 'bachelor', q: 'Master’s-level programs need a bachelor’s degree. Do you have one?', options: [['yes', 'Yes'], ['no', 'No, not yet']] };
 
 export const label = (qid, value) => [...QUESTIONS, BACHELOR_Q].find((q) => q.id === qid)?.options.find(([v]) => v === value)?.[1] ?? '';
 
@@ -93,7 +93,7 @@ export function scoreProgram(p, a) {
   else cautions.push(a.coding === 'some'
     ? 'It expects confident Python. If you are unsure, start with the Certificate in Python & Data Analysis.'
     : 'It needs Python first. The Certificate in Python & Data Analysis is the place to start.');
-  if (p.needsBachelor && a.bachelor === 'yes') reasons.push('You have a bachelorâ€™s degree, which masterâ€™s-level programs require.');
+  if (p.needsBachelor && a.bachelor === 'yes') reasons.push('You have a bachelor’s degree, which master’s-level programs require.');
   if (parts.time === 20) reasons.push(`It fits your ${label('hours', a.hours)} a week: plan for about ${p.weeklyHours} hours.`);
   else if (parts.time >= 14) reasons.push(`It can work with ${label('hours', a.hours)} a week if you can give at least ${p.weeklyMin}: plan for ${p.weeklyHours} hours.`);
   else cautions.push(`Plan for about ${p.weeklyHours} hours a week, more than the ${label('hours', a.hours)} you have now.`);
@@ -104,7 +104,7 @@ export function scoreProgram(p, a) {
 /**
  * @param answers {role, goal, hours, coding, bachelor?}
  * @param programs the program list (web/data/programs.mjs PROGRAMS or the browser catalog)
- * @returns {match, alternatives, needs, ranked} â€” needs is 'bachelor' when the best fit is a Master's-level
+ * @returns {match, alternatives, needs, ranked} — needs is 'bachelor' when the best fit is a Master's-level
  *          program and we have not asked about a degree yet.
  */
 export function recommend(answers, programs) {

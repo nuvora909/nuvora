@@ -1,4 +1,4 @@
-﻿// /contact/: the channels that work today (the seat request form before launch, the student portal after
+// /contact/: the channels that work today (the seat request form before launch, the student portal after
 // enrolment) and the owner's contact facts from OWNER. Undecided facts are null and render as "to be published
 // before the first batch": no contact detail is ever invented here.
 import { html, accent } from '../lib/html.mjs';
@@ -13,7 +13,7 @@ const CRUMBS = [['/', 'Home'], [PATH, 'Contact']];
 const LATER = 'To be published before the first batch';
 
 const later = () => html`<span class="abt-tbp">${icon('clock')} ${LATER}</span>`;
-const text = (v) => (typeof v === 'string' ? v : [v.name, v.email, v.phone].filter(Boolean).join(' Â· '));
+const text = (v) => (typeof v === 'string' ? v : [v.name, v.email, v.phone].filter(Boolean).join(' · '));
 
 // Each row: icon, label, the OWNER value as markup (or null), and what to do until it is published.
 const DETAILS = [
@@ -45,7 +45,7 @@ const channels = () => html`
           <li>We use your details only to reply about your request.</li>
           <li>If you saved a plan in Find my program, you choose whether to include it.</li>
         </ul>
-        <p class="abt-when">Next start ${liveDate('start', 0)} Â· seat requests close ${liveDate('applyBy', 0)}</p>
+        <p class="abt-when">Next start ${liveDate('start', 0)} · seat requests close ${liveDate('applyBy', 0)}</p>
         <div class="row"><a class="btn gold" href="/admissions/#request" data-cta="contact-request">Request a seat ${icon('arrow')}</a></div>
       </article>
       <article class="abt-ch" aria-labelledby="ch-portal">
@@ -58,7 +58,7 @@ const channels = () => html`
       <div class="abt-quick">
         <span class="abt-ico">${icon('book')}</span>
         <div><h3>A quick question about programs?</h3>
-          <p>Prices, start dates, weekly hours and the credentialâ€™s limits are already published, and the advisor answers from the same published catalog.</p></div>
+          <p>Prices, start dates, weekly hours and the credential’s limits are already published, and the advisor answers from the same published catalog.</p></div>
         <div class="row">
           <button class="btn ghost" type="button" data-advisor-open hidden>${icon('spark')} Ask a question</button>
           <a class="btn ghost" href="/how-it-works/">How it works</a>

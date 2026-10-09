@@ -1,4 +1,4 @@
-﻿// Original cover artwork for each program, drawn as SVG at build time and written to /covers/<slug>.svg by
+// Original cover artwork for each program, drawn as SVG at build time and written to /covers/<slug>.svg by
 // scripts/build-site.mjs. Meta-blue led, with navy depth and small cyan, violet and gold accents, a motif for the
 // subject and a big short label. No people, no photos and no third-party logos.
 //
@@ -236,7 +236,7 @@ const SPOKEN = { AI: 'AI', ML: 'ML', MLOPS: 'MLOps', '&': 'and' };
 export function coverAlt(p) {
   const c = COVERS[p.id];
   const words = c.label.join(' ').split(' ').map((w) => SPOKEN[w] ?? w[0] + w.slice(1).toLowerCase()).join(' ');
-  return `Cover illustration: ${c.desc}, with the label â€œ${words}â€`;
+  return `Cover illustration: ${c.desc}, with the label “${words}”`;
 }
 
 // The big label: plain lines above, the last line on a blue pill (fitted with textLength).

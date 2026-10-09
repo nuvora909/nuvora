@@ -1,4 +1,4 @@
-﻿// HTML templating for the static site build. Every interpolated value is escaped unless it is wrapped in raw()
+// HTML templating for the static site build. Every interpolated value is escaped unless it is wrapped in raw()
 // or produced by another html`` template. null, undefined and false render as nothing, so conditional parts can
 // be written as ${cond && html`...`}. Arrays are joined.
 export class Raw {

@@ -1,4 +1,4 @@
-﻿// Demo scenario for the local server, built through the same database functions production uses
+// Demo scenario for the local server, built through the same database functions production uses
 // (enrollment, submissions, grading, the daily term progression, recordings).
 // Dates are relative to today, so there are always past classes, upcoming classes and due dates.
 //

@@ -1,4 +1,4 @@
-﻿-- Nuvora automation and learning functions.
+-- Nuvora automation and learning functions.
 -- Internal functions (batch creation, enrollment, attendance, reminders) are callable only by the
 -- service role and scheduled jobs. Student and staff actions go through checked RPCs.
 

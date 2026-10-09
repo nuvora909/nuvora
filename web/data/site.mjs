@@ -1,4 +1,4 @@
-﻿// Site-wide facts and settings. Everything here must be true today; owner-supplied facts that are not decided
+// Site-wide facts and settings. Everything here must be true today; owner-supplied facts that are not decided
 // yet stay null and the pages say so plainly instead of inventing them.
   import { LIVE_PATTERN, TUITION, money } from './programs.mjs';
 
@@ -59,18 +59,18 @@
   ['When can I start?',
     'Batches start on the first Monday of every month. Seat requests for a start close 7 days before it.'],
   ['How much does it cost?',
-    `${money(TUITION.perTerm.Certificate)} per 12-week term for certificates and bachelorâ€™s-level programs, ${money(TUITION.perTerm.Master)} per term for masterâ€™s-level programs, plus a one-time ${money(TUITION.applicationFee)} application fee. Prices are launch pricing in US dollars, and you pay one term at a time.`],
+    `${money(TUITION.perTerm.Certificate)} per 12-week term for certificates and bachelor’s-level programs, ${money(TUITION.perTerm.Master)} per term for master’s-level programs, plus a one-time ${money(TUITION.applicationFee)} application fee. Prices are launch pricing in US dollars, and you pay one term at a time.`],
   ['How am I assessed?',
     'Each term has three projects graded by instructors on a four-level rubric: Distinguished, Proficient, Basic and Not yet. Proficient or better passes. Below that, you get written feedback and resubmit.'],
   ['Do I need a degree to join?',
-    'Only for the masterâ€™s-level programs, which need a bachelorâ€™s degree in any field. Certificates and bachelorâ€™s-level programs need no degree, and the beginner programs teach Python from the start.'],
+    'Only for the master’s-level programs, which need a bachelor’s degree in any field. Certificates and bachelor’s-level programs need no degree, and the beginner programs teach Python from the start.'],
   ['Will this get me a job?',
     'Nuvora teaches the skills used in data and AI roles, but it does not guarantee jobs, promotions or salaries. We are pre-launch, so there are no graduates or job outcomes yet. We will publish real results, with how they were measured, after our first batches finish.'],
 ];
 
 // Photos and video clips are stock media used under their licences. People shown are not Nuvora students.
   export const PHOTOS = {
-  group: { src: '/img/hero-group.jpg', alt: 'Three friends laughing together while working on laptops at a cafÃ© table', pos: '50% 40%', by: 'Brooke Cagle', id: 'g1Kr4Ozfoac' },
+  group: { src: '/img/hero-group.jpg', alt: 'Three friends laughing together while working on laptops at a café table', pos: '50% 40%', by: 'Brooke Cagle', id: 'g1Kr4Ozfoac' },
   laptop: { src: '/img/hero-laptop.jpg', alt: 'Two young women smiling at a laptop, one pointing at the screen', pos: '50% 35%', by: 'Van Tay Media', id: 'pc_HmXZ0e_w' },
   home: { src: '/img/learner-home.jpg', alt: 'A young man concentrating on his laptop', pos: '50% 25%', by: 'Kojo Kwarteng', id: 'KUzlAah2dog' },
   cohort: { src: '/img/study-group.jpg', alt: 'A group of students gathered around a laptop in a lecture hall', pos: '50% 40%', by: 'Vitaly Gariev', id: 'kp7qkHTgSKc' },

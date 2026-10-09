@@ -1,4 +1,4 @@
-﻿// Career paths. /careers/ shows the three tracks, a role explorer that can be filtered by track and by program,
+// Career paths. /careers/ shows the three tracks, a role explorer that can be filtered by track and by program,
 // and a program-to-role table. /careers/<role-id>/ shows one role: what it does, the skills it uses and the
 // Nuvora lesson and term that teach each one, where it sits in each track, and the programs that cover it.
 // Everything is built from web/data/careers.mjs and the catalog. These are typical industry progressions, not
@@ -172,7 +172,7 @@ const explorer = () => html`
 </section>`;
 
 const MARK_CLASS = { designed: 'cr-mk cr-mk-d', related: 'cr-mk cr-mk-r', none: 'cr-mk cr-mk-n' };
-const mark = (kind) => html`<span class="${MARK_CLASS[kind]}" aria-hidden="true">${kind === 'designed' ? icon('check') : kind === 'none' ? 'â€“' : ''}</span>`;
+const mark = (kind) => html`<span class="${MARK_CLASS[kind]}" aria-hidden="true">${kind === 'designed' ? icon('check') : kind === 'none' ? '–' : ''}</span>`;
 const LEGEND = {
   designed: 'Designed for this role: the program lists it as one of its career paths',
   related: 'Builds related skills: the program teaches skills related to this role, but is aimed at other roles',
@@ -200,7 +200,7 @@ const matrix = () => html`
           })}</tr>`)}</tbody>
       </table>
     </div>
-    <p class="note cr-mapnote">â€œDesigned forâ€ means the program lists the role among its career paths. Each role page shows exactly which of the roleâ€™s skills each program teaches. Neither is a promise of a job: see <a href="#about-these-paths">about these career paths</a> below.</p>
+    <p class="note cr-mapnote">“Designed for” means the program lists the role among its career paths. Each role page shows exactly which of the role’s skills each program teaches. Neither is a promise of a job: see <a href="#about-these-paths">about these career paths</a> below.</p>
   </div>
 </section>`;
 
@@ -300,7 +300,7 @@ function trackCard(rid, tid) {
 <article class="cr-path" aria-labelledby="cr-p-${tid}">
   <div>
     <h3 id="cr-p-${tid}">${t.title}</h3>
-    <p class="cr-pos">Step ${at + 1} of ${t.steps.length}${at === 0 ? ' Â· the first step in this track' : at === t.steps.length - 1 ? ' Â· the last step in this track' : ''}</p>
+    <p class="cr-pos">Step ${at + 1} of ${t.steps.length}${at === 0 ? ' · the first step in this track' : at === t.steps.length - 1 ? ' · the last step in this track' : ''}</p>
   </div>
   <ol class="cr-tl">
     ${t.steps.map((sid, n) => {
@@ -324,7 +324,7 @@ function programItem(p, rid) {
         : 'does not teach the exact lessons above';
   return html`
 <div class="cr-pc">
-  <p class="cr-cover cr-cover-${kind}">${icon(kind === 'designed' ? 'target' : 'layers')}<span><b>${RELATION[kind]}</b> Â· ${what}</span></p>
+  <p class="cr-cover cr-cover-${kind}">${icon(kind === 'designed' ? 'target' : 'layers')}<span><b>${RELATION[kind]}</b> · ${what}</span></p>
   ${programCard(p)}
 </div>`;
 }
@@ -381,7 +381,7 @@ ${pageHead({
 <section class="sec tinted" id="skills" aria-labelledby="cr-skills-title">
   <div class="wrap">
     ${head({ id: 'cr-skills-title', eyebrow: 'Skills', title: 'Skills this role *uses*',
-      lede: 'Each skill maps to a Nuvora lesson. Below it is every program term that teaches the lesson, linked to that programâ€™s curriculum.' })}
+      lede: 'Each skill maps to a Nuvora lesson. Below it is every program term that teaches the lesson, linked to that program’s curriculum.' })}
     <ol class="cr-skilllist">${r.skills.map((s, i) => skillItem(rid, s, i))}</ol>
   </div>
 </section>

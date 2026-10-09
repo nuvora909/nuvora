@@ -1,4 +1,4 @@
-﻿// The Nuvora catalog: programs, their terms (lessons and graded projects), live class pattern and tuition.
+// The Nuvora catalog: programs, their terms (lessons and graded projects), live class pattern and tuition.
 // `npm run seed` turns this into supabase/seed.sql. Edit here, not in the SQL.
 
 export const PROGRAMS = [
@@ -13,8 +13,8 @@ export const PROGRAMS = [
 
 // ============================================================================
 // Program plans as a sequence of 12-week terms (one term = one monthly batch of that program stage).
-// Decided by the owner on 2026-10-02: Bachelor's 120 credits = 12 terms (3â€“4 years part-time),
-// Master's 36 credits = 4 terms (12â€“18 months), certificates = 1 term. Each term has four competency
+// Decided by the owner on 2026-10-02: Bachelor's 120 credits = 12 terms (3–4 years part-time),
+// Master's 36 credits = 4 terms (12–18 months), certificates = 1 term. Each term has four competency
 // lessons and three graded projects (due on days 18, 46 and 81 of the batch).
 // `badge` is the skill badge a student earns in the portal by completing every lesson of the term and
 // passing all three projects (Proficient or Distinguished). Badge names describe skills, never job titles.

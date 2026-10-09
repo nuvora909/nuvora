@@ -1,4 +1,4 @@
-﻿// Signed tokens and password hashing for the local stand-in of Supabase Auth.
+// Signed tokens and password hashing for the local stand-in of Supabase Auth.
 // Production uses Supabase's own auth service; this exists so the portal can be built and tested offline.
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';

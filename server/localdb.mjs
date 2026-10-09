@@ -1,4 +1,4 @@
-﻿// Local PostgreSQL (PGlite, in-process) set up like a Supabase project: the auth schema, the three API
+// Local PostgreSQL (PGlite, in-process) set up like a Supabase project: the auth schema, the three API
 // roles, Supabase's default privileges, all migrations and the seed. Used by the tests and the dev server.
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync } from 'node:fs';

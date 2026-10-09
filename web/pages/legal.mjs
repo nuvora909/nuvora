@@ -1,4 +1,4 @@
-﻿// Legal pages: /legal/privacy/ and /legal/terms/ (plain-English drafts, clearly labelled, to be reviewed by counsel
+// Legal pages: /legal/privacy/ and /legal/terms/ (plain-English drafts, clearly labelled, to be reviewed by counsel
 // before launch), /legal/accessibility/ (the accessibility statement: target, how the site is tested, known limits)
 // and /legal/credits/ (stock media and font credits). One layout: a table of contents beside the text, numbered
 // sections, and links between the pages. Facts the owner has not decided come from OWNER as null and are shown as
@@ -35,7 +35,7 @@ const draftNote = (text) => html`
 <div class="abt-draft" role="note">
   ${icon('info')}
   <div>
-    <b>Draft â€” to be reviewed by counsel before launch</b>
+    <b>Draft — to be reviewed by counsel before launch</b>
     <p>${text} It is not final, and it may change after legal review.</p>
     <p class="small">Draft of ${DRAFT_DATE}</p>
   </div>
@@ -103,19 +103,19 @@ const PRIVACY = [
     </ul>
     <p>Everything else on this website runs in your browser. The only time it sends information to Nuvora is when you send a seat request.</p>`],
   ['on-device', 'What is stored on your device', html`
-    <p>Some features remember things in your browserâ€™s own storage (localStorage and sessionStorage). These are not cookies, and nothing below is sent to Nuvora automatically.</p>
+    <p>Some features remember things in your browser’s own storage (localStorage and sessionStorage). These are not cookies, and nothing below is sent to Nuvora automatically.</p>
     <ul class="abt-cards">
       ${card('Your saved plan', 'nuvora.plan', [
         ['Where', 'localStorage, which stays after you close the browser'],
-        ['When', html`Only if you tick â€œSave my planâ€ in <a href="/find-your-program/">Find my program</a>`],
+        ['When', html`Only if you tick “Save my plan” in <a href="/find-your-program/">Find my program</a>`],
         ['What', 'Your Find my program answers and your matched program'],
-        ['How long', 'Up to 90 days, after which the site no longer uses it. â€œForget my planâ€ removes it at any time.'],
+        ['How long', 'Up to 90 days, after which the site no longer uses it. “Forget my plan” removes it at any time.'],
       ])}
       ${card('Your answers for this visit', 'nuvora.answers', [
         ['Where', 'sessionStorage, for this tab only'],
         ['When', 'While you answer Find my program'],
         ['What', 'Your answers, so you can move between pages without losing them'],
-        ['How long', 'Until you close the tab. â€œForget my planâ€ also removes it.'],
+        ['How long', 'Until you close the tab. “Forget my plan” also removes it.'],
       ])}
       ${card('The logo intro has played', 'nuvora.intro', [
         ['Where', 'sessionStorage, for this tab only'],
@@ -124,7 +124,7 @@ const PRIVACY = [
         ['How long', 'Until you close the tab'],
       ])}
       ${card('Your portal sign-in session', 'nuvora.session', [
-        ['Where', 'localStorage if you tick â€œKeep me signed in on this deviceâ€, otherwise sessionStorage for that tab'],
+        ['Where', 'localStorage if you tick “Keep me signed in on this device”, otherwise sessionStorage for that tab'],
         ['What', 'The sign-in session that proves who you are when the portal talks to our database provider'],
         ['How long', 'Until you sign out, or until you close the tab if you did not choose to stay signed in'],
       ], html`The portal also keeps, for the current tab only, which batch you are viewing (<code>nuvora.batch</code>) and the page to return to after signing in (<code>nuvora.next</code>).`)}
@@ -148,12 +148,12 @@ const PRIVACY = [
       <li>your name, email address and the country you live in;</li>
       <li>a phone number, if you choose to give one;</li>
       <li>the program and start date you want;</li>
-      <li>your saved Find my program plan, only if you saved one and tick the box to include it: your answers about your background, goal, weekly time and coding, your answer about a bachelorâ€™s degree if you gave one, and your best match and its score.</li>
+      <li>your saved Find my program plan, only if you saved one and tick the box to include it: your answers about your background, goal, weekly time and coding, your answer about a bachelor’s degree if you gave one, and your best match and its score.</li>
     </ul>
     <p>We use these details only to reply to you about your request. They are stored with our database provider (see <a href="#providers">service providers</a>). Sending a request needs your agreement to this, which you give with the tick box on the form.</p>
-    <p>The page shows the same â€œRequest receivedâ€ message for every request it accepts, whether or not the same request was sent before, so it never reveals anything about earlier requests. A request can only be confirmed through the email address given in it: Nuvora replies there.</p>`],
+    <p>The page shows the same “Request received” message for every request it accepts, whether or not the same request was sent before, so it never reveals anything about earlier requests. A request can only be confirmed through the email address given in it: Nuvora replies there.</p>`],
   ['advisor', 'The advisor', html`
-    <p>On this website, the advisorâ€™s answers come from fixed rules that run in your browser, using the published catalog. Nothing you type is sent anywhere, and the advisor is labelled as giving catalog answers.</p>
+    <p>On this website, the advisor’s answers come from fixed rules that run in your browser, using the published catalog. Nothing you type is sent anywhere, and the advisor is labelled as giving catalog answers.</p>
     <p>Where an AI model is connected, the advisor is labelled as AI, and your questions are sent to the AI provider, Anthropic, to generate the answers. Please do not share personal information with the advisor.</p>`],
   ['portal', 'The student portal', html`
     <p>When you have a portal account, Nuvora keeps the records needed to run your course:</p>
@@ -163,18 +163,18 @@ const PRIVACY = [
       <li><b>Watch progress:</b> which parts of each lesson you have watched, recorded in 10-second slices. A lesson counts as complete at 90% watched.</li>
       <li><b>Live attendance:</b> when you joined each live session and for how many minutes, from Jitsi.</li>
       <li><b>Submissions:</b> the links, files and notes you submit for projects.</li>
-      <li><b>Grades and feedback:</b> your rubric grade and your instructorâ€™s written feedback for each project.</li>
+      <li><b>Grades and feedback:</b> your rubric grade and your instructor’s written feedback for each project.</li>
       <li><b>Notifications:</b> messages about your course, such as new grades and reminders before your portal access would pause, which may also be sent to you by email.</li>
       <li><b>Payments:</b> the tuition payments recorded for you, with the term, amount, date and how it was paid.</li>
       <li><b>Access history:</b> when your portal access was paused or restored, whether by the rule for unpaid terms or by a Nuvora administrator, and the reason given.</li>
     </ul>
-    <p>Your last activity is used for one more thing: learners who have been inactive for 14 days appear on their instructorâ€™s check-in list, so someone can see whether you need help.</p>
+    <p>Your last activity is used for one more thing: learners who have been inactive for 14 days appear on their instructor’s check-in list, so someone can see whether you need help.</p>
     <p>Lessons and recordings stream in the portal and are never downloadable. PDF materials are delivered through short-lived download links.</p>`],
   ['grades', 'Who can see your records', html`
     <ul>
       <li><b>You</b> see your own progress, attendance, submissions, grades and feedback.</li>
       <li><b>Your instructors</b> see the progress, attendance, submissions and grades of the learners they teach.</li>
-      <li><b>Nuvora administrators</b> can see these records to run the school and handle problems. They can also see each studentâ€™s payment records and access history, to record tuition payments and to pause or restore portal access.</li>
+      <li><b>Nuvora administrators</b> can see these records to run the school and handle problems. They can also see each student’s payment records and access history, to record tuition payments and to pause or restore portal access.</li>
     </ul>
     <p>Other students cannot see your grades, feedback, progress, payments or access history.</p>`],
   ['providers', 'Service providers', html`
@@ -195,8 +195,8 @@ const PRIVACY = [
     </ul>`],
   ['rights', 'Your rights', html`
     <p>You can ask us for a copy of the information we hold about you, ask us to correct it, and ask us to delete it. ${contactLine()}</p>
-    <p>Grievance officer: ${OWNER.grievanceOfficer ? (typeof OWNER.grievanceOfficer === 'string' ? OWNER.grievanceOfficer : [OWNER.grievanceOfficer.name, OWNER.grievanceOfficer.email].filter(Boolean).join(' Â· ')) : later(LATER.toLowerCase())}.</p>
-    <p>Information kept only in your browser is under your control: use â€œForget my planâ€, sign out of the portal, or clear this websiteâ€™s data in your browser.</p>`],
+    <p>Grievance officer: ${OWNER.grievanceOfficer ? (typeof OWNER.grievanceOfficer === 'string' ? OWNER.grievanceOfficer : [OWNER.grievanceOfficer.name, OWNER.grievanceOfficer.email].filter(Boolean).join(' · ')) : later(LATER.toLowerCase())}.</p>
+    <p>Information kept only in your browser is under your control: use “Forget my plan”, sign out of the portal, or clear this website’s data in your browser.</p>`],
   ['changes', 'Changes to this notice', html`
     <p>This is a draft. It will be reviewed by counsel before launch, and the reviewed version will replace it on this page. Each version shows its date at the top.</p>`],
 ];
@@ -206,7 +206,7 @@ const TERMS = [
   ['summary', 'In short', html`
     <ul class="abt-short">
       <li>${icon('check')}<span>A seat request is not admission or a contract, and nothing is charged.</span></li>
-      <li>${icon('check')}<span>Tuition is paid one term at a time. <a href="#paying">What happens if a term isnâ€™t paid</a>.</span></li>
+      <li>${icon('check')}<span>Tuition is paid one term at a time. <a href="#paying">What happens if a term isn’t paid</a>.</span></li>
       <li>${icon('check')}<span>Programs lead to a ${CREDENTIAL.short}, not an accredited degree.</span></li>
       <li>${icon('check')}<span>Course videos are for streaming only: no downloading, recording or sharing.</span></li>
       <li>${icon('check')}<span>Keep your portal account to yourself, and submit your own work.</span></li>
@@ -219,7 +219,7 @@ const TERMS = [
     <p>To enrol, you complete the application, pay the one-time ${money(TUITION.applicationFee)} application fee and pay for your first term. You pay one term at a time. The refund and deferral policy will be published before the first batch, and you will see it before you pay.</p>`],
   ['paying', 'Paying tuition and portal access', html`
     <p>${ACCESS_RULE}</p>
-    <p>For now, Nuvora records payments by hand. Prices are launch pricing in US dollars, and the <a href="/tuition/">tuition page</a> lists every programâ€™s price per term.</p>`],
+    <p>For now, Nuvora records payments by hand. Prices are launch pricing in US dollars, and the <a href="/tuition/">tuition page</a> lists every program’s price per term.</p>`],
   ['credential', 'The credential', html`
     <ul>
       <li>Finishing a program earns a <b>${CREDENTIAL.short}</b>. It is not an accredited degree.</li>
@@ -231,9 +231,9 @@ const TERMS = [
     <p>When you use the portal, please:</p>
     <ul>
       <li>keep your sign-in details to yourself and do not share your account;</li>
-      <li>submit work that is your own, and say where you used other peopleâ€™s code, data or text;</li>
+      <li>submit work that is your own, and say where you used other people’s code, data or text;</li>
       <li>be respectful to instructors and other learners in live sessions and in anything you submit;</li>
-      <li>do not try to reach other peopleâ€™s accounts or data, get around the portalâ€™s protections, or disrupt the service.</li>
+      <li>do not try to reach other people’s accounts or data, get around the portal’s protections, or disrupt the service.</li>
     </ul>
     <p>Live sessions on Jitsi are recorded, and the recordings stream in the portal.</p>`],
   ['content', 'Course content', html`
@@ -247,7 +247,7 @@ const TERMS = [
     <p>Each term has ${PROJECTS_PER_TERM} projects, graded by instructors on a four-level rubric: Distinguished, Proficient, Basic and Not yet. Proficient or better passes. Below that, you get written feedback and resubmit. A lesson counts as complete when you have watched 90% of it.</p>`],
   ['accounts', 'Accounts and security', html`
     <ul>
-      <li>You are responsible for keeping your password safe. Only choose â€œKeep me signed in on this deviceâ€ on a device that is yours.</li>
+      <li>You are responsible for keeping your password safe. Only choose “Keep me signed in on this device” on a device that is yours.</li>
       <li>If you think someone else has used your account, tell us. ${contactLine()}</li>
       <li>We may suspend an account that breaks these terms, for example by sharing course videos.</li>
     </ul>`],
