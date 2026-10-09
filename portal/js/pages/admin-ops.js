@@ -103,7 +103,7 @@ function batchCard(b, teachers) {
           <div class="field"><label for="st-${b.id}">Status</label><select id="st-${b.id}" data-status>${options(Object.entries(BATCH_STATUS), b.status)}</select></div>
         </div>
         <div class="field"><label for="url-${b.id}">Live-class link for every upcoming class</label>
-          <input id="url-${b.id}" type="url" inputmode="url" maxlength="500" placeholder="https://Jitsi.us/j/..." data-url aria-describedby="url-h-${b.id}">
+          <input id="url-${b.id}" type="url" inputmode="url" maxlength="500" placeholder="https://meet.jit.si/..." data-url aria-describedby="url-h-${b.id}">
           <span class="hint" id="url-h-${b.id}">Leave empty to keep the current links. Students see a link only from 15 minutes before each class until it ends.</span></div>
         <label class="remember"><input type="checkbox" data-clear> Remove the links from upcoming classes</label>
         <p><button class="btn primary" type="submit">Save changes</button></p>

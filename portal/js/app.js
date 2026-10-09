@@ -6,7 +6,6 @@ import * as authPages from './pages/auth.js';
 import * as student from './pages/student.js';
 import * as staff from './pages/staff.js';
 import * as admin from './pages/admin.js';
-import * as adminAssistant from './pages/admin-assistant.js';
 import * as adminOps from './pages/admin-ops.js';
 
 const root = document.getElementById('app');
@@ -39,7 +38,6 @@ const ROUTES = [
   { path: 'admin/staff', page: adminOps.staff, who: 'admin', title: 'Staff' },
   { path: 'admin/requests', page: adminOps.requests, who: 'admin', title: 'Seat requests' },
   { path: 'admin/materials', page: adminOps.materials, who: 'admin', title: 'Materials' },
-  { path: 'admin/assistant', page: adminAssistant.assistant, who: 'admin', title: 'Admin Assistant' },
 ];
 
 const state = {
@@ -241,8 +239,7 @@ function ensureShell() {
   const staffNav = [['teach', 'board', 'Teaching'], ['grading', 'grade', 'Grading', 'grade'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
   const studentNav = [['home', 'home', 'Home'], ['course', 'book', 'My course'], ['live', 'live', 'Live classes'], ['assignments', 'task', 'Assignments'], ['notifications', 'bell', 'Notifications', 'unread'], ['profile', 'user', 'Profile']];
   const adminNav = [['admin', 'gauge', 'Overview'], ['admin/students', 'users', 'Students'], ['admin/batches', 'calendar', 'Batches'],
-    ['admin/staff', 'shield', 'Staff'], ['admin/requests', 'inbox', 'Seat requests'], ['admin/materials', 'pdf', 'Materials'],
-    ['admin/assistant', 'route', 'Admin Assistant']];
+    ['admin/staff', 'shield', 'Staff'], ['admin/requests', 'inbox', 'Seat requests'], ['admin/materials', 'pdf', 'Materials']];
   const link = ([p, ic, label, badge]) => html`<a class="snav" href="#/${p}" data-nav="${p}">${icon(ic)}<span>${label}</span>${badge ? html`<span class="count" data-badge="${badge}" hidden></span>` : ''}</a>`;
   const nav = isAdmin()
     ? html`<p class="navhead">Admin</p>${adminNav.map(link)}<p class="navhead">Teaching</p>${staffNav.map(link)}`

@@ -91,7 +91,7 @@ function build() {
       return;
     }
     const status = modal.querySelector('[data-brochure-status]');
-    status.textContent = 'Your details were not sent. <span class="brochure-highlight">Brochure</span> requests are not connected yet.';
+    status.textContent = 'Your details were not sent. Brochure requests are not connected yet.';
     status.hidden = false;
   });
 
