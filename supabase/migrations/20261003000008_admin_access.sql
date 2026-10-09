@@ -476,7 +476,7 @@ create or replace function public.request_seat(
 ) returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare
-  today     date := (now() at time zone 'Asia/Kolkata')::date;
+  today     date := (now() at time zone 'America/New_York')::date;
   prog      public.programs;
   problem   text;
   v_name    text;
@@ -974,7 +974,7 @@ create function public.admin_record_payment(
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   e      public.enrollments;
-  today  date := (now() at time zone 'Asia/Kolkata')::date;
+  today  date := (now() at time zone 'America/New_York')::date;
   v_ref  text := nullif(trim(coalesce(p_reference, '')), '');
   v_note text := nullif(trim(coalesce(p_note, '')), '');
   pay    public.payments;

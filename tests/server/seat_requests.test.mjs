@@ -11,7 +11,7 @@ before(async () => {
   H = { apikey: s.anonKey, 'Content-Type': 'application/json' };
   // Today in India decides which starts are open (not the server's UTC date).
   start = (await (await fetch(`${s.url}/__test/sql`, { method: 'POST', headers: { 'X-Nuvora-Test': '1', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sql: `select next_start_date((now() at time zone 'Asia/Kolkata')::date)::text as d` }) })).json())[0].d;
+    body: JSON.stringify({ sql: `select next_start_date((now() at time zone 'America/New_York')::date)::text as d` }) })).json())[0].d;
 });
 after(() => s.close());
 

@@ -54,7 +54,7 @@ export async function loadDemo(db) {
                                              where m.program_id = 'bs-aiml' and m.term_no = $1 order by l.position`, [term]));
   for (const [i, l] of (await lessonsOf(1)).entries()) {
     for (const [s, lag] of [['student', 0], ['classmate', 3]]) {
-      const at = `${t1.starts_on} 20:00 Asia/Kolkata`;
+      const at = `${t1.starts_on} 20:00 America/New_York`;
       await db.query(`insert into public.lesson_progress (student_id, lesson_id, watched, watched_seconds, last_position, completed_at, updated_at)
                       values ($1, $2, array_fill(true, array[ceil($3 / 10.0)::int]), $3, $3,
                               $4::timestamptz + make_interval(days => $5), $4::timestamptz + make_interval(days => $5))`,
@@ -94,7 +94,7 @@ export async function loadDemo(db) {
     const reserved = await one(db.query(`select id from public.enrollments where student_id = $1 and status = 'reserved'`, [id[s]]));
     await as(id.admin)(`select admin_set_enrollment_status($1, 'active')`, [reserved]);
   }
-  await db.query(`update public.enrollments set updated_at = (($2::date + 1) + time '09:00') at time zone 'Asia/Kolkata'
+  await db.query(`update public.enrollments set updated_at = (($2::date + 1) + time '09:00') at time zone 'America/New_York'
                   where batch_id = $1`, [term1, t1.ends_on]);
 
   // ---------------------------------------------------------------- the current and next batches
@@ -221,7 +221,7 @@ export async function loadDemo(db) {
   await payTerm(omar, 2450, 'DEMO-BT-0202', omarPaidOn, 'Term 1 in full.');
 
   // The earlier M.S. batch: Kenji and Amara joined before it started; Ines joined 20 days ago (a late joiner).
-  await db.query(`update public.enrollments set enrolled_at = ($2::date - 5 + time '10:00') at time zone 'Asia/Kolkata'
+  await db.query(`update public.enrollments set enrolled_at = ($2::date - 5 + time '10:00') at time zone 'America/New_York'
                   where batch_id = $1 and student_id = any($3)`, [batch.earlier, earlierStart, [id.lapsed, id.extended]]);
   await db.query(`update public.enrollments set enrolled_at = now() - interval '20 days' where batch_id = $1 and student_id = $2`, [batch.earlier, id.grace]);
   await admin(`select admin_set_access($1, 'on', 'Payment promised by bank transfer; access extended for two weeks.', now() + interval '14 days')`,
@@ -232,7 +232,7 @@ export async function loadDemo(db) {
   await service(`select apply_access_rules()`);
 
   // Seat requests from the website, in each status. Nia's can be converted (she has an account).
-  const nextStart = await one(db.query(`select next_start_date((now() at time zone 'Asia/Kolkata')::date)::text`));
+  const nextStart = await one(db.query(`select next_start_date((now() at time zone 'America/New_York')::date)::text`));
   await service(`select request_seat(p_program => 'c-py', p_start => $1::date, p_full_name => 'Nia Brooks', p_email => $2, p_country => 'Kenya',
                                      p_consent => true, p_consent_version => 'privacy-2026-10', p_details => '{"goal": "Analyst role"}'::jsonb,
                                      p_source => '/programs/certificate-python-data-analysis/')`, [nextStart, ACCOUNTS.newcomer.email]);

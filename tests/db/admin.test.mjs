@@ -7,7 +7,7 @@ import { freshDb, rejects } from './helpers.mjs';
 let h, admin, admin2, inst, inst2, S = {}, B, F, ask;
 
 const PAST_MONDAY = `(current_date - 70 - (extract(isodow from current_date - 70)::int - 1))`;
-const TODAY = `(now() at time zone 'Asia/Kolkata')::date`;
+const TODAY = `(now() at time zone 'America/New_York')::date`;
 const enroll = async (key, email, name, batchStart = PAST_MONDAY, program = 'ms-ds') => {
   const id = await h.user(email, 'student', name);
   const eid = await h.one(h.service, `select enroll_student($1, $2, ${batchStart})`, [id, program]);
@@ -197,8 +197,13 @@ test('batches: list with seats and instructors; update capacity, status and the 
                    [40, 35, true, 'https://Jitsi.us/j/123456789?pwd=abc']);
   const mine = await h.one(h.as(S.maya.id), `select my_sessions($1)`, [B]);
   assert.deepEqual(mine.filter((s) => s.join_url).map((s) => [s.id, s.join_url]), [[live, 'https://Jitsi.us/j/123456789?pwd=abc']]);
-  assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1 and ends_at < now() and join_url is not null`, [B]), 0,
-               'past classes are not changed');
+  // Every class has its own Jitsi room link from the start (migration 20261009065400); a new link replaces it only
+  // on classes still to come.
+  assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1 and ends_at < now()
+                                    and join_url = 'https://Jitsi.us/j/123456789?pwd=abc'`, [B]), 0, 'past classes are not changed');
+  assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1 and ends_at < now()
+                                    and join_url is distinct from 'https://meet.jit.si/nuvora-' || room_id::text`, [B]), 0,
+               'past classes keep their own room link');
   const a = await lastAudit();
   assert.deepEqual([a.action, a.target_id, a.details.capacity, a.details.join_link.removed], ['batch.update', B, { from: 60, to: 40 }, false]);
   const cleared = await upd({ url: '' });

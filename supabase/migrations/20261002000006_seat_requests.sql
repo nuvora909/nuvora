@@ -6,7 +6,7 @@
 -- Rules:
 --   * The program must exist and be active. The start must be a first Monday whose applications are still
 --     open (apply by = start - 7 days, inclusive, as in next_start_date) and at most 200 days ahead, judged
---     by today's date in Asia/Kolkata.
+--     by today's date in America/New_York.
 --   * Consent to be contacted is required and its wording version is stored with the request.
 --   * The same email, program and start within 30 days returns the earlier reference (duplicate = true)
 --     and stores nothing new. At most 5 new requests per email in 24 hours.
@@ -41,7 +41,7 @@ grant all on public.seat_requests to service_role;
 -- ============================================================================
 -- Helpers (internal)
 -- ============================================================================
--- Why a start date cannot be requested on p_today (a calendar day in Asia/Kolkata), or null if it can.
+-- Why a start date cannot be requested on p_today (a calendar day in America/New_York), or null if it can.
 create function public.seat_start_problem(p_start date, p_today date) returns text
 language sql immutable as $$
   select case
@@ -83,7 +83,7 @@ create function public.request_seat(
 ) returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare
-  today     date := (now() at time zone 'Asia/Kolkata')::date;
+  today     date := (now() at time zone 'America/New_York')::date;
   prog      public.programs;
   problem   text;
   v_name    text;

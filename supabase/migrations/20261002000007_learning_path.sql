@@ -45,7 +45,7 @@ alter table public.profiles
   add column goal_role   text references public.career_roles(id) on delete set null,
   add column show_streak boolean not null default true;
 
--- One row per student and calendar day (Asia/Kolkata) with verified learning, written only by the triggers
+-- One row per student and calendar day (America/New_York) with verified learning, written only by the triggers
 -- below: new watched slices, completed lessons, submitted projects, attended classes.
 create table public.activity_days (
   user_id           uuid not null references public.profiles(id) on delete cascade,
@@ -68,7 +68,7 @@ grant all on public.career_roles, public.role_skills, public.program_roles, publ
 -- Helpers (internal)
 -- ============================================================================
 create function public.learning_day(p_at timestamptz) returns date
-language sql stable as $$ select (p_at at time zone 'Asia/Kolkata')::date $$;
+language sql stable as $$ select (p_at at time zone 'America/New_York')::date $$;
 
 -- Stable ids for achievement notifications, so each one is sent once (unique user + kind + ref).
 create function public.achievement_ref(p_program text, p_key text, p_term int default null) returns uuid

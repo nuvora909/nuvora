@@ -53,9 +53,9 @@ test('Jitsi attendance is recorded for enrolled students only and adds up across
   const outsider = await h.user('out@test.io');
   await h.service(`select enroll_student($1, 'bs-aiml', '2026-10-05')`, [inBatch]);
   const sess = await h.one(h.sql, `select id from sessions where batch_id = $1 order by starts_at limit 1`, [bid]);
-  assert.equal(await h.one(h.service, `select record_attendance($1, 'IN@test.io', '2026-10-06 13:30Z', '2026-10-06 14:00Z')`, [sess]), true);
-  assert.equal(await h.one(h.service, `select record_attendance($1, 'in@test.io', '2026-10-06 14:05Z', '2026-10-06 14:25Z')`, [sess]), true);
-  assert.equal(await h.one(h.service, `select record_attendance($1, 'out@test.io', '2026-10-06 13:30Z', '2026-10-06 14:30Z')`, [sess]), false);
+  assert.equal(await h.one(h.service, `select record_attendance($1, 'IN@test.io', '2026-10-06 23:00Z', '2026-10-06 23:30Z')`, [sess]), true);
+  assert.equal(await h.one(h.service, `select record_attendance($1, 'in@test.io', '2026-10-06 23:35Z', '2026-10-06 23:55Z')`, [sess]), true);
+  assert.equal(await h.one(h.service, `select record_attendance($1, 'out@test.io', '2026-10-06 23:00Z', '2026-10-07 00:00Z')`, [sess]), false);
   assert.equal(await h.one(h.sql, `select minutes from attendance where session_id = $1 and student_id = $2`, [sess, inBatch]), 50);
   assert.equal(await h.one(h.sql, `select count(*)::int from attendance where student_id = $1`, [outsider]), 0);
   await rejects(h.as(inBatch)(`select record_attendance($1, 'in@test.io', now(), now())`, [sess]), '42501');
@@ -78,10 +78,10 @@ test('class reminders go to enrolled students once per class', async () => {
   const bid = await h.one(h.service, `select create_batch('bs-aiml', '2026-10-05')`);
   const s1 = await h.user('r1@test.io'); const s2 = await h.user('r2@test.io');
   for (const s of [s1, s2]) await h.service(`select enroll_student($1, 'bs-aiml', '2026-10-05')`, [s]);
-  // Two hours before the first class (Tue Oct 6, 13:30 UTC): exactly one class is within 24 hours.
-  assert.equal(await h.one(h.service, `select queue_session_reminders(24, '2026-10-06 11:30Z')`), 2);
-  assert.equal(await h.one(h.service, `select queue_session_reminders(24, '2026-10-06 11:30Z')`), 0);
-  assert.match(await h.one(h.as(s1), `select body from notifications where kind = 'reminder_24h'`), /Tue Oct 06, 19:00 \(Asia\/Kolkata\)/);
+  // Two hours before the first class (Tue Oct 6, 19:00 EDT = 23:00 UTC): exactly one class is within 24 hours.
+  assert.equal(await h.one(h.service, `select queue_session_reminders(24, '2026-10-06 21:00Z')`), 2);
+  assert.equal(await h.one(h.service, `select queue_session_reminders(24, '2026-10-06 21:00Z')`), 0);
+  assert.match(await h.one(h.as(s1), `select body from notifications where kind = 'reminder_24h'`), /Tue Oct 06, 19:00 \(America\/New_York\)/);
 });
 
 test('inactive students are flagged to staff, never visible to students', async () => {

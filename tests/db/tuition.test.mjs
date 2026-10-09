@@ -115,7 +115,7 @@ test('late joiners get 30 days from when they enrolled; a future term counts fro
   const a = await access(early);
   assert.equal(a.state, 'grace', 'enrolling early does not use up the 30 days');
   const start = await h.one(h.sql, `select (starts_on::timestamp at time zone timezone) from batches where id = $1`, [a.batch_id]);
-  assert.equal(Date.parse(a.ends_at), start.getTime() + 30 * 86400000, 'the 30 days start at 00:00 on the start date, India time');
+  assert.equal(Date.parse(a.ends_at), start.getTime() + 30 * 86400000, 'the 30 days start at 00:00 on the start date, in the batch time zone');
 });
 
 test('a stopped term closes every student page, action and file, exactly like a paused one', async () => {
@@ -336,7 +336,7 @@ test('the hourly job: records each stop once, reminds 7 days and 1 day before, e
   assert.deepEqual(await kinds(paidUp.id), []);
   const r7 = (await j.sql(`select title, body from notifications where user_id = $1 and kind = 'access_reminder_7d'`, [week.id])).rows[0];
   assert.match(r7.title, /^Tuition reminder: your access pauses on [A-Z][a-z]{2} \d{1,2}$/);
-  assert.match(r7.body, /Term 1 of M\.S\. Data Science & Analytics has not been paid yet\. .* \(Asia\/Kolkata\) and then pauses until your payment is recorded\./);
+  assert.match(r7.body, /Term 1 of M\.S\. Data Science & Analytics has not been paid yet\. .* \(America\/New_York\) and then pauses until your payment is recorded\./);
   for (const admin of [a1, a2]) {
     const n = (await j.sql(`select title, body from notifications where user_id = $1 and kind = 'access_stopped' order by title`, [admin])).rows;
     assert.deepEqual(n.map((x) => x.title).sort(), ['Access stopped: Kenji Lapsed', 'Access stopped: ending'], 'every admin, once per stop');

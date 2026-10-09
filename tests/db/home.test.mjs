@@ -1,14 +1,14 @@
 // The student home (my_home): learning path, streak, achievements and badges, competency gaps for a goal,
 // the next best action and today's targets. Everything comes from verified learning events and only the
 // caller's own data; time-gated things (Jitsi links) follow the real clock, never the caller's p_now.
-// Fixed dates: the batch below ran March-May 2026 (India time, +05:30).
+// Fixed dates: the batch below ran March-May 2026 (US Eastern time, the batch zone).
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { freshDb, rejects } from './helpers.mjs';
 
 let h, mar, admin, inst, lessons, projects, sessions;
 const S = {};      // students, all enrolled in the March batch before it ends
-const IST = (s) => `${s}+05:30`;
+const ET = (s) => `${s} America/New_York`;
 
 const enroll = async (email) => {
   const id = await h.user(email, 'student', email.split('@')[0].replace(/^./, (c) => c.toUpperCase()));
@@ -74,7 +74,7 @@ test('learning days come only from verified events: new watched slices, completi
   assert.deepEqual(await days(u), [], 'a replay does not open a learning day either');
 
   await submit(u, projects[0].id);
-  await h.service(`select record_attendance($1, 'verified@test.io', $2, $3)`, [sessions[0].id, IST('2026-03-03 19:00'), IST('2026-03-03 19:50')]);
+  await h.service(`select record_attendance($1, 'verified@test.io', $2, $3)`, [sessions[0].id, ET('2026-03-03 19:00'), ET('2026-03-03 19:50')]);
   assert.deepEqual(await days(u), [{ day: '2026-03-03', watched_slices: 0, lessons_completed: 0, submissions: 0, classes_attended: 1 },
                                    { day: d, watched_slices: 0, lessons_completed: 0, submissions: 1, classes_attended: 0 }]);
   await h.sql(`update lessons set kind = 'reading' where id = $1`, [lessons[3].id]);
@@ -91,13 +91,13 @@ test('the streak is shown with its length, and not sent at all when switched off
   const u = S['streaky'];
   await h.sql(`insert into activity_days (user_id, day) select $1, d::date from unnest($2::text[]) d`,
               [u, ['2026-03-09', '2026-03-10', '2026-03-12', '2026-03-13', '2026-03-14', '2026-03-16', '2026-03-17']]);
-  let r = await home(u, IST('2026-03-18 09:00'));
+  let r = await home(u, ET('2026-03-18 09:00'));
   assert.deepEqual([r.streak.current, r.streak.alive, r.streak.active_today, r.streak.last_active], [9, true, false, '2026-03-17']);
   assert.deepEqual(earned(r.achievements), ['streak_7']);
-  assert.equal((await home(u, IST('2026-03-19 09:00'))).streak.current, 0, 'two days without learning end it');
+  assert.equal((await home(u, ET('2026-03-19 09:00'))).streak.current, 0, 'two days without learning end it');
 
   assert.deepEqual(await h.one(h.as(u), `select set_streak_visibility(false)`), { show_streak: false });
-  r = await home(u, IST('2026-03-18 09:00'));
+  r = await home(u, ET('2026-03-18 09:00'));
   assert.equal(r.streak, null);
   assert.equal(r.profile.show_streak, false);
   assert.ok(r.achievements.every((a) => !a.key.startsWith('streak')), 'streak achievements are hidden too');
@@ -110,7 +110,7 @@ test('the streak is shown with its length, and not sent at all when switched off
 
 test('achievements come from verified results only, and each one is announced exactly once', async () => {
   const u = S['achiever'];
-  let r = await home(u, IST('2026-03-02 09:00'));
+  let r = await home(u, ET('2026-03-02 09:00'));
   assert.deepEqual(earned(r.achievements), []);
   assert.deepEqual(r.achievements.map((a) => a.key), ['first_lesson', 'first_project', 'distinguished', 'revised_to_mastery', 'full_week',
                                                        'streak_7', 'streak_30', 'term_complete', 'program_complete']);
@@ -119,14 +119,14 @@ test('achievements come from verified results only, and each one is announced ex
 
   for (const l of lessons) await finish(u, l.id);
   await submit(u, projects[0].id);
-  assert.deepEqual(earned((await home(u, IST('2026-03-21 09:00'))).achievements), ['first_lesson'], 'submitting is not passing');
+  assert.deepEqual(earned((await home(u, ET('2026-03-21 09:00'))).achievements), ['first_lesson'], 'submitting is not passing');
   await grade(u, projects[0].id, 'basic');
-  assert.deepEqual(earned((await home(u, IST('2026-03-21 09:00'))).achievements), ['first_lesson']);
+  assert.deepEqual(earned((await home(u, ET('2026-03-21 09:00'))).achievements), ['first_lesson']);
   await submit(u, projects[0].id, 'https://github.com/student/work-v2');
   await grade(u, projects[0].id, 'proficient');
   await submit(u, projects[1].id);
   await grade(u, projects[1].id, 'distinguished');
-  r = await home(u, IST('2026-04-20 09:00'));
+  r = await home(u, ET('2026-04-20 09:00'));
   assert.deepEqual(earned(r.achievements), ['first_lesson', 'first_project', 'distinguished', 'revised_to_mastery']);
   assert.equal(r.badges[0].earned, false, 'the badge needs every project passed');
 
@@ -136,17 +136,17 @@ test('achievements come from verified results only, and each one is announced ex
   }
   await submit(u, projects[2].id);
   await grade(u, projects[2].id, 'proficient');
-  r = await home(u, IST('2026-05-20 09:00'));
+  r = await home(u, ET('2026-05-20 09:00'));
   assert.deepEqual(earned(r.achievements), ['first_lesson', 'first_project', 'distinguished', 'revised_to_mastery', 'full_week']);
   assert.deepEqual([r.badges[0].earned, r.badges[1].earned], [true, false]);
-  assert.equal(earned((await home(u, IST('2026-03-04 09:00'))).achievements).includes('full_week'), false, 'only once the week is over');
+  assert.equal(earned((await home(u, ET('2026-03-04 09:00'))).achievements).includes('full_week'), false, 'only once the week is over');
 
   // The term is completed by the daily job after the batch ends; the student moves on to term 2.
   await h.service(`select update_batch_statuses('2026-05-25')`);
   const t2 = await h.one(h.sql, `select e.id from enrollments e join batches b on b.id = e.batch_id where e.student_id = $1 and b.term_no = 2`, [u]);
   await h.as(admin)(`select admin_set_enrollment_status($1, 'active')`, [t2]);
   const t2batch = await h.one(h.sql, `select batch_id from enrollments where id = $1`, [t2]);
-  r = await home(u, IST('2026-06-02 09:00'), t2batch);
+  r = await home(u, ET('2026-06-02 09:00'), t2batch);
   assert.deepEqual(earned(r.achievements), ['first_lesson', 'first_project', 'distinguished', 'revised_to_mastery', 'full_week', 'term_complete1']);
   assert.deepEqual(r.achievements.filter((a) => a.key === 'term_complete').map((a) => [a.term, a.earned]), [[1, true], [2, false]]);
 
@@ -166,7 +166,7 @@ test('the final term completes the program', async () => {
   await h.service(`select enroll_student($1, 'c-py', '2026-03-02')`, [u]);
   for (const l of (await h.sql(`select l.id from lessons l join modules m on m.id = l.module_id where m.program_id = 'c-py'`)).rows) await finish(u, l.id);
   for (const t of (await h.sql(`select id from batch_assignments where batch_id = $1`, [cpy])).rows) { await submit(u, t.id); await grade(u, t.id, 'proficient'); }
-  const before = await home(u, IST('2026-05-20 09:00'), cpy);
+  const before = await home(u, ET('2026-05-20 09:00'), cpy);
   assert.equal(before.achievements.find((a) => a.key === 'program_complete').earned, false);
   await h.service(`select update_batch_statuses('2026-05-25')`);
   assert.ok((await notes(u, 'achievement')).some((n) => n.title === 'Achievement: Program complete'));
@@ -175,13 +175,13 @@ test('the final term completes the program', async () => {
 
 test('competency gaps for the goal: mastered, needs work, in progress, not started, or not in the program', async () => {
   const u = S['gaps'];
-  let r = await home(u, IST('2026-03-02 09:00'));
+  let r = await home(u, ET('2026-03-02 09:00'));
   assert.deepEqual([r.goal.role, r.goal.title, r.goal.suggested], ['ml-ai-specialist', 'ML / AI Specialist', true], 'first role suggested for the program');
   assert.ok(r.roles.find((x) => x.id === 'ml-engineer').for_program && !r.roles.find((x) => x.id === 'data-analyst').for_program);
 
   assert.deepEqual(await h.one(h.as(u), `select set_my_goal('data-analyst')`), { goal_role: 'data-analyst', title: 'Data Analyst' });
-  const status = async () => Object.fromEntries((await home(u, IST('2026-03-02 09:00'))).goal.skills.map((s) => [s.lesson_code, s.status]));
-  r = await home(u, IST('2026-03-02 09:00'));
+  const status = async () => Object.fromEntries((await home(u, ET('2026-03-02 09:00'))).goal.skills.map((s) => [s.lesson_code, s.status]));
+  r = await home(u, ET('2026-03-02 09:00'));
   assert.equal(r.goal.suggested, false);
   const byCode = Object.fromEntries(r.goal.skills.map((s) => [s.lesson_code, s]));
   assert.deepEqual(r.goal.skills.map((s) => s.skill), ['SQL querying', 'Python for data', 'Exploratory analysis', 'Data visualization', 'Dashboards & storytelling']);
@@ -203,7 +203,7 @@ test('competency gaps for the goal: mastered, needs work, in progress, not start
   assert.equal((await status())['PRG-101'], 'mastered');
 
   await h.as(u)(`select set_my_goal(null)`);
-  assert.equal((await home(u, IST('2026-03-02 09:00'))).goal.role, 'ml-ai-specialist', 'back to the suggestion');
+  assert.equal((await home(u, ET('2026-03-02 09:00'))).goal.role, 'ml-ai-specialist', 'back to the suggestion');
   await rejects(h.as(u)(`select set_my_goal('astronaut')`), 'Choose one of the listed goals');
   await rejects(h.anon(`select set_my_goal('data-analyst')`), '42501');
   await rejects(h.as(u)(`update profiles set goal_role = 'ai-engineer', show_streak = false where id = $1`, [u]), '42501');
@@ -212,30 +212,30 @@ test('competency gaps for the goal: mastered, needs work, in progress, not start
 test('next best action follows its fixed order of priority, with a plain reason', async () => {
   const u = S['next'];
   const next = async (now) => (await home(u, now)).next_action;
-  let n = await next(IST('2026-03-02 09:00'));                          // Monday: first class is Tuesday 19:00, 34 hours away
+  let n = await next(ET('2026-03-02 09:00'));                          // Monday: first class is Tuesday 19:00, 34 hours away
   assert.deepEqual([n.kind, n.id, n.reason], ['start', lessons[0].id, 'The next lesson of Term 1.']);
-  n = await next(IST('2026-03-03 12:00'));
+  n = await next(ET('2026-03-03 12:00'));
   assert.deepEqual([n.kind, n.id], ['session', sessions[0].id]);
   assert.equal(n.reason, 'Your next live class starts within 24 hours.');
-  assert.equal((await next(IST('2026-03-03 19:10'))).reason, 'Your live class is on now.');
+  assert.equal((await next(ET('2026-03-03 19:10'))).reason, 'Your live class is on now.');
   await h.as(u)(`select record_progress($1, 0, 30)`, [lessons[1].id]);
-  n = await next(IST('2026-03-02 09:00'));
+  n = await next(ET('2026-03-02 09:00'));
   assert.deepEqual([n.kind, n.id], ['continue', lessons[1].id]);
   assert.match(n.reason, /^You are \d+% of the way through this lesson\.$/);
-  n = await next(IST('2026-03-22 09:00'));                              // Sunday after project 1 was due (Mar 20)
+  n = await next(ET('2026-03-22 09:00'));                              // Sunday after project 1 was due (Mar 20)
   assert.deepEqual([n.kind, n.id, n.reason], ['overdue', projects[0].id, 'It is past its due date. You can still submit it.']);
   await submit(u, projects[0].id);
-  assert.equal((await next(IST('2026-03-22 09:00'))).kind, 'continue', 'submitted: waiting for review is not overdue');
+  assert.equal((await next(ET('2026-03-22 09:00'))).kind, 'continue', 'submitted: waiting for review is not overdue');
   await grade(u, projects[0].id, 'basic');
-  n = await next(IST('2026-03-22 09:00'));
+  n = await next(ET('2026-03-22 09:00'));
   assert.deepEqual([n.kind, n.id], ['resubmit', projects[0].id]);
   assert.match(n.reason, /no penalty/);
   await submit(u, projects[0].id, 'https://github.com/student/work-v2');
   await grade(u, projects[0].id, 'proficient');
   for (const l of lessons) await finish(u, l.id);
-  n = await next(IST('2026-04-12 09:00'));                              // Sunday; project 2 due Friday Apr 17
+  n = await next(ET('2026-04-12 09:00'));                              // Sunday; project 2 due Friday Apr 17
   assert.deepEqual([n.kind, n.id, n.reason], ['due_soon', projects[1].id, 'Due within a week, and not submitted yet.']);
-  n = await next(IST('2026-04-05 09:00'));
+  n = await next(ET('2026-04-05 09:00'));
   assert.deepEqual([n.kind, n.id], ['caught_up', null]);
   assert.equal(n.title, 'You’re all caught up');
 });
@@ -250,7 +250,7 @@ test('next best action: closing a goal gap when nothing else is pending', async 
   const jun = await h.one(h.sql, `select batch_id from enrollments where id = $1`, [e2]);
   for (const l of (await h.sql(`select l.id from lessons l join modules m on m.id = l.module_id where m.program_id = 'bs-aiml' and m.term_no = 2`)).rows) await finish(u, l.id);
   await h.as(u)(`select set_my_goal('data-analyst')`);
-  const at = IST('2026-06-01 08:00');                                    // the term-2 batch starts June 1
+  const at = ET('2026-06-01 08:00');                                    // the term-2 batch starts June 1
   let n = (await home(u, at, jun)).next_action;
   assert.deepEqual([n.kind, n.id], ['gap', lessons[0].id]);
   assert.equal(n.reason, 'It builds “Python for data” for your goal: Data Analyst.');
@@ -260,20 +260,20 @@ test('next best action: closing a goal gap when nothing else is pending', async 
 
 test('today\'s targets: the lesson to finish, today\'s class, and work due soon', async () => {
   const u = S['today'];
-  let t = (await home(u, IST('2026-03-03 10:00'))).targets;
+  let t = (await home(u, ET('2026-03-03 10:00'))).targets;
   assert.deepEqual(t.map((x) => [x.kind, x.title, x.done]), [['lesson', `Start ${lessons[0].title}`, false],
     ['session', `Join ${sessions[0].title}`, false]]);
   await h.service(`select record_attendance($1, 'today@test.io', $2, $2::timestamptz + interval '55 minutes')`, [sessions[0].id, sessions[0].starts_at]);
   await h.as(u)(`select record_progress($1, 0, 30)`, [lessons[0].id]);
-  t = (await home(u, IST('2026-03-03 10:00'))).targets;
+  t = (await home(u, ET('2026-03-03 10:00'))).targets;
   assert.deepEqual(t.map((x) => [x.kind, x.done]), [['lesson', false], ['session', true]]);
   assert.equal(t[0].title, `Finish ${lessons[0].title}`);
-  t = (await home(u, IST('2026-03-18 10:00'))).targets;
+  t = (await home(u, ET('2026-03-18 10:00'))).targets;
   assert.deepEqual(t.map((x) => [x.kind, x.title, x.done]), [['lesson', `Finish ${lessons[0].title}`, false], ['assignment', `Submit ${projects[0].title}`, false]]);
   await submit(u, projects[0].id);
-  assert.equal((await home(u, IST('2026-03-18 10:00'))).targets[1].done, true);
-  await h.sql(`update lesson_progress set completed_at = $3::timestamptz where student_id = $1 and lesson_id = $2`, [u, lessons[0].id, IST('2026-03-18 08:00')]);
-  t = (await home(u, IST('2026-03-18 10:00'))).targets;
+  assert.equal((await home(u, ET('2026-03-18 10:00'))).targets[1].done, true);
+  await h.sql(`update lesson_progress set completed_at = $3::timestamptz where student_id = $1 and lesson_id = $2`, [u, lessons[0].id, ET('2026-03-18 08:00')]);
+  t = (await home(u, ET('2026-03-18 10:00'))).targets;
   assert.deepEqual(t[0], { kind: 'lesson', id: lessons[0].id, title: `Finish ${lessons[0].title}`, done: true }, 'finished today: ticked');
   assert.ok(t.length <= 3);
 });
@@ -281,7 +281,7 @@ test('today\'s targets: the lesson to finish, today\'s class, and work due soon'
 test('learning path: whole-program and term progress, and the term-by-term path', async () => {
   const u = S['path'];
   for (const l of lessons.slice(0, 2)) await finish(u, l.id);
-  let p = (await home(u, IST('2026-03-10 09:00'))).path;
+  let p = (await home(u, ET('2026-03-10 09:00'))).path;
   assert.deepEqual([p.lessons_completed, p.lessons_total], [2, 48]);
   assert.equal(p.terms.length, 12);
   assert.deepEqual(p.terms.slice(0, 2).map((t) => [t.term, t.title, t.badge, t.status, t.starts_on, t.ends_on, t.lessons_completed, t.lessons_total]),
@@ -296,7 +296,7 @@ test('learning path: whole-program and term progress, and the term-by-term path'
   const jun = await h.one(h.sql, `select batch_id from enrollments where id = $1`, [e2]);
   const t3 = await h.one(h.service, `select create_batch('bs-aiml', '2026-09-07', 3)`);
   await h.sql(`insert into enrollments (student_id, batch_id, program_id, status, source) values ($1, $2, 'bs-aiml', 'reserved', 'progression')`, [u, t3]);
-  const r = await home(u, IST('2026-06-10 09:00'), jun);
+  const r = await home(u, ET('2026-06-10 09:00'), jun);
   p = r.path;
   assert.deepEqual(p.terms.slice(0, 4).map((t) => [t.term, t.status, t.starts_on]),
                    [[1, 'completed', '2026-03-02'], [2, 'current', '2026-06-01'], [3, 'reserved', '2026-09-07'], [4, 'upcoming', null]]);
@@ -311,7 +311,7 @@ test('my_home: the caller\'s own data only, for batches they may open', async ()
   await rejects(h.as(a)(`select my_home($1)`, [other]), 'Batch not found');
   await rejects(h.as(a)(`select my_home(gen_random_uuid())`), 'Batch not found');
   await rejects(h.anon(`select my_home($1)`, [mar]), '42501');
-  const rb = await home(b, IST('2026-03-10 09:00'));
+  const rb = await home(b, ET('2026-03-10 09:00'));
   assert.equal(rb.path.lessons_completed, 0, 'a classmate\'s progress is not mixed in');
   assert.equal(rb.profile.name, 'Own.b');
   const paused = await h.one(h.sql, `select id from enrollments where student_id = $1`, [b]);

@@ -35,23 +35,23 @@ test('monthly job creates one batch per program with its full schedule, and is s
   assert.equal(await h.one(h.sql, `select count(*)::int from sessions where batch_id = $1`, [b.id]), 24);
   assert.equal(await h.one(h.sql, `select count(*)::int from batch_assignments where batch_id = $1`, [b.id]), 3);
 
-  // Tuesday 19:00 India time = 13:30 UTC; office hours Thursday 19:00 IST.
+  // Tuesday 19:00 US Eastern time (EST in November) = 00:00 UTC the next day; office hours Thursday 19:00 ET.
   const first = (await h.sql(`select title, to_char(starts_at at time zone 'UTC','YYYY-MM-DD HH24:MI') s,
                                      to_char(ends_at at time zone 'UTC','HH24:MI') e
                               from sessions where batch_id = $1 order by starts_at limit 2`, [b.id])).rows;
-  assert.equal(first[0].s, '2026-11-03 13:30');
-  assert.equal(first[0].e, '14:30');
+  assert.equal(first[0].s, '2026-11-04 00:00');
+  assert.equal(first[0].e, '01:00');
   assert.match(first[0].title, /^Live class · Week 1/);
-  assert.equal(first[1].s, '2026-11-05 13:30');
+  assert.equal(first[1].s, '2026-11-06 00:00');
   assert.match(first[1].title, /^Office hours · Week 1/);
 
-  const last = await h.one(h.sql, `select to_char(max(starts_at) at time zone 'Asia/Kolkata','YYYY-MM-DD') from sessions where batch_id = $1`, [b.id]);
+  const last = await h.one(h.sql, `select to_char(max(starts_at) at time zone 'America/New_York','YYYY-MM-DD') from sessions where batch_id = $1`, [b.id]);
   assert.equal(last, '2027-01-21', 'week 12 Thursday');
 
-  // Project 1 is due 18 days after the start at 23:59 India time.
+  // Project 1 is due 18 days after the start at 23:59 US Eastern time (04:59 UTC the next day).
   const due = await h.one(h.sql, `select to_char(due_at at time zone 'UTC','YYYY-MM-DD HH24:MI') from batch_assignments
                                   where batch_id = $1 order by due_at limit 1`, [b.id]);
-  assert.equal(due, '2026-11-20 18:29');
+  assert.equal(due, '2026-11-21 04:59');
 });
 
 test('batches must start on a Monday and belong to an active program', async () => {

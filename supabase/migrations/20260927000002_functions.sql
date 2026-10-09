@@ -58,15 +58,12 @@ begin
     return bid;
   end if;
 
-    insert into public.sessions (batch_id, template_id, title, join_url, room_id, starts_at, ends_at)
+  insert into public.sessions (batch_id, template_id, title, starts_at, ends_at)
   select bid, t.id, t.title,
-         'https://meet.jit.si/nuvora-' || room_id::text,
-           room_id,
          ((p_starts_on + (t.week - 1) * 7 + (t.weekday - 1)) + t.start_time) at time zone prog.timezone,
          ((p_starts_on + (t.week - 1) * 7 + (t.weekday - 1)) + t.start_time) at time zone prog.timezone
            + make_interval(mins => t.duration_minutes)
-  from (select gen_random_uuid() as room_id) r
-  cross join public.session_templates t
+  from public.session_templates t
   where t.program_id = p_program;
 
   insert into public.batch_assignments (batch_id, template_id, title, instructions, due_at)
@@ -582,6 +579,3 @@ grant execute on function
   public.attach_recording(uuid, text),
   public.queue_session_reminders(int, timestamptz)
   to service_role;
-
-
-

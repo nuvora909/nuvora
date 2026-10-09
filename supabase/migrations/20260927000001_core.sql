@@ -35,7 +35,7 @@ create table public.programs (
   level          text not null check (level in ('Bachelor','Master','Certificate')),
   credits        int  not null check (credits > 0),
   duration_weeks int  not null default 12 check (duration_weeks between 1 and 104),
-  timezone       text not null default 'Asia/Kolkata',
+  timezone       text not null default 'America/New_York',
   capacity       int  not null default 60 check (capacity > 0),
   active         boolean not null default true
 );

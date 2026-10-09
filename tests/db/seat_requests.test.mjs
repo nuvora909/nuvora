@@ -8,7 +8,7 @@ import { freshDb, rejects } from './helpers.mjs';
 
 let h, admin1, admin2, inst, student, D;
 
-const TODAY = `(now() at time zone 'Asia/Kolkata')::date`;
+const TODAY = `(now() at time zone 'America/New_York')::date`;
 const ARGS = ['p_program', 'p_start', 'p_full_name', 'p_email', 'p_country', 'p_consent', 'p_consent_version', 'p_phone', 'p_details', 'p_source'];
 const base = (over = {}) => ({
   p_program: 'bs-aiml', p_start: D.open, p_full_name: 'Priya Nair', p_email: 'priya@example.com', p_country: 'India',
