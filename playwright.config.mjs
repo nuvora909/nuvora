@@ -32,7 +32,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: `node server/dev-server.mjs --port ${PORT} --test-api${PORTAL_DIR}`,
+    // --no-clock: the school clock never changes data while a test runs (tests set the moment they need).
+    command: `node server/dev-server.mjs --port ${PORT} --test-api --no-clock${PORTAL_DIR}`,
     url: `http://127.0.0.1:${PORT}/portal/`,
     reuseExistingServer: false,
     timeout: 60_000,

@@ -27,6 +27,17 @@ export function safeUrl(url) {
 export const SCHOOL_TZ = 'America/New_York';
 export const schoolToday = (at = new Date()) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: SCHOOL_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+// The end of a school day (YYYY-MM-DD): 00:00 the next day in New York (04:00 or 05:00 UTC, by daylight saving),
+// whatever the device's own time zone.
+export function schoolDayEnd(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const clock = new Intl.DateTimeFormat('en-GB', { timeZone: SCHOOL_TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  for (const h of [4, 5]) {
+    const at = new Date(Date.UTC(y, m - 1, d + 1, h));
+    if (clock.format(at) === '00:00') return at.toISOString();
+  }
+  throw new Error(`No midnight in New York after ${iso}`);
+}
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];

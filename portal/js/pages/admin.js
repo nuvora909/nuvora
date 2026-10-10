@@ -2,7 +2,7 @@
 // student's record (enrollments, payments, access history) with Start / Stop / Return to automatic access and
 // Record / Void payment. Admins only: the route is hidden from other roles and every call checks require_admin().
 import { rpc } from '../api.js';
-import { html, icon, toast, busy, $, $$, fmtDate, fmtDateTime, fmtRelative, localZone } from '../ui.js';
+import { html, icon, toast, busy, $, $$, fmtDate, fmtDateTime, fmtRelative, schoolDayEnd } from '../ui.js';
 import { downloadCsv } from '../csv.js';
 import {
   ACCESS, ACCESS_FILTERS, ENROLLMENT_STATUS, METHODS, REQUEST_STATUS, accessPill, accessText, money, programs,
@@ -30,7 +30,9 @@ export async function overview(ctx) {
     : html`<p class="empty">${empty}</p>`);
   ctx.render(html`
     <header class="band"><div><p class="eyebrow">Admin</p><h1>Overview</h1>
-      <p class="sub">${o.students} ${o.students === 1 ? 'student account' : 'student accounts'} · ${o.active_enrollments} active ${o.active_enrollments === 1 ? 'enrollment' : 'enrollments'} · access is decided by the database clock, as of ${fmtDateTime(new Date().toISOString())}</p></div>
+      <p class="sub">${o.students} ${o.students === 1 ? 'student account' : 'student accounts'} · ${o.active_enrollments} active ${o.active_enrollments === 1 ? 'enrollment' : 'enrollments'} · access is decided by the database clock, as of ${fmtDateTime(o.now)} · ${o.clock_last_run
+        ? `dates move on by themselves (last run ${fmtDateTime(o.clock_last_run)}${o.clock_errors ? `, ${o.clock_errors} ${o.clock_errors === 1 ? 'step' : 'steps'} failed: see the database log` : ''})`
+        : 'the automatic date jobs have not run yet (they switch on at go-live)'}</p></div>
       <a class="btn primary" href="#/admin/students">${icon('users')} Student database</a></header>
     <div class="content">
       <section class="card" aria-labelledby="h-access"><div class="cardhead"><h2 id="h-access">Access to the portal</h2><span class="small muted">Active enrollments</span></div>
@@ -284,16 +286,12 @@ export async function student(ctx) {
         title: `Start access for ${p.name || p.email}?`, confirm: 'Start access now',
         body: html`<p>${label(b.dataset.start)}: opens this term now, even if it isn’t paid. Without an end date it stays open until you change it.</p>
           <div class="field"><label for="d-until">End date (optional)</label><input id="d-until" type="date" min="${today()}" aria-describedby="d-until-hint">
-            <span class="hint" id="d-until-hint">Access stays open until the end of this day (${localZone()} time), then the payment rule applies again.</span></div>
+            <span class="hint" id="d-until-hint">Access stays open until the end of this day in US Eastern Time, then the payment rule applies again.</span></div>
           <div class="field"><label for="d-note">Note (optional, private)</label><textarea id="d-note" maxlength="500"></textarea></div>`,
         action: async (form) => {
           const until = $('#d-until', form).value;
-          let at = null;
-          if (until) {
-            const [y, m, d] = until.split('-').map(Number);
-            at = new Date(y, m - 1, d + 1).toISOString();
-          }
-          return rpc('admin_set_access', { p_enrollment: b.dataset.start, p_mode: 'on', p_until: at, p_reason: $('#d-note', form).value.trim() || null });
+          return rpc('admin_set_access', { p_enrollment: b.dataset.start, p_mode: 'on', p_until: until ? schoolDayEnd(until) : null,
+                                           p_reason: $('#d-note', form).value.trim() || null });
         },
       });
       if (r) await done(r.until ? `Access started until ${fmtDateTime(r.until)}.` : 'Access started until you change it.');

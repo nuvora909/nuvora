@@ -4,7 +4,7 @@ import { page, breadcrumbs, liveDate } from '../lib/layout.mjs';
 import { schedule, rubric, faqList, ctaBand, certFan, programCerts } from '../lib/components.mjs';
 import { course, breadcrumbList, faqPage } from '../lib/schema.mjs';
 import { coverGlow, brochureCoverUrl, brochureCoverAlt } from '../lib/covers.mjs';
-import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay } from '../data/programs.mjs';
+import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay, lowerFirst } from '../data/programs.mjs';
 import { ROLES, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE } from '../data/site.mjs';
 import { guideFaq, pathLede, TUITION_NOTE } from '../lib/guide-data.mjs';
@@ -133,7 +133,7 @@ ${hero(p, today)}
 
   <section class="psec" id="workload" aria-labelledby="h-workload">
     <h2 id="h-workload">${accent('Duration and *workload*')}</h2>
-    <p class="lede">${p.duration}. Plan for about ${p.weeklyHours} hours a week: ${PACE.long.toLowerCase()}.</p>
+    <p class="lede">${p.duration}. Plan for about ${p.weeklyHours} hours a week: ${lowerFirst(PACE.long)}.</p>
     ${schedule()}
     ${termPath(p, today)}
   </section>

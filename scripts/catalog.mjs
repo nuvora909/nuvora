@@ -23,14 +23,18 @@ const PROJECT_DAYS = [18, 46, 81];
 // Which project assesses each of a term's four lessons (by position): project 1 the first lesson,
 // project 2 the second and third, the term project the fourth. Used for "mastered" in the competency map.
 export const PROJECT_FOR_LESSON = [0, 1, 1, 2];
+// Lower-cases the first letter of a title so it reads inside a sentence, unless its first word is an acronym or
+// a name ("SQL", "MLOps", "Python"). The rest keeps its case: "Metrics & KPIs" becomes "metrics & KPIs".
+const NAMES = /^(Python|Git|GitHub|Docker|Kubernetes|Spark|Excel|Tableau|PyTorch|Jitsi)\b/;
+export const lowerFirst = (s) => (/^\S*[A-Z]\S*[A-Z]/.test(s) || NAMES.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1));
 const term = (title, badge, lessons, projects) => ({
   title,
   badge,
   lessons,
   projects: (projects ?? [
     `${lessons[0][1]} in practice`,
-    `${lessons[1][1]} and ${lessons[2][1].toLowerCase()}`,
-    `Term project: ${title.toLowerCase()}`,
+    `${lessons[1][1]} and ${lowerFirst(lessons[2][1])}`,
+    `Term project: ${title}`,
   ]).map((t, i) => [t, PROJECT_DAYS[i]]),
 });
 const capstone = (badge, lessons, projects) => term('Capstone', badge, lessons, projects);

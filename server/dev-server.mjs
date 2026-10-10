@@ -6,6 +6,10 @@
 // The portal speaks the same HTTP protocol to this server as it will to Supabase in production.
 //
 //   npm run dev        then open http://127.0.0.1:5173/portal/
+//
+// The school clock: like pg_cron on hosted Supabase, the server runs public.run_clock() (batches made ahead,
+// statuses, the access rule, class reminders) once at start and then every 10 minutes, so a copy left running
+// keeps moving on by itself. --no-clock turns it off; the browser tests do, so nothing changes under a test.
 import http from 'node:http';
 import { watch as watchFiles } from 'node:fs';
 import { execFile } from 'node:child_process';
@@ -90,8 +94,10 @@ class HttpError extends Error {
 const authError = (status, error_code, msg) => new HttpError(status, { code: status, error_code, msg });
 const restError = (status, code, message, details = null, hint = null) => new HttpError(status, { code, message, details, hint });
 
+// clock: milliseconds between runs of the school clock, or 0 for none (the default, so tests that start a server
+// see exactly the data they set up; the command line turns it on).
 export async function startServer({ port = 5173, host = '127.0.0.1', testApi = false, demo = true, accessTtl = 3600, quiet = false, build = true, watch = false,
-                                    portalDir = resolve(ROOT, 'portal') } = {}) {
+                                    portalDir = resolve(ROOT, 'portal'), clock = 0 } = {}) {
   // Each server builds the website into its own temporary folder, so a preview server and a test server can run
   // side by side. Photos, video and fonts are served straight from web/static.
   const siteDir = build ? await mkdtemp(join(tmpdir(), 'nuvora-site-')) : DIST;
@@ -112,12 +118,31 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
   const tenYears = 10 * 365 * 86400;
   const anonKey = signJwt({ iss: 'nuvora-local', role: 'anon', iat: issued, exp: issued + tenYears }, secret);
   const serviceKey = signJwt({ iss: 'nuvora-local', role: 'service_role', iat: issued, exp: issued + tenYears }, secret);
-  const state = { db: null, refresh: new Map(), recovery: new Map(), outbox: [], demo: null, files: new Map() };
+  const state = { db: null, refresh: new Map(), recovery: new Map(), outbox: [], demo: null, files: new Map(),
+                  clock: { runs: 0, last: null, error: null } };
   const log = quiet ? () => {} : (...a) => console.log(...a);
   let dummyHash; // compared against when an email is unknown, so timing does not reveal which emails exist
 
+  // One run of the school clock on the current database. Runs never overlap here (a call during a run waits for
+  // that run), and the database's own lock covers any other caller.
+  let running = null;
+  function tick() {
+    running ??= (async () => {
+      try {
+        const r = await runAs(state.db, 'service_role', { role: 'service_role' }, 'select public.run_clock() as r');
+        Object.assign(state.clock, { runs: state.clock.runs + 1, last: r.rows[0].r, error: null });
+        if (r.rows[0].r.errors?.length) console.error('[clock]', JSON.stringify(r.rows[0].r.errors));
+      } catch (e) {
+        state.clock.error = e.message;
+        console.error('[clock]', e.message);
+      } finally { running = null; }
+    })();
+    return running;
+  }
+
   async function reset() {
     const old = state.db;
+    await running;                                                  // never close a database under a clock run
     state.db = await createDb();
     state.refresh.clear();
     state.recovery.clear();
@@ -125,8 +150,11 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
     state.files.clear();
     state.demo = demo ? await loadDemo(state.db) : null;
     if (old) await closeDb(old);
+    if (clock) await tick();
   }
   await reset();
+  const clockTimer = clock ? setInterval(tick, clock) : null;
+  clockTimer?.unref();
   dummyHash = await hashPassword(randomToken());
 
   // ---------------------------------------------------------------- helpers
@@ -562,9 +590,11 @@ export async function startServer({ port = 5173, host = '127.0.0.1', testApi = f
   log(`Nuvora local server: website ${url}/  portal ${url}/portal/${testApi ? '  (test API on)' : ''}`);
 
   return {
-    url, anonKey, serviceKey, state, reset,
+    url, anonKey, serviceKey, state, reset, tick,
     async close() {
+      clearInterval(clockTimer);
       await new Promise((ok) => { server.close(ok); server.closeAllConnections(); });
+      await running;
       await closeDb(state.db);
       watchers.forEach((w) => w.close());
       if (build) await rm(siteDir, { recursive: true, force: true });
@@ -581,7 +611,7 @@ export function pgStatus(code, role) {
   return 500;
 }
 
-// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo] [--watch] [--portal-dir <folder>]
+// Command line: node server/dev-server.mjs [--port 5173] [--test-api] [--no-demo] [--no-clock] [--watch] [--portal-dir <folder>]
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const argv = process.argv.slice(2);
   const opt = (name, fallback) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : fallback; };
@@ -590,6 +620,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     testApi: argv.includes('--test-api'),
     demo: !argv.includes('--no-demo'),
     watch: argv.includes('--watch'),
+    clock: argv.includes('--no-clock') ? 0 : 10 * 60 * 1000,
     ...(opt('--portal-dir') ? { portalDir: opt('--portal-dir') } : {}),
   });
   console.log('Demo accounts (local only): see server/demo-accounts.mjs');

@@ -1,7 +1,7 @@
 // Shared behaviour for every public page. Pages work without JavaScript; this adds live dates, local class
 // times, menus, filters, the career ladder, example-screen hotspots, the saved plan and the advisor entry points.
 // cinema.js adds the pointer spotlight on dark sections; the rest of the cinematic motion is CSS (site.css).
-import { nextStarts, termDates, fmtDay, isoDay, weeklyTimeIn, fromIso, TIMEZONE } from './dates.mjs';
+import { nextStarts, termDates, todayInBatchZone, fmtDay, isoDay, weeklyTimeIn, fromIso, TIMEZONE } from './dates.mjs';
 import './cinema.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -53,11 +53,21 @@ if ((location.pathname === '/' || ROOT === './') && location.hash.length > 1) {
 }
 
 // ---------- live dates ----------
-function refreshDates() {
-  const starts = nextStarts(6);
+// Every date the build wrote is worked out again from today's New York date, so a page built days ago never shows
+// a start that has passed or seat requests that have closed. One mechanism for every page (layout.mjs liveDate):
+//   time[data-date="start|applyBy|end"][data-n]   the nth upcoming start, its apply-by day, or its first term's end
+//   table[data-termpath="N"] with tr[data-term]   the term-by-term dates for the next start
+//   [data-year]                                   the current year in New York
+// It runs on load, when the page is shown again (back button, a tab brought forward) and when the New York date
+// changes while the page is open, and then announces "nuvora:dates" so page scripts (the seat form) follow.
+let datesFor = '';
+function refreshDates(today = todayInBatchZone()) {
+  datesFor = isoDay(today);
+  const wanted = Math.max(1, ...$$('time[data-date]').map((el) => Number(el.dataset.n || 0) + 1));
+  const starts = nextStarts(wanted, today);
   for (const el of $$('time[data-date]')) {
     const s = starts[Number(el.dataset.n || 0)];
-    const d = el.dataset.date === 'applyBy' ? s.applyBy : s.start;
+    const d = el.dataset.date === 'applyBy' ? s.applyBy : el.dataset.date === 'end' ? termDates(s.start, 1)[0].end : s.start;
     el.dateTime = isoDay(d);
     el.textContent = fmtDay(d);
   }
@@ -72,7 +82,15 @@ function refreshDates() {
       b.dateTime = isoDay(r.end); b.textContent = fmtDay(r.end);
     }
   }
-  for (const el of $$('[data-year]')) el.textContent = String(new Date().getFullYear());
+  for (const el of $$('[data-year]')) el.textContent = String(today.getUTCFullYear());
+  document.dispatchEvent(new CustomEvent('nuvora:dates', { detail: { today: datesFor } }));
+}
+
+function keepDatesCurrent() {
+  const check = () => { if (isoDay(todayInBatchZone()) !== datesFor) refreshDates(); };
+  window.addEventListener('pageshow', check);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  setInterval(check, 60_000);
 }
 
 // ---------- class times in the visitor's time zone ----------
@@ -237,6 +255,7 @@ function preview3dButtons() {
 
 // Initialize everything
 refreshDates();
+keepDatesCurrent();
 localTimes();
 menus();
 ladders();

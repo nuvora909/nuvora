@@ -143,7 +143,18 @@ The student's page also shows the **Access history** (every stop, restore and ov
 
 ### Create a batch
 
-New batches for every program are created automatically each month, on the first Monday. To add another one:
+You do not need to create batches for the usual start dates: the database does it by itself. Every program
+always has a batch ready for each of its next eight start dates (the first Monday of each month), and a
+student's next-term batch is ready as soon as they are in the term before. Each batch comes with its classes,
+project due dates and Jitsi links. Batches then move from scheduled to active to completed on their own dates.
+
+When a student finishes a term (every lesson done and every project passed, or you mark the term completed),
+their seat in the next term is reserved at once, and on that term's start date it opens by itself: you do not
+need to activate it. The 30 days to pay for the new term count from its start date. To stop a seat opening (for
+example, the student is taking a break), set it to **Paused** or **Withdrawn** before the start date.
+
+What still needs you: enrolling new students and recording payments, assigning instructors to batches, and
+handling seat requests. To add a batch for any other Monday or term:
 
 1. Open **Batches**.
 2. Under **Create a batch**, choose the **Program**, the **Term** (1 for new students) and the start date
@@ -212,5 +223,21 @@ gets a notification for each new one).
 | Lesson videos | VdoCipher, connected in Phase 3. |
 | Card payments | Razorpay, connected in Phase 4. Until then, record payments by hand (above). |
 | Raw database tables | The Supabase dashboard's **Table Editor**, after go-live. Prefer the admin area: it checks every change and writes the audit log; the Table Editor does neither. |
-| Scheduled jobs (the hourly access check, class reminders) | Set up once on hosted Supabase; the exact lines are in `docs/admin-api.md`. |
+| Scheduled jobs (batches made ahead, statuses, the access check, class reminders) | They run by themselves every 10 minutes on hosted Supabase once it is live (see "Going live" below). The Overview shows when they last ran. |
+| Website dates | The website rebuilds itself every day just after midnight New York time (GitHub Actions, `.github/workflows/daily-site.yml`), and every page also refreshes its dates in the visitor's browser. |
+
+## Going live: the one-time date steps
+
+Everything date-related runs by itself once these are done (Phase 5):
+
+1. **Supabase:** after the migrations are pushed, open the SQL Editor and run
+   `select jobname, schedule from cron.job;`. You should see `nuvora-clock` and `nuvora-clock-history`. If
+   the list is empty or the table does not exist, enable **pg_cron** under Database > Extensions, then run
+   `select public.schedule_clock();` once and check again.
+2. **Cloudflare Pages:** in the Pages project, Settings > Builds > **Add deploy hook** (branch `main`), and copy
+   its URL. In GitHub, nuvora909/nuvora > Settings > Secrets and variables > Actions > **New repository
+   secret**, named `CLOUDFLARE_PAGES_DEPLOY_HOOK`, with that URL as its value. Keep the URL private: anyone who
+   has it can start a build. Then run **Daily site rebuild** once by hand from the Actions tab to check it.
+3. **Plan:** on the Supabase Free plan a project with no visitors for 7 days is paused, and a paused database
+   runs no jobs. Use a paid plan from go-live, or keep the project active.
 

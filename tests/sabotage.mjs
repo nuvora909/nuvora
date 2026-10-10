@@ -141,6 +141,11 @@ const CASES = [
   const_seat('Over the daily limit the form answers with an error', patch(SEAT, `interval '24 hours') >= 5 then
     return jsonb_build_object('ok', true);`, `interval '24 hours') >= 5 then
     raise exception 'You have sent several requests from this email today.' using errcode = '22023';`)),
+  // The school clock: every date moves on by itself, on the New York date.
+  ['The school date is the UTC date', 'clock', patch('school_today(timestamptz)', `at time zone 'America/New_York'`, `at time zone 'UTC'`)],
+  ['The clock makes batches for the next start only', 'clock', patch('ensure_batches_ahead(date,int)', 'p_starts integer DEFAULT 8', 'p_starts integer DEFAULT 1')],
+  ['Reserved seats wait for an admin on the start date', 'clock', patch('update_batch_statuses(date)', 'perform public.open_reserved_seats(p_today);')],
+  ['Clock runs no longer take the lock', 'clock', patch('run_clock(timestamptz)', 'if not pg_try_advisory_xact_lock(7302810010) then', 'if false then')],
 ];
 
 // The portal in the browser. Each case changes one line in a fresh copy of portal/ (the checkout is never

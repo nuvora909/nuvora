@@ -16,7 +16,6 @@ import { nextStarts, termDates, fmtDay, fmtLong, isoDay, fromIso } from './dates
 import { savedPlan } from './site.js';
 
 const FORM_STARTS = 3;
-const TABLE_STARTS = 6;
 const TIMEOUT_MS = 20000;
 const EMAIL = /^[^\s@]{1,64}@([^\s@.]+\.)+[a-z]{2,63}$/i;
 const PHONE = /^[0-9 +()-]{6,24}$/;
@@ -50,16 +49,6 @@ function refreshStarts(select) {
   return starts;
 }
 
-function refreshTable() {
-  const starts = nextStarts(TABLE_STARTS);
-  for (const el of document.querySelectorAll('time[data-adm-end]')) {
-    const s = starts[Number(el.dataset.admEnd)];
-    if (!s) continue;
-    const end = termDates(s.start, 1)[0].end;
-    el.dateTime = isoDay(end);
-    el.textContent = fmtDay(end);
-  }
-}
 
 // ---------- the form ----------
 function mount(form) {
@@ -91,6 +80,8 @@ function mount(form) {
 
   // ----- prefill -----
   const starts = refreshStarts(el.start);
+  // site.js announces a new New York date (a tab left open overnight, or shown again from the back button).
+  document.addEventListener('nuvora:dates', () => refreshStarts(el.start));
   const params = new URLSearchParams(location.search);
   const notes = [];
   const wanted = params.get('program');
@@ -392,5 +383,4 @@ function mount(form) {
   submit.disabled = false;
 }
 
-refreshTable();
 document.querySelectorAll('form[data-seat-form]').forEach(mount);

@@ -30,10 +30,16 @@ Online Data Science and AI/ML school: public website, student portal, database a
 ### Programs are sequences of 12-week terms
 
 - Bachelor's programs have 12 terms, Master's 4, certificates 1 (`TERMS` in `scripts/catalog.mjs`). Each term has four lessons, three graded projects (due on days 18, 46 and 81) and a skill badge.
-- Every batch is one term of one program. Its code names the term: `BSAIML-T2-2026-11`. New students start in term 1; the monthly job creates the term-1 batches.
+- Every batch is one term of one program. Its code names the term: `BSAIML-T2-2026-11`. New students start in term 1. The school clock (below) keeps a term-1 batch of every program ready for each of the next eight starts, and each next-term batch ready while students are in the term before.
 - A student sees and tracks the lessons and PDFs of a term only while they hold an **active or completed** enrollment in that term. Completed terms stay open for review; later terms stay closed.
 - A term is **completed** when its batch has ended and the student has completed every lesson of the term and passed every project of the batch, or when an admin marks the enrollment completed. Students who finish late are picked up on a later day.
-- The daily job (`update_batch_statuses`) then **reserves a seat** in the next term's batch (created if needed, on the first first-Monday after the batch ended, never in the past) and notifies the student: "Term 2: … starts …. Your seat is reserved." A reserved seat opens nothing until it is made active (by an admin today, by the term payment later). Running the job again never reserves twice. Completing the final term completes the program.
+- As soon as a term's requirements are met (while the term still runs), the clock **reserves a seat** in the next term's batch (on the first first-Monday after the batch ends, never in the past) and notifies the student: "Term 2: … starts …. Your seat is reserved." A reserved seat opens nothing until its start date, when it becomes active by itself; the 30-day unpaid rule counts from that date. Admins can pause or withdraw it before then. Running the job again never reserves twice. Completing the final term completes the program.
+
+### Dates run themselves
+
+- "Today" is the New York date everywhere (`school_today()` in the database, `todayInBatchZone()` on the website, `schoolToday()` in the portal).
+- **Database:** `run_clock()` makes batches ahead, moves statuses and terms on, applies the access rule and queues class reminders. On hosted Supabase, pg_cron runs it every 10 minutes (scheduled by the migration); locally, `npm run dev` runs it at start and every 10 minutes. Details: `docs/admin-api.md`.
+- **Website:** every date a page shows is refreshed in the browser from today's New York date (`web/assets/js/site.js`, for any `liveDate()` element), on load, when a page is shown again and at midnight. `.github/workflows/daily-site.yml` rebuilds production daily (once the deploy-hook secret is set), so pages read without JavaScript and search engines stay current. `node scripts/build-site.mjs --today YYYY-MM-DD` builds the site as of another day.
 
 ### Tuition, payments and the 30-day rule
 
