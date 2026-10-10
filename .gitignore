@@ -15,3 +15,7 @@ Thumbs.db
 dist/
 # Temporary agent working copies
 .claude/worktrees/
+
+# Copies of CLAUDE.md and the project skill that the Codex app writes while it runs; not part of the project.
+AGENTS.md
+.agents/
