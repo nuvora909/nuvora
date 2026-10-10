@@ -3,7 +3,6 @@ import { icon } from '../lib/icons.mjs';
 import { page, breadcrumbs, liveDate } from '../lib/layout.mjs';
 import { schedule, rubric, faqList, ctaBand, certFan, programCerts } from '../lib/components.mjs';
 import { course, breadcrumbList, faqPage } from '../lib/schema.mjs';
-import { coverGlow, brochureCoverUrl, brochureCoverAlt } from '../lib/covers.mjs';
 import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay, lowerFirst } from '../data/programs.mjs';
 import { ROLES, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE } from '../data/site.mjs';
@@ -90,20 +89,6 @@ function body(p, today) {
 ${hero(p, today)}
 <div class="wrap">
   <div class="jumpnav"><nav aria-label="On this page" data-jumpnav>${SECTIONS.map(([id, label]) => html`<a href="#${id}">${label}</a>`)}</nav></div>
-
-  <!-- 3D Book Watermark - Fixed position, light shade, 20% visibility -->
-  <div class="book-watermark-container">
-    <div class="book-watermark" data-program-watermark>
-      <div class="book-3d-stage">
-        <div class="book-3d-book" style="--book-glow:${coverGlow(p)}">
-          <div class="book-3d-book-pages" aria-hidden="true"></div>
-          <div class="book-3d-book-back" aria-hidden="true"></div>
-          <img class="book-3d-book-face" src="${brochureCoverUrl(p)}" alt="${brochureCoverAlt(p)}" loading="lazy" decoding="async">
-          <div class="book-3d-book-foil" aria-hidden="true"></div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <section class="psec" id="overview" aria-labelledby="h-overview">
     <h2 id="h-overview">${accent('Is it *right for you*?')}</h2>
