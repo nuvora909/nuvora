@@ -184,7 +184,18 @@ test('pages that show stock photos or clips say they are stock media', () => {
   assert.deepEqual(problems, []);
 });
 
-test('every Course offers the next real batch, on the India-time schedule, at the published tuition', () => {
+test('class times are in US Eastern Time, and no word was broken by the Zoom-to-Jitsi rename', () => {
+  const problems = [];
+  for (const { path, html } of site.pages) {
+    const text = visibleText(html);
+    for (const m of text.matchAll(/\bIST\b|India time|Kolkata|Calcutta|\bZoom\b|does not Jitsi|Jitsi\.us/g)) {
+      problems.push(`${path}: "${m[0]}" in "…${text.slice(Math.max(0, m.index - 50), m.index + m[0].length + 50).replace(/\s+/g, ' ').trim()}…"`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('every Course offers the next real batch, on the US Eastern schedule, at the published tuition', () => {
   const today = todayInBatchZone();
   const problems = [];
   const courses = [];

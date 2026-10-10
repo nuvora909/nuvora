@@ -289,7 +289,7 @@ const ACCESSIBILITY = [
   ['testing', 'How we test', html`
     <p>Automated checks in our test suite run in a real browser. They catch many problems, but they are not a substitute for testing by disabled people.</p>
     <ul>
-      <li><b>Every page at five screen sizes.</b> Each page in the sitemap is opened at 320, 360, 390, 768 and 1280 pixels wide and checked for content that sticks out sideways, links and buttons smaller than 24 by 24 pixels, form fields without labels, links and buttons without a name, images without a text alternative and more than one main heading. On phones, text fields must use text of at least 16 pixels so the page does not Jitsi.</li>
+      <li><b>Every page at five screen sizes.</b> Each page in the sitemap is opened at 320, 360, 390, 768 and 1280 pixels wide and checked for content that sticks out sideways, links and buttons smaller than 24 by 24 pixels, form fields without labels, links and buttons without a name, images without a text alternative and more than one main heading. On phones, text fields must use text of at least 16 pixels so the page does not zoom in.</li>
       <li><b>The dark colour scheme.</b> Every page is opened in the dark colour scheme and checked for a dark background and for errors.</li>
       <li><b>Keyboard checks.</b> The phone menu opens, closes with Escape and returns focus to its button. The career tabs move with the arrow keys. The advisor closes with Escape and returns focus to the button that opened it.</li>
       <li><b>Reduced motion.</b> With reduced motion requested, no video plays on the home page.</li>

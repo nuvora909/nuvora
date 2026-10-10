@@ -54,7 +54,7 @@ const INTENT = {
   payment: /\b(pay|paid|paying|payments?|unpaid|overdue)\b|\bpaus(e|ed)\b|\blose (my )?access\b|\baccess (stops?|ends?)\b/,
   refund: /refund|cancel|defer|money back/,
   dates: /when.*\b(start|begin)|start date|next (batch|start|intake)|intake|deadline|apply by|\bclos(e|es|ing)\b/,
-  live: /\blive\b|Jitsi|\bclass(es)?\b|schedule|timing|time ?zone|office hours|weekday|weekend/,
+  live: /\blive\b|jitsi|zoom|\bclass(es)?\b|schedule|timing|time ?zone|office hours|weekday|weekend/,
   hours: /(?<!office )\bhours\b|how much time|per week|workload|part[- ]time|full[- ]time|\bbusy\b|job and study|around (a|my) job/,
   prereq: /prereq|requirements?|need to know|do i need|need for|beginner|no (coding|experience)|never coded|\bmaths?\b|eligib|qualif/,
   assess: /assess|\bgrad(e|ed|es|ing)\b|\bexams?\b|rubric|\btest|\bpass(ed|es|ing)?\b|\bfail/,

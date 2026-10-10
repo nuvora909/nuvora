@@ -301,12 +301,12 @@ already voided` or a missing reason.
 [
   { "id": "uuid", "code": "BSAIML-T2-2026-09", "program_id": "bs-aiml", "program": "B.S. ...", "term": 2,
     "term_title": "Mathematics for ML", "starts_on": "2026-09-07", "ends_on": "2026-11-29", "status": "active",
-    "timezone": "Asia/Kolkata", "capacity": 60,
+    "timezone": "America/New_York", "capacity": 60,
     "enrolled": { "active": 2, "reserved": 0, "paused": 0, "completed": 0, "withdrawn": 0 },
     "seats_taken": 2, "seats_left": 58,
     "instructors": [ { "id": "uuid", "name": "Elena Ruiz", "email": "...", "role": "instructor" } ],
     "sessions": { "total": 24, "upcoming": 13, "upcoming_with_link": 13 },
-    "next_session": { "id": "uuid", "title": "Live class · Week 5 · ...", "starts_at": "...", "join_url": "https://Jitsi.us/j/..." } }
+    "next_session": { "id": "uuid", "title": "Live class · Week 5 · ...", "starts_at": "...", "join_url": "https://meet.jit.si/nuvora-..." } }
 ]
 ```
 
@@ -576,7 +576,7 @@ the `pg_cron` extension and schedule the jobs, for example:
 ```sql
 select cron.schedule('nuvora-access-rules',   '5 * * * *',  $$select public.apply_access_rules()$$);
 select cron.schedule('nuvora-class-reminders', '0 * * * *',  $$select public.queue_session_reminders(24)$$);
-select cron.schedule('nuvora-batch-statuses', '30 18 * * *', $$select public.update_batch_statuses((now() at time zone 'Asia/Kolkata')::date)$$);
+select cron.schedule('nuvora-batch-statuses', '5 5 * * *',  $$select public.update_batch_statuses((now() at time zone 'America/New_York')::date)$$);
 select cron.schedule('nuvora-monthly-batches', '0 19 1 * *', $$select public.create_monthly_batches()$$);
 ```
 

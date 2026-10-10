@@ -102,7 +102,7 @@ const learningSystem = () => html`
       ${pillar({ n: '03', title: 'Stay *supported*', photoKey: 'mentor',
         lede: 'Instructors teach live and grade your work, and office hours run every week. Mentoring and success coaching are planned; what they include will be published before the first batch.',
         points: [`Live class every ${SCHEDULE.classDay} and office hours every ${SCHEDULE.officeDay}`, 'Instructors who teach your classes and grade your projects', 'After 14 days without activity, you appear on your instructor’s check-in list'],
-        glass: html`<div class="floatcard g2"><span class="ex">This week</span><b>Office hours · ${SCHEDULE.officeDay}</b><span>${SCHEDULE.officeTime} IST · ${SCHEDULE.officeMinutes} min on Jitsi</span></div>` })}
+        glass: html`<div class="floatcard g2"><span class="ex">This week</span><b>Office hours · ${SCHEDULE.officeDay}</b><span>${SCHEDULE.officeTime} ET · ${SCHEDULE.officeMinutes} min on Jitsi</span></div>` })}
     </div>
   </div>
 </section>`;

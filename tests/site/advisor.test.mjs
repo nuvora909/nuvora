@@ -49,6 +49,8 @@ const QUESTIONS = [
   ['What is the median salary of your graduates?', ['no graduates']],
   ['What percentage of students get placed?', ['no graduates']],
   ['What is the class schedule?', ['Tuesday', 'Thursday', '19:00', 'US', 'recorded']],
+  ['Are the classes on Jitsi?', ['Tuesday', 'Thursday', '19:00', 'US Eastern Time', 'Jitsi']],
+  ['Is it on Zoom?', ['Tuesday', 'Thursday', 'US Eastern Time', 'Jitsi']],
   ['What are the prerequisites?', ['No coding experience', 'bachelor’s degree']],
   ['What do I need for the MLOps certificate?', [P('c-mlops').name, ...P('c-mlops').required]],
   ['What is your refund policy?', ['will be published before the first batch']],
