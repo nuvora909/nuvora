@@ -32,7 +32,7 @@ const needs = (p) => (p.needsBachelor ? 'Bachelor’s degree to join' : p.requir
 // programs apart (the credential is the same for every program, so it is shown on program pages and certificates).
 // The whole card links to the program page (the title link stretches over the card). .pcard[data-program] and
 // [data-match-badge] are the hooks site.js uses to mark a visitor's saved match; [data-card] and data-topics are
-// used by showcase.js.
+// used by showcase.js. The "3D preview" button stays hidden until site.js wires it (preview3d.js opens the model).
 export const programCard = (p) => html`
 <article class="pcard ccard" data-program="${p.id}" data-level="${p.level}" data-topics="${p.topics.join('|')}" data-card>
   <div class="ccard-cover" style="--ccard-glow:${coverGlow(p)}">
@@ -49,7 +49,8 @@ export const programCard = (p) => html`
     <p class="ccard-brand">${mark()}<span class="ccard-org">Nuvora</span><span class="ccard-lvl">${LEVEL_SHORT[p.level]}</span></p>
     <h3><a class="ccard-link" href="${p.url}">${p.name}</a></h3>
     <p class="ccard-brochure">
-      <button class="btn ghost" data-brochure-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="Request the ${p.name} brochure">Brochure</button>
+      <button class="btn ghost sm" data-brochure-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="Request the ${p.name} brochure">Brochure</button>
+      <button class="btn ghost sm" type="button" data-preview3d-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="3D preview of the ${p.name} program guide" hidden>3D preview</button>
     </p>
     <p class="ccard-meta"><span>${p.duration}</span> · <span>${p.weeklyHours} hrs/week</span></p>
     <ul class="ccard-chips">

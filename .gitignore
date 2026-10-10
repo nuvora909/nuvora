@@ -1,4 +1,4 @@
-﻿# Dependencies and local tooling
+# Dependencies and local tooling
 node_modules/
 .env
 .env.*
