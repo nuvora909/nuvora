@@ -154,8 +154,11 @@ export const intro = () => raw(`<div class="intro" data-intro aria-hidden="true"
  * @param o.styles       extra stylesheets (paths), after site.css and showcase.css
  * @param o.image        social image path
  * @param o.status       404 pages skip canonical
+ * @param o.noindex      keep the page out of search results (it keeps its canonical link; the build leaves it out of
+ *                       the sitemap when the page object also says noindex). Robots: "noindex, nofollow" on every page
+ *                       while SITE.indexable is false (pre-launch); after that, "noindex, follow" for these pages.
  */
-export function page({ path, title, description, body, schema = [], scripts = [], styles = [], image = PHOTOS.group.src, bodyClass = '', status = 200, today }) {
+export function page({ path, title, description, body, schema = [], scripts = [], styles = [], image = PHOTOS.group.src, bodyClass = '', status = 200, noindex = false, today }) {
   const full = path === '/' ? `${title}` : `${title} | Nuvora`;
   const canonical = SITE.origin + path;
   const ld = [organization(), ...(path === '/' ? [website()] : []), ...schema];
@@ -169,7 +172,7 @@ export function page({ path, title, description, body, schema = [], scripts = []
 <title>${raw(html`${full}`)}</title>
 <meta name="description" content="${raw(html`${description}`)}">
 ${status === 200 ? raw(`<link rel="canonical" href="${canonical}">`) : ''}
-<meta name="robots" content="${SITE.indexable && status === 200 ? 'index, follow' : 'noindex, nofollow'}">
+<meta name="robots" content="${!SITE.indexable || status !== 200 ? 'noindex, nofollow' : noindex ? 'noindex, follow' : 'index, follow'}">
 <meta name="theme-color" content="#0A1A3F">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta property="og:type" content="website">
@@ -192,7 +195,6 @@ ${styles.map((s) => `<link rel="stylesheet" href="${s}">`).join('')}
 <script type="module" src="/js/intro.js"></script>
 <script type="module" src="/js/site.js"></script>
 <script type="module" src="/js/showcase.js"></script>
-<script type="module" src="/js/brochure.js"></script>
 ${scripts.map((s) => `<script type="module" src="${s}"></script>`).join('\n')}
 ${ld.map((o) => `<script type="application/ld+json">${jsonBlock(o)}</script>`).join('\n')}
 </head>
@@ -207,7 +209,6 @@ ${body}
 ${footer()}
 ${advisor()}
 <div data-advisor-root></div>
-<div data-brochure-root></div>
 </body>
 </html>
 `.replace(/\n{3,}/g, '\n\n');

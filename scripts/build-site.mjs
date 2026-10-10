@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WEB = resolve(ROOT, 'web');
 export const DIST = resolve(ROOT, 'dist');
-const PAGES = ['home', 'programs-index', 'program', 'careers', 'find', 'how', 'admissions', 'tuition', 'learn', 'about', 'contact', 'legal', 'notfound'];
+const PAGES = ['home', 'programs-index', 'program', 'guide', 'brochure', 'careers', 'find', 'how', 'admissions', 'tuition', 'learn', 'about', 'contact', 'legal', 'notfound'];
 const MEDIA = ['img', 'video', 'fonts'];
 
 async function copyTree(from, to) {

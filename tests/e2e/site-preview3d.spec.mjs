@@ -285,7 +285,7 @@ test('if the preview cannot load, the button says so beside it instead of doing 
   await page.goto('/programs/');
   const card = page.locator('#programs-catalog [data-program="c-py"]');
   await card.getByRole('button', { name: `3D preview of the ${P('c-py').name} program guide` }).click();
-  await expect(card.getByRole('status')).toHaveText('The 3D preview could not load. The Brochure button and the program page still work.');
+  await expect(card.getByRole('status')).toHaveText('The 3D preview could not load. The brochure and the program page still work.');
   await expect(page.locator('dialog.p3d')).toHaveCount(0);
   expect(pageErrors).toEqual([]);   // no unhandled promise rejection
 });
@@ -420,18 +420,19 @@ test('on a 320px phone the model fits, nothing scrolls sideways and the buttons 
   expect(errors).toEqual([]);
 });
 
-test('the card buttons are at least 44px tall and the 3D button sits next to "Brochure"', async ({ page }) => {
+test('the card controls are at least 44px tall and the 3D button sits next to the "Brochure" link', async ({ page }) => {
   await page.goto('/programs/');
   for (const card of await page.locator('#programs-catalog [data-card]').all()) {
     const id = await card.getAttribute('data-program');
-    const brochure = card.getByRole('button', { name: `Request the ${P(id).name} brochure` });
+    const brochure = card.getByRole('link', { name: `${P(id).name} brochure` });
     const preview = card.getByRole('button', { name: `3D preview of the ${P(id).name} program guide` });
     await expect(preview).toBeVisible();
     await expect(preview).toHaveText('3D preview');
     const [a, b] = [await brochure.boundingBox(), await preview.boundingBox()];
     expect(b.height).toBeGreaterThanOrEqual(44);
+    expect(a.height).toBeGreaterThanOrEqual(44);
     // Same row as "Brochure", or wrapped just below it on a narrow card.
-    await expect(card.locator('.ccard-brochure [data-brochure-trigger] + [data-preview3d-trigger]')).toHaveCount(1);
+    await expect(card.locator('.ccard-brochure [data-brochure-link] + [data-preview3d-trigger]')).toHaveCount(1);
     expect(b.y).toBeGreaterThanOrEqual(a.y - 1);
   }
 });

@@ -1,7 +1,7 @@
 // Proves the tests have teeth: each case breaks one security or business rule on purpose,
 // and the matching test file must FAIL. If a sabotaged run passes, the tests are missing something.
 import { spawnSync } from 'node:child_process';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, rmdir, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -176,15 +176,101 @@ async function runBrowserCase([name, spec, title, file, from, to]) {
   }
 }
 
+// The public website. Each case changes one line in a sandbox copy of the project (the checkout is never touched:
+// web/static and node_modules are linked in as directory junctions, everything else is copied), then runs the one
+// website test file, or the one browser test, that must notice. [name, test, file, text, replacement], where test is
+// 'site/<file>' (a tests/site unit test) or 'e2e/<spec>|<test title>' (a browser test; needs Microsoft Edge).
+const SITE_CASES = [
+  ['A wrong tuition price on the program guides', 'site/guide', 'web/lib/guide-data.mjs',
+    'perTerm: money(p.tuition.perTerm),', 'perTerm: money(p.tuition.perTerm - 100),'],
+  ['A PDF brochure download comes back on the brochure page', 'site/guide', 'web/pages/brochure.mjs',
+    '<button class="btn ghost" type="button" data-gb-print hidden>', '<a class="btn gold" href="${brochureUrl(p)}nuvora-brochure.pdf" download>Save the PDF brochure</a><button class="btn ghost" type="button" data-gb-print hidden>'],
+  ['The guide’s hero render loses its alt text', 'site/guide', 'web/pages/guide.mjs',
+    '<img src="${img.src}" alt="${img.alt}" width', '<img src="${img.src}" width'],
+  ['The brochure drops a graded project from every term', 'site/guide', 'web/pages/brochure.mjs',
+    '<ul>${t.projects.map((pj) =>', '<ul>${t.projects.slice(0, 2).map((pj) =>'],
+  ['The brochure viewer’s page counter stops updating', 'e2e/site-guide|the viewer turns with Previous and Next', 'web/assets/js/guide.js',
+    'count.textContent = stacked ? `All ${total} pages` : `Page ${current + 1} of ${total}`;', ''],
+  // Money and honesty on the guides and brochures.
+  ['The guide’s FAQ gives a wrong total tuition', 'site/guide', 'web/lib/guide-data.mjs',
+    '${money(p.tuition.total)} in total', '${money(p.tuition.perTerm * 2)} in total'],
+  ['Join step 4 names a term’s tuition as the application fee', 'site/guide', 'web/lib/guide-data.mjs',
+    'pay the one-time ${money(p.tuition.applicationFee)} application fee', 'pay the one-time ${money(p.tuition.perTerm)} application fee'],
+  ['The brochure’s Tuition tile shows the application fee', 'site/guide', 'web/pages/brochure.mjs',
+    '<span data-fact="tuition-per-term">${t.perTerm}</span> per term', '<span>${t.fee}</span> per term'],
+  ['The brochure loses a row of term dates', 'site/guide', 'web/pages/brochure.mjs',
+    'termDates(start, p.termCount).map', 'termDates(start, p.termCount).slice(1).map'],
+  ['The brochure lists role skills its program does not teach', 'site/guide', 'web/lib/guide-data.mjs',
+    'taught: ROLES[id].skills.filter(([, code]) => codes.has(code))', 'taught: ROLES[id].skills'],
+  ['An FAQ says lesson videos can be downloaded', 'site/guide', 'web/lib/guide-data.mjs',
+    '\'No. Lessons and class recordings stream in the student portal only.', '\'Yes. Lessons and class recordings can be downloaded.'],
+  // The brochure viewer and its pages in the browser.
+  ['The guide’s viewport rules reach the brochure pages at tablet widths', 'e2e/site-guide|at 820px every brochure page', 'web/assets/css/guide.css',
+    '  .gd .st-term{grid-template-columns:4.2em minmax(0,1fr)}\n  .gd .st-term-pj{grid-column:2;', '  .st-term{grid-template-columns:4.2em minmax(0,1fr)}\n  .st-term-pj{grid-column:2;'],
+  ['The brochure’s small print shrinks below the size floor', 'e2e/site-guide|at 1280px every brochure page', 'web/assets/css/guide.css',
+    '.gb-fine{margin-top:1.1em;color:var(--st-muted);font-size:.72em;', '.gb-fine{margin-top:1.1em;color:var(--st-muted);font-size:.56em;'],
+  ['A page turn leaves the reader partway down the new page', 'e2e/site-guide|turning a page shows the new page from its top', 'web/assets/js/guide.js',
+    '{ show(i); revealTop(); } };', '{ show(i); } };'],
+  ['The viewer bar pushes the page down as it appears', 'e2e/site-guide|does not shift as it loads', 'web/assets/css/guide.css',
+    '  .gb-bar[hidden]{display:flex!important;visibility:hidden}\n', ''],
+  ['The brochure viewer cannot be reached with Tab', 'e2e/site-guide|reached with Tab', 'web/assets/js/guide.js',
+    '  viewer.tabIndex = 0;\n', ''],
+  ['A mostly vertical drag turns the brochure page', 'e2e/site-guide|a sideways drag turns the page', 'web/assets/js/guide.js',
+    ' || Math.abs(dx) < Math.abs(dy) * 1.2', ''],
+  ['The guide’s "Tuition and refunds" link is a small target', 'e2e/site-guide|is at least 44px high', 'web/assets/css/guide.css',
+    '.st-more{display:inline-flex;align-items:center;gap:.4em;min-height:44px;', '.st-more{display:inline-flex;align-items:center;gap:.4em;'],
+];
+const ROOT_DIR = fileURLToPath(new URL('..', import.meta.url));
+const COPY = ['scripts', 'server', 'web', 'tests', 'supabase', 'portal', 'package.json', 'playwright.config.mjs'];
+const LINKED = ['node_modules', 'web/static'];
+
+async function runSiteCase([name, target, file, from, to]) {
+  const dir = await mkdtemp(join(tmpdir(), 'nuvora-sabotage-site-'));
+  const links = LINKED.map((l) => join(dir, l));
+  try {
+    for (const entry of COPY) {
+      await cp(join(ROOT_DIR, entry), join(dir, entry), { recursive: true, filter: (src) => !src.startsWith(join(ROOT_DIR, 'web', 'static')) });
+    }
+    for (const l of LINKED) await symlink(join(ROOT_DIR, l), join(dir, l), 'junction');
+    const path = join(dir, file);
+    const text = (await readFile(path, 'utf8')).replace(/\r\n/g, '\n');
+    if (!text.includes(from)) return { invalid: `pattern not found in ${file}` };
+    await writeFile(path, text.replace(from, to));
+    const [kind, rest] = target.split('/');
+    if (kind === 'site') {
+      const r = spawnSync(process.execPath, ['--test', '--test-reporter=spec', `tests/site/${rest}.test.mjs`], { cwd: dir, encoding: 'utf8' });
+      const fails = Number(r.stdout.match(/^ℹ fail (\d+)$/m)?.[1] ?? 0);
+      return { caught: r.status !== 0 && fails > 0, fails, file: `${rest}.test` };
+    }
+    const [spec, title] = rest.split('|');
+    const r = spawnSync(process.execPath, [join(dir, 'node_modules/@playwright/test/cli.js'), 'test', `tests/e2e/${spec}.spec.mjs`, '-g', title, '--reporter=line', `--output=${join(dir, 'results')}`],
+      { cwd: dir, encoding: 'utf8' });
+    const fails = Number(r.stdout.match(/^\s*(\d+) failed/m)?.[1] ?? 0);
+    return { caught: r.status !== 0 && fails > 0, fails, file: `${spec}.spec` };
+  } finally {
+    // The junctions are removed first, on their own, so nothing behind them can be touched.
+    for (const l of links) await unlink(l).catch(() => rmdir(l).catch(() => {}));
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 // Optional filter: node tests/sabotage.mjs <test file name> runs only the cases checked by that file
-// (a database test such as "tuition", or a browser spec such as "admin.spec"); "db" or "browser" runs one kind.
+// (a database test such as "tuition", a browser spec such as "admin.spec" or "site-guide.spec", or a website test such
+// as "guide.test"); "db", "browser" or "site" runs one kind.
 const only = process.argv[2];
 const cases = CASES.filter(([, file]) => !only || only === 'db' || file === only);
 const browserCases = BROWSER_CASES.filter(([, spec]) => !only || only === 'browser' || `${spec}.spec` === only);
-const total = cases.length + browserCases.length;
+const siteCases = SITE_CASES.filter(([, t]) => !only || only === 'site' || `${t.split('/')[1].split('|')[0]}.${t.startsWith('e2e') ? 'spec' : 'test'}` === only);
+const total = cases.length + browserCases.length + siteCases.length;
 let missed = 0;
 for (const c of browserCases) {
   const r = await runBrowserCase(c);
+  if (r.invalid) { missed++; console.log(`INVALID ${c[0]}: ${r.invalid}`); continue; }
+  if (!r.caught) missed++;
+  console.log(`${r.caught ? 'CAUGHT' : 'MISSED'}  ${c[0]}  (${r.file}: ${r.fails} test${r.fails === 1 ? '' : 's'} failed)`);
+}
+for (const c of siteCases) {
+  const r = await runSiteCase(c);
   if (r.invalid) { missed++; console.log(`INVALID ${c[0]}: ${r.invalid}`); continue; }
   if (!r.caught) missed++;
   console.log(`${r.caught ? 'CAUGHT' : 'MISSED'}  ${c[0]}  (${r.file}: ${r.fails} test${r.fails === 1 ? '' : 's'} failed)`);

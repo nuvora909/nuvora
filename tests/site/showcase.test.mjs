@@ -34,7 +34,7 @@ function linkProblem(href) {
   return null;
 }
 
-test('every catalog card links to its built program page and every program appears once', () => {
+test('every catalog card links to its built program page and its brochure, and every program appears once', () => {
   for (const path of ['/', '/programs/']) {
     const cat = catalogOf(pageAt(path));
     assert.ok(cat, `${path} has the catalog`);
@@ -43,8 +43,9 @@ test('every catalog card links to its built program page and every program appea
     for (const [card, id] of cards) {
       const p = PROGRAMS.find((x) => x.id === id);
       const links = hrefs(card);
-      assert.deepEqual(links, [p.url], `${path}: the ${id} card has one link, to its program page`);
+      assert.deepEqual(links, [p.url, `${p.url}brochure/`], `${path}: the ${id} card links to its program page and its brochure`);
       assert.equal(linkProblem(p.url), null);
+      assert.equal(linkProblem(`${p.url}brochure/`), null);
       assert.match(card, /data-match-badge hidden/, 'the "Your match" hook site.js uses is there');
       assert.match(card, new RegExp(`<img class="ccard-book-face" src="${brochureCoverUrl(p)}" alt="[^"]{30,}"`), `${id}: the portrait brochure cover has alt text`);
       assert.match(card, /class="ccard-book-pages"/, `${id}: the cover has 3D page depth`);

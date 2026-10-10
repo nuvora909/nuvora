@@ -3,10 +3,11 @@ import { html, raw, accent } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
 import { liveDate } from './layout.mjs';
 import { brochureCoverUrl, brochureCoverAlt, coverGlow } from './covers.mjs';
+import { brochureUrl, CHECKED_ON, CERTS_INTRO } from './guide-data.mjs';
 import { PROGRAMS, TOPICS, CREDENTIAL, P } from '../data/programs.mjs';
 import { ROLES, TRACKS, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE, RUBRIC, FAQ, FACTS, PHOTOS } from '../data/site.mjs';
-import { CHECKED, CERT_DISCLAIMER, certsFor } from '../data/certs.mjs';
+import { CERT_DISCLAIMER, certsFor } from '../data/certs.mjs';
 import { QUESTIONS } from '../assets/js/match.mjs';
 
 // id: the heading id, for a section that is aria-labelledby it.
@@ -32,7 +33,8 @@ const needs = (p) => (p.needsBachelor ? 'Bachelor’s degree to join' : p.requir
 // programs apart (the credential is the same for every program, so it is shown on program pages and certificates).
 // The whole card links to the program page (the title link stretches over the card). .pcard[data-program] and
 // [data-match-badge] are the hooks site.js uses to mark a visitor's saved match; [data-card] and data-topics are
-// used by showcase.js. The "3D preview" button stays hidden until site.js wires it (preview3d.js opens the model).
+// used by showcase.js. "Brochure" opens the page-by-page brochure (/programs/<slug>/brochure/). The "3D preview"
+// button stays hidden until site.js wires it (preview3d.js opens the model).
 export const programCard = (p) => html`
 <article class="pcard ccard" data-program="${p.id}" data-level="${p.level}" data-topics="${p.topics.join('|')}" data-card>
   <div class="ccard-cover" style="--ccard-glow:${coverGlow(p)}">
@@ -49,7 +51,7 @@ export const programCard = (p) => html`
     <p class="ccard-brand">${mark()}<span class="ccard-org">Nuvora</span><span class="ccard-lvl">${LEVEL_SHORT[p.level]}</span></p>
     <h3><a class="ccard-link" href="${p.url}">${p.name}</a></h3>
     <p class="ccard-brochure">
-      <button class="btn ghost sm" data-brochure-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="Request the ${p.name} brochure">Brochure</button>
+      <a class="btn ghost sm" href="${brochureUrl(p)}" data-brochure-link aria-label="${p.name} brochure">Brochure</a>
       <button class="btn ghost sm" type="button" data-preview3d-trigger data-program-id="${p.id}" aria-haspopup="dialog" aria-label="3D preview of the ${p.name} program guide" hidden>3D preview</button>
     </p>
     <p class="ccard-meta"><span>${p.duration}</span> · <span>${p.weeklyHours} hrs/week</span></p>
@@ -92,7 +94,6 @@ export function programCatalog({ id = 'catalog', limit = 0, intro = null, progra
 
 // ---------------------------------------------------------------- certificates
 
-const CHECKED_ON = new Date(`${CHECKED}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const lessonTitle = (p, code) => p.terms.flatMap((t) => t.lessons).find(([c]) => c === code)?.[1] ?? code;
 const seal = () => raw('<svg class="certcard-seal" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle class="s1" cx="20" cy="20" r="17"/><circle class="s2" cx="18.5" cy="21.5" r="7.2"/><circle class="s3" cx="25.8" cy="13.2" r="2.6"/></svg>');
 const signature = () => raw('<svg class="certcard-sig" viewBox="0 0 120 28" aria-hidden="true" focusable="false"><path d="M4 21c7-13 13-16 15-10s-5 11-1 9 9-15 15-13-2 13 4 11 7-9 13-9 4 7 10 6 9-5 17-6 12 2 18 0"/></svg>');
@@ -123,7 +124,7 @@ export const industryCerts = () => html`
 <div class="indcerts">
   <div class="indcerts-head">
     <h3>Industry certifications to aim for <span class="serif">next</span></h3>
-    <p>Certifications from leading technology companies whose official exam topics overlap what a Nuvora program teaches. Each name and its exam areas were checked on the company’s official page on ${CHECKED_ON}.</p>
+    <p>Certifications from technology companies and certification bodies whose official exam topics overlap what a Nuvora program teaches. Each name and its exam areas were checked on the company’s official page on ${CHECKED_ON}.</p>
   </div>
   <div class="indcerts-grid">${PROGRAMS.map((p) => html`
     <div class="indcert">
@@ -138,7 +139,7 @@ export const industryCerts = () => html`
 export const programCerts = (p) => html`
 <div class="indcerts one">
   <h3>Industry certifications to aim for <span class="serif">next</span></h3>
-  <p class="muted">Certifications from leading technology companies whose official exam topics overlap this program. Checked on each company’s official page on ${CHECKED_ON}.</p>
+  <p class="muted">${CERTS_INTRO} Checked on each company’s official page on ${CHECKED_ON}.</p>
   <ul class="indlist">${certsFor(p.id).map((c) => html`
     <li class="indrow">
       <p class="indrow-name"><b>${c.name}</b><span>${c.vendor}${c.exam ? ` · exam ${c.exam}` : ''}</span></p>
@@ -257,7 +258,7 @@ export const weekView = () => {
   const cell = (d) => {
     if (d === 'Tue') return html`<div class="live"><b>${d}</b><strong>Live class</strong><span>${SCHEDULE.classTime} ET · ${SCHEDULE.classMinutes} min</span></div>`;
     if (d === 'Thu') return html`<div class="live"><b>${d}</b><strong>Office hours</strong><span>${SCHEDULE.officeTime} ET · ${SCHEDULE.officeMinutes} min</span></div>`;
-    return html`<div class="${d === 'Sat' || d === 'Sun' ? 'rest' : ''}"><b>${d}</b><span>Lessons and project work, at your own time</span></div>`;
+    return html`<div class="${d === 'Sat' || d === 'Sun' ? 'rest' : ''}"><b>${d}</b><span>Lessons and project work, in your own time</span></div>`;
   };
   return html`<div class="week" aria-label="A typical week">${days.map(cell)}</div>`;
 };

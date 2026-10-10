@@ -7,9 +7,9 @@ import { coverGlow, brochureCoverUrl, brochureCoverAlt } from '../lib/covers.mjs
 import { PROGRAMS, PACE, CREDENTIAL, money, nextStarts, termDates, fmtDay, isoDay } from '../data/programs.mjs';
 import { ROLES, CAREER_NOTE } from '../data/careers.mjs';
 import { SCHEDULE } from '../data/site.mjs';
+import { guideFaq, pathLede, TUITION_NOTE } from '../lib/guide-data.mjs';
 
 const week = (day) => Math.ceil(day / 7);
-const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 // Search-result limits (tests/site/build.test.mjs): the title gets " | Nuvora" added, so 61 characters are left.
 const TITLE_MAX = 61, DESC_MAX = 170;
@@ -20,23 +20,8 @@ const SECTIONS = [['overview', 'Overview'], ['curriculum', 'Curriculum'], ['proj
   ['assessment', 'Assessment'], ['instructors', 'Instructors'], ['tuition', 'Tuition & financing'], ['credential', 'Credential & credit'],
   ['careers', 'Careers'], ['faq', 'FAQ']];
 
-function faqFor(p) {
-  const total = money(p.tuition.total);
-  return [
-    [`How long does the ${p.name} take?`, p.termCount === 1
-      ? 'One 12-week term. It starts on the first Monday of a month.'
-      : `${plural(p.termCount, 'term')} of 12 weeks, taken one after another: ${p.duration}. Each term starts on the first Monday of a month.`],
-    [`How many hours a week does it take?`, `Plan for about ${p.weeklyHours} hours a week: two live Jitsi sessions (${SCHEDULE.classMinutes} and ${SCHEDULE.officeMinutes} minutes) plus lessons and project work at your own time.`],
-    [`Do I need to know how to code?`, p.requiresCoding
-      ? `Yes. You need: ${p.required.join('; ')}.`
-      : `No. ${p.required.join('. ')}.`],
-    [`What does it cost in total?`, p.termCount === 1
-      ? `${money(p.tuition.perTerm)} for the term, plus a one-time ${money(p.tuition.applicationFee)} application fee. Prices are launch pricing in US dollars.`
-      : `${money(p.tuition.perTerm)} per term for ${plural(p.termCount, 'term')}, ${total} in total, plus a one-time ${money(p.tuition.applicationFee)} application fee. You pay one term at a time. Prices are launch pricing in US dollars.`],
-    [`What do I receive when I finish?`, `A ${CREDENTIAL.short} for the ${p.name}. ${CREDENTIAL.note}`],
-    [`Can I download the lesson videos?`, 'No. Lessons and class recordings stream in the student portal only. Lesson notes, exercise sheets and project briefs are PDFs you can download.'],
-  ];
-}
+// The same questions as the program guide (web/lib/guide-data.mjs), so both pages always answer alike.
+const faqFor = guideFaq;
 
 function hero(p, today) {
   const crumbs = [['/', 'Home'], ['/programs/', 'Programs'], [p.url, p.name]];
@@ -53,6 +38,10 @@ function hero(p, today) {
         <a class="btn gold" href="/admissions/?program=${p.id}#request" data-cta="program-request">Request a seat ${icon('arrow')}</a>
         <a class="btn ghost" href="/find-your-program/" data-cta="program-find">Is this right for me?</a>
       </div>
+      <p class="row phero-guide" style="margin-top:12px" data-test="guide-links">
+        <a class="btn ghost sm" href="${p.url}guide/" data-cta="program-guide">${icon('route')}Program guide</a>
+        <a class="btn ghost sm" href="${p.url}brochure/" data-cta="program-brochure">${icon('book')}Read the brochure</a>
+      </p>
     </div>
     <aside class="keyfacts" aria-labelledby="kf-title">
       <h2 id="kf-title">Key facts</h2>
@@ -129,7 +118,7 @@ ${hero(p, today)}
 
   <section class="psec" id="curriculum" aria-labelledby="h-curriculum">
     <h2 id="h-curriculum">${accent('The *curriculum*')}</h2>
-    <p class="lede">${plural(p.termCount, 'term')} of 12 weeks. Each term has ${p.terms[0].lessons.length} competency lessons with PDF notes, and ${p.terms[0].projects.length} graded projects due in weeks 3, 7 and 12.</p>
+    <p class="lede">${pathLede(p)}</p>
     <div class="terms">${p.terms.map((t, i) => termBlock(t, i, i === 0))}</div>
   </section>
 
@@ -151,7 +140,7 @@ ${hero(p, today)}
 
   <section class="psec" id="assessment" aria-labelledby="h-assessment">
     <h2 id="h-assessment">${accent('How you are *assessed*')}</h2>
-    <p class="lede">Projects are graded by instructors on a four-level mastery rubric. A lesson counts as complete when you have watched 90% of it, and live attendance is recorded from Jitsi.</p>
+    <p class="lede">Projects are graded by instructors on a four-level mastery rubric. A lesson counts as complete when you have watched 90% of it.</p>
     ${rubric()}
   </section>
 
@@ -165,7 +154,7 @@ ${hero(p, today)}
 
   <section class="psec" id="tuition" aria-labelledby="h-tuition">
     <h2 id="h-tuition">${accent('Tuition and *financing*')}</h2>
-    <p class="lede">Launch pricing in US dollars. You pay one term at a time, so you are only ever charged for the term you are starting.</p>
+    <p class="lede">${TUITION_NOTE}</p>
     <div class="tablewrap" data-test="fees"><table style="min-width:0">
       <tbody>
         <tr><th scope="row">Tuition per 12-week term</th><td><b>${money(p.tuition.perTerm)}</b></td></tr>
@@ -179,7 +168,7 @@ ${hero(p, today)}
   </section>
 
   <section class="psec" id="credential" aria-labelledby="h-credential">
-    <h2 id="h-credinet">${accent('Credential and *credit*')}</h2>
+    <h2 id="h-credential">${accent('Credential and *credit*')}</h2>
     <div class="cred-split">
       <div class="stack">
         <p class="lede">Your certificate names the program and is backed by the graded projects you can show. List it on your résumé under Certifications, and on LinkedIn under Licenses &amp; certifications with Nuvora as the issuing organization.</p>
@@ -188,7 +177,7 @@ ${hero(p, today)}
     </div>
     <div class="twocol">
       <div class="box"><h3>${icon('cert')} What you receive</h3><p>A ${CREDENTIAL.short} for the ${p.name}, issued by Nuvora when you complete your program.</p></div>
-      <div class="box"><h3>${icon('info')} Recognition</h3><p>Nuvora is not an accredited university and this is not an accredited degree. The ${p.credits} Nuvora credits (about ${p.creditsPerTerm} per term) describe workload; they are not academic credit and may not transfer to universities.</p></div>
+      <div class="box"><h3>${icon('info')} Recognition</h3><p>Nuvora is not an accredited university and this is not an accredited degree. The ${p.credits} Nuvora credits${p.termCount > 1 ? ` (about ${p.creditsPerTerm} per term)` : ''} describe workload; they are not academic credit and may not transfer to universities.</p></div>
       <div class="box"><h3>${icon('layers')} Transfer and test-outs</h3><p>Nuvora does not accept transfer credit or offer test-outs: every learner completes every term.${p.needsBachelor ? ' Joining needs a bachelor’s degree in any field.' : ''}</p></div>
     </div>
     ${programCerts(p)}

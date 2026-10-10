@@ -80,20 +80,22 @@ test('the whole card opens its program, and the title link is reachable by keybo
   await card.locator('.ccard-cover').click({ force: true });
   await expect(page).toHaveURL(new RegExp(`${PROGRAMS[0].url}$`));
   await page.goBack();
-  const link = page.locator('#home-catalog [data-card]').first().getByRole('link');
+  const link = page.locator('#home-catalog [data-card]').first().getByRole('link', { name: PROGRAMS[0].name, exact: true });
   await link.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(new RegExp(`${PROGRAMS[0].url}$`));
 });
 
-test('the brochure control opens the request dialog without following the card link', async ({ page }) => {
+test('the "Brochure" control opens that program’s brochure, not the card’s program page', async ({ page }) => {
   await page.goto('/programs/');
   const card = page.locator(`#programs-catalog [data-program="${P('bs-ds').id}"]`);
-  await card.getByRole('button', { name: `Request the ${P('bs-ds').name} brochure` }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator('#brochure-program')).toHaveValue(P('bs-ds').id);
-  await expect(page).toHaveURL(/\/programs\/$/);
+  const link = card.getByRole('link', { name: `${P('bs-ds').name} brochure` });
+  await expect(link).toHaveText('Brochure');
+  expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await link.click();
+  await expect(page).toHaveURL(new RegExp(`${P('bs-ds').url}brochure/$`));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(`${P('bs-ds').name} brochure`);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('a saved match is moved to the front of the catalog and shown with its badge', async ({ page }) => {

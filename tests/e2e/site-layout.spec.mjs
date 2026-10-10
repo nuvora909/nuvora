@@ -1,18 +1,20 @@
 // Layout and accessibility basics for every page in the sitemap, from a 320px phone to a desktop, plus the phone
-// menu and the dark colour scheme. Pages are read from /sitemap.xml, so new pages are covered automatically.
+// menu and the dark colour scheme. Pages are read from /sitemap.xml, so new pages are covered automatically; the
+// program brochures, which are noindex and so not in the sitemap, are added to the list.
 import { test, expect } from './fixtures.mjs';
+import { PROGRAMS } from '../../web/data/programs.mjs';
 
 test.describe.configure({ timeout: 600_000 });   // each test walks through every page
 
 const WIDTHS = [320, 360, 390, 768, 1280];
 const PHONE = 390;   // up to this width, iOS zooms into form fields with text smaller than 16px
 
-async function sitemapPaths(request) {
+async function pagePaths(request) {
   const r = await request.get('/sitemap.xml');
   expect(r.ok()).toBeTruthy();
   const paths = [...(await r.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
   expect(paths.length).toBeGreaterThan(5);
-  return paths;
+  return [...paths, ...PROGRAMS.map((p) => `${p.url}brochure/`)];
 }
 
 // Console errors and page errors, each with the page it happened on. Google Fonts is optional and is ignored.
@@ -49,14 +51,14 @@ const inspect = (page, { phone }) => page.evaluate(({ phone }) => {
 
   // Nothing sticks out sideways. The page hides horizontal scrolling, so scrollWidth alone would not reveal clipped
   // content: check every element's box. Horizontal scrollers and decoration hidden from assistive tech are skipped.
-  const SCROLLERS = '.tabs, .tablewrap, .jumpnav nav, [aria-hidden="true"], .skip, .sr-only';
+  const SCROLLERS = '.tabs, .tablewrap, .jumpnav nav, [data-hscroll], [aria-hidden="true"], .skip, .sr-only';
   const out = [...document.querySelectorAll('body *')]
     .filter((el) => !el.closest(SCROLLERS) && shown(el))
     .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && (r.right > vw + 1 || r.left < -1); })
     .map((el) => `sticks out: ${name(el)} (${Math.round(el.getBoundingClientRect().left)}..${Math.round(el.getBoundingClientRect().right)} of ${vw})`);
   problems.push(...out.slice(0, 8));
 
-  // Text fields at least 16px on phones (smaller makes iOS Jitsi in on focus). Check boxes, radios, sliders and
+  // Text fields at least 16px on phones (smaller makes iOS zoom in on focus). Check boxes, radios, sliders and
   // buttons hold no typed text.
   if (phone) {
     const NO_TEXT = ['hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image'].map((t) => `:not([type=${t}])`).join('');
@@ -90,7 +92,7 @@ const inspect = (page, { phone }) => page.evaluate(({ phone }) => {
 
 for (const width of WIDTHS) {
   test(`every page fits and works at ${width}px`, async ({ page, request }) => {
-    const paths = await sitemapPaths(request);
+    const paths = await pagePaths(request);
     await page.setViewportSize({ width, height: width < 768 ? 780 : 900 });
     const errors = watchErrors(page);
     const found = [];
@@ -127,7 +129,7 @@ for (const width of WIDTHS) {
 }
 
 test('every page renders in the dark colour scheme without errors', async ({ page, request }) => {
-  const paths = await sitemapPaths(request);
+  const paths = await pagePaths(request);
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.setViewportSize({ width: 390, height: 780 });
   const errors = watchErrors(page);

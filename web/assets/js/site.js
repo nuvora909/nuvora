@@ -206,20 +206,6 @@ function advisorButtons() {
   });
 }
 
-// ---------- Brochure modal entry points ----------
-function brochureButtons() {
-  const buttons = $$('[data-brochure-trigger]');
-  if (!buttons.length) return;
-  let mod;
-  const open = async (e) => {
-    const btn = e.currentTarget;
-    mod ??= await import('./brochure.js');
-    const programId = btn.dataset.programId;
-    mod.openBrochure({ programId, returnFocus: btn });
-  };
-  buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
-}
-
 // ---------- 3D preview of a program guide (the model and its stylesheet load on first use) ----------
 function preview3dButtons() {
   const buttons = $$('[data-preview3d-trigger]');
@@ -243,7 +229,7 @@ function preview3dButtons() {
       if (!note) btn.after(msg);
       // Filled a moment after the live region is in the page, so screen readers announce it.
       msg.textContent = '';
-      setTimeout(() => { msg.textContent = 'The 3D preview could not load. The Brochure button and the program page still work.'; }, 60);
+      setTimeout(() => { msg.textContent = 'The 3D preview could not load. The brochure and the program page still work.'; }, 60);
     }
   };
   buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', open); });
@@ -257,6 +243,5 @@ ladders();
 hotspots();
 personalize();
 advisorButtons();
-brochureButtons();
 preview3dButtons();
 export { $, $$, fromIso };

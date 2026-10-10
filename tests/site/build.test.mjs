@@ -16,6 +16,7 @@ before(async () => { site = await buildForTest(); });
 after(() => site?.cleanup());
 
 const is404 = (p) => p.path === '/404';
+const isBrochure = (path) => /^\/programs\/[^/]+\/brochure\/$/.test(path);
 const count = (s, re) => [...s.matchAll(re)].length;
 const attr = (tag, name) => decode(new RegExp(`\\s${name}="([^"]*)"`, 'i').exec(tag)?.[1] ?? '');
 const titleOf = (html) => decode(/<title>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '').trim();
@@ -75,9 +76,12 @@ test('canonical links, robots and the content security policy', () => {
     else if (canon.length !== 1 || canon[0] !== SITE.origin + path) problems.push(`${path}: canonical ${JSON.stringify(canon)}, expected ${SITE.origin + path}`);
 
     const robots = /<meta name="robots" content="([^"]*)">/.exec(html)?.[1];
-    const shouldIndex = SITE.indexable && !is404({ path });
+    // The brochures repeat their guide page by page, so they are always noindex (and stay out of the sitemap).
+    const shouldIndex = SITE.indexable && !is404({ path }) && !isBrochure(path);
     if (!robots) problems.push(`${path}: no robots meta`);
     else if (shouldIndex ? /noindex/.test(robots) : !/noindex/.test(robots)) problems.push(`${path}: robots "${robots}" while SITE.indexable is ${SITE.indexable}`);
+    // Pre-launch the policy is uniform: nothing is indexed and no link is followed, brochures included.
+    else if (!SITE.indexable && robots !== 'noindex, nofollow') problems.push(`${path}: robots "${robots}" before launch, expected "noindex, nofollow"`);
 
     const csp = decode(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/.exec(html)?.[1] ?? '');
     if (!csp) problems.push(`${path}: no Content-Security-Policy meta`);
@@ -175,9 +179,10 @@ test('pages that show stock photos or clips say they are stock media', () => {
   const problems = [];
   for (const { path, html } of site.pages) {
     const body = /<main[\s\S]*<\/main>/.exec(html)?.[0] ?? '';
-    // Program covers (/img/covers/) are Nuvora's own drawn artwork with no people or photos (web/lib/covers.mjs),
-    // so they are not stock media. Every other image under /img/ is a stock photo.
-    const people = [...body.matchAll(/<img\b[^>]*src="\/img\/(?!covers\/)[^"]*"[^>]*>/g)].filter(([tag]) => attr(tag, 'alt')).length
+    // Program covers (/img/covers/) are Nuvora's own drawn artwork with no people or photos (web/lib/covers.mjs), and
+    // the program-guide renders (/img/guides/) are the owner's own 3D illustrations of the guide, so neither is stock
+    // media. Every other image under /img/ is a stock photo.
+    const people = [...body.matchAll(/<img\b[^>]*src="\/img\/(?!covers\/|guides\/)[^"]*"[^>]*>/g)].filter(([tag]) => attr(tag, 'alt')).length
       + count(body, /<video\b/g);
     if (people && !/\bstock (photo|video|clip|model|media|footage)s?\b/i.test(visibleText(`<body>${body}</body>`))) problems.push(`${path}: shows ${people} stock photo(s) or clip(s) without saying they are stock media`);
   }
@@ -287,7 +292,7 @@ test('sitemap.xml lists exactly the indexable pages and robots.txt allows the si
   const listed = locs.map((l) => l.slice(SITE.origin.length));
   assert.equal(new Set(listed).size, listed.length, 'no URL is listed twice');
   assert.ok(!listed.includes('/404') && !listed.some((p) => p.startsWith('/portal')), 'no 404 page or portal in the sitemap');
-  const indexable = site.pages.filter((p) => !is404(p) && /<link rel="canonical"/.test(p.html)).map((p) => p.path);
+  const indexable = site.pages.filter((p) => !is404(p) && !isBrochure(p.path) && /<link rel="canonical"/.test(p.html)).map((p) => p.path);
   assert.deepEqual([...listed].sort(), [...indexable].sort());
 
   const robots = await readFile(join(site.outDir, 'robots.txt'), 'utf8');

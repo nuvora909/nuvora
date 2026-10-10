@@ -14,7 +14,7 @@ after(() => site?.cleanup());
 
 const cardsIn = (html) => [...html.matchAll(/<article class="pcard ccard"[\s\S]*?<\/article>/g)].map((m) => m[0]);
 
-test('every program card has a "3D preview" button with an accessible name, next to "Brochure"', () => {
+test('every program card has a "3D preview" button with an accessible name, next to the "Brochure" link', () => {
   let cards = 0;
   for (const { path, html } of site.pages) {
     for (const card of cardsIn(html)) {
@@ -28,15 +28,15 @@ test('every program card has a "3D preview" button with an accessible name, next
       assert.match(tag, /\btype="button"/, `${path} ${id}: a plain button`);
       const cls = (t) => /\bclass="([^"]*)"/.exec(t)?.[1];
       assert.match(cls(tag), /^btn ghost\b/, `${path} ${id}: a ghost button`);
-      assert.equal(cls(tag), cls(/<button\b[^>]*\bdata-brochure-trigger\b[^>]*>/.exec(card)[0]), `${path} ${id}: the same style as "Brochure"`);
+      assert.equal(cls(tag), cls(/<a\b[^>]*\bdata-brochure-link\b[^>]*>/.exec(card)[0]), `${path} ${id}: the same style as the "Brochure" link`);
       assert.match(tag, /\baria-haspopup="dialog"/, `${path} ${id}: announces that it opens a dialog`);
       assert.match(tag, new RegExp(`data-program-id="${id}"`), `${path} ${id}: names its program`);
       const name = decode(/aria-label="([^"]*)"/.exec(tag)?.[1] ?? '');
       assert.equal(name, `3D preview of the ${p.name} program guide`, `${path} ${id}: accessible name`);
       assert.equal(label.trim(), '3D preview', `${path} ${id}: visible label`);
       assert.ok(name.startsWith(label.trim()), `${path} ${id}: the accessible name starts with the visible label`);
-      // It sits beside the brochure button, in the layer above the card's stretched link.
-      assert.match(card, /<p class="ccard-brochure"[^>]*>\s*<button[^>]*data-brochure-trigger[^>]*>[^<]*<\/button>\s*<button[^>]*data-preview3d-trigger/, `${path} ${id}: next to "Brochure"`);
+      // It sits beside the brochure link, in the layer above the card's stretched link.
+      assert.match(card, /<p class="ccard-brochure"[^>]*>\s*<a[^>]*data-brochure-link[^>]*>[^<]*<\/a>\s*<button[^>]*data-preview3d-trigger/, `${path} ${id}: next to "Brochure"`);
     }
   }
   assert.ok(cards >= PROGRAMS.length, `cards were found (${cards})`);
