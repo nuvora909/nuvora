@@ -7,13 +7,13 @@ import { freshDb } from './helpers.mjs';
 
 // Functions each role may call. Everything else in `public` must be closed to them.
 // request_seat: the public website's "Request a seat" form (checks every field itself).
-const ANON_FUNCTIONS = ['first_monday', 'next_start_date', 'request_seat'];
+const ANON_FUNCTIONS = ['first_monday', 'next_start_date', 'request_seat', 'school_today'];
 const AUTHENTICATED_FUNCTIONS = [
   // used inside security rules (can_read_material: the storage rule for PDF downloads; can_upload_course_file
   // and can_delete_course_file: the storage rules for admin PDF uploads)
   'can_read_material', 'can_see_batch', 'is_admin', 'my_active_batches', 'teaches',
   'can_upload_course_file', 'can_delete_course_file',
-  'first_monday', 'next_start_date', 'request_seat',
+  'first_monday', 'next_start_date', 'request_seat', 'school_today',
   // student actions and pages
   'record_progress', 'mark_reading_done', 'submit_assignment', 'my_dashboard', 'my_course', 'my_lesson',
   'my_sessions', 'my_assignments', 'my_notifications', 'mark_notifications_read', 'update_my_profile',
@@ -28,7 +28,8 @@ const AUTHENTICATED_FUNCTIONS = [
   'admin_convert_seat_request', 'admin_materials', 'admin_program_outline', 'admin_add_material', 'admin_remove_material', 'admin_audit_log',
 ].sort();
 // The scheduler's jobs: server side only (service_role), never signed-in users or visitors.
-const SERVICE_ONLY = ['apply_access_rules', 'queue_session_reminders', 'update_batch_statuses', 'create_monthly_batches', 'progress_terms'];
+const SERVICE_ONLY = ['apply_access_rules', 'queue_session_reminders', 'update_batch_statuses', 'create_monthly_batches', 'progress_terms',
+                      'ensure_batches_ahead', 'open_reserved_seats', 'run_clock'];
 
 // Tables (and for partial grants, the columns) each role may read or change.
 const ANON_SELECT = { programs: '*', modules: '*', lessons: ['code', 'duration_seconds', 'id', 'kind', 'module_id', 'position', 'title'] };

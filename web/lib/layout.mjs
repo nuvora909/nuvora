@@ -3,7 +3,7 @@
 import { html, raw, jsonBlock } from './html.mjs';
 import { icon, wordmark } from './icons.mjs';
 import { SITE, NAV, PHOTOS, OWNER } from '../data/site.mjs';
-import { PROGRAMS, TOPICS, LEVELS, nextStarts, fmtDay, isoDay } from '../data/programs.mjs';
+import { PROGRAMS, TOPICS, LEVELS, nextStarts, termDates, todayInBatchZone, fmtDay, isoDay } from '../data/programs.mjs';
 import { ROLES } from '../data/careers.mjs';
 import { organization, website } from './schema.mjs';
 
@@ -13,11 +13,17 @@ const CSP = [
   "connect-src 'self' https://*.supabase.co", "object-src 'none'", "base-uri 'self'", "form-action 'self'",
 ].join('; ');
 
-// A date that the browser refreshes on load, so pages built days ago still show the right batch.
-// kind: start | applyBy; n: which upcoming start (0 = next).
-export const liveDate = (kind, n = 0, today) => {
+// The New York date the site is built for. Unset: the build day. scripts/build-site.mjs --today sets it, so a
+// build "as of" a date is the same on every page, including those that do not pass today on.
+let buildDay;
+export const setBuildDay = (day) => { buildDay = day; };
+
+// A date that the browser refreshes (web/assets/js/site.js refreshDates: on load, when the page is shown again,
+// and when the New York date changes), so pages built days ago still show the right batch. Any page can use it.
+// kind: start | applyBy | end (the last day of the first term); n: which upcoming start (0 = next).
+export const liveDate = (kind, n = 0, today = buildDay) => {
   const s = nextStarts(n + 1, today)[n];
-  const d = kind === 'applyBy' ? s.applyBy : s.start;
+  const d = kind === 'applyBy' ? s.applyBy : kind === 'end' ? termDates(s.start, 1)[0].end : s.start;
   return html`<time datetime="${isoDay(d)}" data-date="${kind}" data-n="${n}">${fmtDay(d)}</time>`;
 };
 
@@ -113,7 +119,7 @@ export function footer({ social = OWNER.social } = {}) {
       </div>`)}
     </nav>
     <div class="sitefoot-bar">
-      <p class="sitefoot-legal"><span>© <span data-year>${new Date().getFullYear()}</span> Nuvora</span><span>Nuvora certificate of completion · not an accredited degree</span></p>
+      <p class="sitefoot-legal"><span>© <span data-year>${(buildDay ?? todayInBatchZone()).getUTCFullYear()}</span> Nuvora</span><span>Nuvora certificate of completion · not an accredited degree</span></p>
       ${links.length ? html`<ul class="sitefoot-social">${links.map(([k, name, url]) => html`
         <li><a href="${url}" rel="noopener noreferrer me" aria-label="Nuvora on ${name}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${SOCIAL[k][1]}"/></svg></a></li>`)}</ul>` : ''}
     </div>
@@ -159,7 +165,6 @@ export function page({ path, title, description, body, schema = [], scripts = []
   const full = path === '/' ? `${title}` : `${title} | Nuvora`;
   const canonical = SITE.origin + path;
   const ld = [organization(), ...(path === '/' ? [website()] : []), ...schema];
-  const next = nextStarts(1, today)[0];
   return `<!doctype html>
 <html lang="en">
 <head>

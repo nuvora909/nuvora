@@ -7,7 +7,7 @@ import { icon } from '../lib/icons.mjs';
 import { page, pageHead, liveDate } from '../lib/layout.mjs';
 import { faqList, ctaBand } from '../lib/components.mjs';
 import { breadcrumbList, faqPage } from '../lib/schema.mjs';
-import { PROGRAMS, LEVELS, TUITION, CREDENTIAL, money, nextStarts, termDates, fmtDay, fmtLong, isoDay } from '../data/programs.mjs';
+import { PROGRAMS, LEVELS, TUITION, CREDENTIAL, money, nextStarts, fmtDay, fmtLong, isoDay } from '../data/programs.mjs';
 import { OWNER } from '../data/site.mjs';
 import { ACCESS_RULE } from '../assets/js/access-rule.mjs';
 
@@ -167,17 +167,14 @@ function dates(today) {
       <table class="adm-dates" data-adm-dates>
         <caption class="sr-only">The next ${TABLE_STARTS} batch start dates, when seat requests close, and when the first term ends</caption>
         <thead><tr><th scope="col">Batch starts</th><th scope="col">Seat requests close</th><th scope="col">First term ends</th><th scope="col"><span class="sr-only">Request</span></th></tr></thead>
-        <tbody>${starts.map((s, n) => {
-          const end = termDates(s.start, 1)[0].end;
-          return html`<tr class="${n === 0 ? 'adm-nextrow' : ''}">
+        <tbody>${starts.map((s, n) => html`<tr class="${n === 0 ? 'adm-nextrow' : ''}">
             <th scope="row"><span class="adm-day">Monday</span> ${liveDate('start', n, today)}${n === 0 ? html` <span class="chip gold adm-nextchip">Next</span>` : ''}</th>
             <td><span class="adm-cell">Requests close</span> ${liveDate('applyBy', n, today)}</td>
-            <td><span class="adm-cell">First term ends</span> <time datetime="${isoDay(end)}" data-adm-end="${n}">${fmtDay(end)}</time></td>
+            <td><span class="adm-cell">First term ends</span> ${liveDate('end', n, today)}</td>
             <td class="adm-pick">${n < FORM_STARTS
               ? html`<a class="link" href="#request" data-pick-start="${n}">Request<span class="sr-only"> a seat for the ${liveDate('start', n, today)} start</span> ${icon('arrow')}</a>`
               : html`<span class="muted small">For planning</span>`}</td>
-          </tr>`;
-        })}</tbody>
+          </tr>`)}</tbody>
       </table>
     </div>
     <p class="note adm-datesnote">The form offers the next ${FORM_STARTS} starts; later dates are listed so you can plan ahead. Multi-term programs continue term after term: each program page shows the full path.</p>

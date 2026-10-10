@@ -1,6 +1,7 @@
 // Programs as sequences of 12-week terms: one batch per term, content limited to the terms a student has
-// reached (active or completed enrollment), and the daily job that completes a term and reserves the
-// student's seat in the next one. Fixed dates throughout.
+// reached (active or completed enrollment), and the daily job that completes a term, reserves the student's
+// seat in the next one as soon as the term is finished, and opens that seat on its start date. Fixed dates
+// throughout.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { freshDb, rejects } from './helpers.mjs';
@@ -128,12 +129,15 @@ test('a term-1 student cannot open, track or download term-2 lessons, on any pat
   assert.ok((await h.one(h.as(asha), `select record_progress($1, 0, 10)`, [l1[0].id])).watched_seconds > 0);
 });
 
-test('finishing term 1 reserves one seat in term 2; the job is safe to re-run', async () => {
+test('finishing term 1 reserves one seat in term 2 while the term still runs; the job is safe to re-run', async () => {
   await finishLessons(asha, 'bs-aiml', 1);
   await gradeAll(asha, t1, ['proficient', 'distinguished', 'proficient']);
   await finishLessons(ben, 'bs-aiml', 1);
   await gradeAll(ben, t1, ['proficient', 'proficient', 'basic']);            // project 3 needs a resubmission
-  assert.equal(await h.one(h.service, `select progress_terms('2026-12-20')`), 0, 'nothing moves while the batch runs');
+  assert.equal(await h.one(h.service, `select progress_terms('2026-12-20')`), 1, 'the seat is reserved before the batch ends');
+  assert.deepEqual(await enrollmentsOf(asha), [{ code: 'BSAIML-T1-2026-10', status: 'active' }, { code: 'BSAIML-T2-2027-01', status: 'reserved' }],
+                   'term 1 stays active until its batch ends');
+  assert.deepEqual(await enrollmentsOf(ben), [{ code: 'BSAIML-T1-2026-10', status: 'active' }]);
 
   await h.service(`select update_batch_statuses('2026-12-28')`);             // the day after the batch ended
   assert.deepEqual(await enrollmentsOf(asha), [{ code: 'BSAIML-T1-2026-10', status: 'completed' }, { code: 'BSAIML-T2-2027-01', status: 'reserved' }]);
@@ -148,15 +152,16 @@ test('finishing term 1 reserves one seat in term 2; the job is safe to re-run', 
   const note = (await h.as(asha)(`select title, body from notifications where kind = 'term_reserved'`)).rows;
   assert.equal(note.length, 1);
   assert.equal(note[0].title, 'Term 2: Mathematics for ML starts Jan 4, 2027. Your seat is reserved.');
+  assert.equal(note[0].body, 'Your place in BSAIML-T2-2027-01 is held for you. It opens on its own on Jan 4, 2027.');
 
   const snapshot = async () => (await h.sql(`select (select count(*) from batches)::int b, (select count(*) from enrollments)::int e,
                                                   (select count(*) from notifications)::int n`)).rows[0];
   const was = await snapshot();
-  for (const day of ['2026-12-28', '2026-12-29', '2027-01-10']) await h.service(`select update_batch_statuses($1)`, [day]);
+  for (const day of ['2026-12-20', '2026-12-28', '2026-12-29', '2027-01-03']) await h.service(`select update_batch_statuses($1)`, [day]);
   assert.deepEqual(await snapshot(), was, 'running the job again creates nothing');
 });
 
-test('a reserved seat opens nothing until it is activated; completed terms stay open for review', async () => {
+test('a reserved seat opens nothing before its start date, then opens on its own; completed terms stay open for review', async () => {
   const t2 = await batchId('BSAIML-T2-2027-01');
   await rejects(h.as(asha)(`select my_lesson($1)`, [l2[0].id]), 'Lesson not found');
   await rejects(h.as(asha)(`select my_course($1)`, [t2]), 'Batch not found');
@@ -171,7 +176,20 @@ test('a reserved seat opens nothing until it is activated; completed terms stay 
   assert.equal((await h.one(h.as(asha), `select my_lesson($1)`, [l1[2].id])).can_track, true);
   assert.equal(await h.one(h.as(asha), `select can_read_material('bs-aiml/t1/notes.pdf')`), true);
 
-  await h.as(admin)(`select admin_set_enrollment_status($1, 'active')`, [await enrollmentId(asha, 'BSAIML-T2-2027-01')]);
+  // The start date (New York): the seat opens with no admin step, and the 30 days for tuition count from the start.
+  await h.service(`select update_batch_statuses('2027-01-04')`);
+  const seat = await enrollmentId(asha, 'BSAIML-T2-2027-01');
+  assert.deepEqual(await enrollmentsOf(asha), [{ code: 'BSAIML-T1-2026-10', status: 'completed' }, { code: 'BSAIML-T2-2027-01', status: 'active' }]);
+  assert.equal(await h.one(h.sql, `select ((access_of($1, '2027-01-05 12:00-05')).grace_start at time zone 'America/New_York')::text`, [seat]),
+               '2027-01-04 00:00:00', 'the unpaid rule counts from 00:00 on the start date in New York');
+  assert.equal(await h.one(h.sql, `select (access_of($1, '2027-02-02 23:59-05')).state`, [seat]), 'grace');
+  assert.equal(await h.one(h.sql, `select (access_of($1, '2027-02-03 00:01-05')).state`, [seat]), 'stopped_unpaid');
+  const started = (await h.as(asha)(`select title, body from notifications where kind = 'term_started'`)).rows;
+  assert.deepEqual(started, [{ title: 'Term 2: Mathematics for ML has started',
+    body: 'Your seat in BSAIML-T2-2027-01 is now active. This term\'s lessons, live classes and projects are open in the portal.' }]);
+  const was = await h.one(h.sql, `select count(*)::int from notifications`);
+  await h.service(`select update_batch_statuses('2027-01-05')`);
+  assert.equal(await h.one(h.sql, `select count(*)::int from notifications`), was, 'opened once');
   const lesson = await h.one(h.as(asha), `select my_lesson($1)`, [l2[0].id]);
   assert.deepEqual([lesson.term.no, lesson.term.title, lesson.index, lesson.total, lesson.prev], [2, 'Mathematics for ML', 1, 4, null]);
   const course = await h.one(h.as(asha), `select my_course($1)`, [t2]);
@@ -191,17 +209,21 @@ test('a student who finishes late is picked up by a later run and joins the next
   assert.equal((await enrollmentsOf(asha)).length, 2, 'students who already moved on get nothing new');
 });
 
-test('admins can mark a term completed; the seat is reserved once the batch has ended', async () => {
+test('admins can mark a term completed: the seat is reserved at once; an admin can pause it before it opens', async () => {
   const dan = await h.user('dan@test.io');
   const ds = await h.one(h.service, `select create_batch('bs-ds', '2026-11-02')`);
   await h.service(`select enroll_student($1, 'bs-ds', '2026-11-02')`, [dan]);
   await rejects(h.as(asha)(`select admin_set_enrollment_status($1, 'completed')`, [await enrollmentId(dan, 'BSDS-T1-2026-11')]), 'Admins only');
   await h.as(admin)(`select admin_set_enrollment_status($1, 'completed')`, [await enrollmentId(dan, 'BSDS-T1-2026-11')]);
   await h.service(`select update_batch_statuses('2026-11-20')`);
-  assert.deepEqual(await enrollmentsOf(dan), [{ code: 'BSDS-T1-2026-11', status: 'completed' }], 'batch still running');
+  assert.deepEqual(await enrollmentsOf(dan), [{ code: 'BSDS-T1-2026-11', status: 'completed' }, { code: 'BSDS-T2-2027-02', status: 'reserved' }],
+                   'reserved while the batch still runs');
   await h.service(`select update_batch_statuses('2027-01-25')`);
   assert.equal(await h.one(h.sql, `select status from batches where id = $1`, [ds]), 'completed');
-  assert.deepEqual(await enrollmentsOf(dan), [{ code: 'BSDS-T1-2026-11', status: 'completed' }, { code: 'BSDS-T2-2027-02', status: 'reserved' }]);
+  // Paused by an admin before the start: the start date leaves it paused.
+  await h.as(admin)(`select admin_set_enrollment_status($1, 'paused')`, [await enrollmentId(dan, 'BSDS-T2-2027-02')]);
+  await h.service(`select update_batch_statuses('2027-02-01')`);
+  assert.deepEqual(await enrollmentsOf(dan), [{ code: 'BSDS-T1-2026-11', status: 'completed' }, { code: 'BSDS-T2-2027-02', status: 'paused' }]);
   // Cara never finished term 1, and nobody marked it: she keeps her term-1 access and gets no seat.
   assert.deepEqual(await enrollmentsOf(cara), [{ code: 'BSAIML-T1-2026-10', status: 'active' }]);
   await rejects(h.as(admin)(`select admin_set_enrollment_status($1, 'finished')`, [await enrollmentId(dan, 'BSDS-T1-2026-11')]), 'Invalid status');

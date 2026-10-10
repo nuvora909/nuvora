@@ -69,7 +69,9 @@ test('every admin function refuses everyone but admins, before doing anything', 
 
 test('overview: counts by access state, the students in their 30 days, and the stopped ones', async () => {
   const o = await h.one(ask, `select admin_overview()`);
-  const { grace, stopped, ...counts } = o;
+  const { grace, stopped, now, clock_last_run, clock_errors, ...counts } = o;
+  assert.ok(Math.abs(new Date(now) - Date.now()) < 60_000, 'the database clock, for the "as of" line');
+  assert.deepEqual([clock_last_run, clock_errors], [null, 0], 'the clock has not run in this database');
   assert.deepEqual(counts, { students: 8, enrolled: 6, active_enrollments: 6, paid: 1, in_grace: 2, ending_soon: 1, stopped_unpaid: 1,
                              stopped_manual: 1, started_manual: 1, reserved: 0, paused: 1, new_seat_requests: 3, batches_running: 2 });
   assert.deepEqual(grace.map((g) => [g.name, g.days_left]), [['Ines Duarte', 6], ['Wei Chen', grace[1].days_left]]);

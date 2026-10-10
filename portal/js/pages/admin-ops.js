@@ -31,7 +31,7 @@ export async function batches(ctx) {
 
   ctx.render(html`
     <header class="band"><div><p class="eyebrow">Admin</p><h1>Batches</h1>
-      <p class="sub">New batches of every program start each month on its first Monday; the database also creates them on its own. Create one here for any other Monday or term.</p></div></header>
+      <p class="sub">New batches of every program start each month on its first Monday. The database creates them on its own, eight starts ahead, and each next-term batch as soon as students are in the term before. Create one here only for any other Monday or term.</p></div></header>
     <div class="content">
       <form class="card" novalidate data-create aria-labelledby="h-create">
         <h2 id="h-create">Create a batch</h2>

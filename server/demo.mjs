@@ -39,9 +39,9 @@ export async function loadDemo(db) {
   // ---------------------------------------------------------------- term 1 (finished last quarter)
   // The current batch started on a first Monday at least two weeks ago. Term 1 ran in the batch that started
   // three months before it, so the next term begins on the current batch's start date.
-  const target = await one(db.query(`select (case when first_monday(current_date) <= current_date - 14
-                                                  then first_monday(current_date)
-                                                  else first_monday((current_date - interval '1 month')::date) end)::text`));
+  const target = await one(db.query(`select (case when first_monday(d) <= d - 14 then first_monday(d)
+                                                  else first_monday((d - interval '1 month')::date) end)::text
+                                     from school_today() d`));
   const t1Start = await one(db.query(`select first_monday(($1::date - interval '3 months')::date)::text`, [target]));
   const term1 = await one(service(`select create_batch('bs-aiml', $1, 1)`, [t1Start]));
   const t1 = (await db.query(`select starts_on::text, ends_on::text from public.batches where id = $1`, [term1])).rows[0];
@@ -87,13 +87,10 @@ export async function loadDemo(db) {
   await db.query(`update public.submissions s set submitted_at = a.due_at - interval '2 days', graded_at = a.due_at + interval '1 day'
                   from public.batch_assignments a where a.id = s.assignment_id and a.batch_id = $1`, [term1]);
 
-  // The daily job on the day after term 1 ended: both completed the term, so seats in term 2 were reserved;
-  // the admin then confirmed them (later this will be the term payment).
+  // The daily job: both finished term 1, so their seats in term 2 were reserved; on term 2's start date the
+  // seats opened by themselves.
   await service(`select update_batch_statuses(($1::date + 1))`, [t1.ends_on]);
-  for (const s of ['student', 'classmate']) {
-    const reserved = await one(db.query(`select id from public.enrollments where student_id = $1 and status = 'reserved'`, [id[s]]));
-    await as(id.admin)(`select admin_set_enrollment_status($1, 'active')`, [reserved]);
-  }
+  await service(`select update_batch_statuses($1::date)`, [target]);
   await db.query(`update public.enrollments set updated_at = (($2::date + 1) + time '09:00') at time zone 'America/New_York'
                   where batch_id = $1`, [term1, t1.ends_on]);
 
@@ -119,7 +116,7 @@ export async function loadDemo(db) {
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.next, id.instructor2]);
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.otherProgram, id.instructor2]);
   await as(id.admin)(`select admin_assign_staff($1, $2)`, [batch.earlier, id.instructor2]);
-  await service(`select update_batch_statuses(current_date)`);
+  await service(`select update_batch_statuses()`);
 
   // Placeholder Jitsi links (not real meetings): each class gets a fresh room id and the link is built from that id.
   await db.query(`update public.sessions s set room_id = r.id, join_url = 'https://meet.jit.si/nuvora-' || r.id::text

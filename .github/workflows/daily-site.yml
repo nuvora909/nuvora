@@ -1,0 +1,50 @@
+# Daily website rebuild. The website is static, so the dates written into its pages ("Next start", "Seat requests
+# close", the term tables and the search-engine data) are fixed when it is built. Pages refresh their dates in the
+# browser, but visitors without JavaScript and search engines read the built pages, so production is rebuilt every
+# day just after midnight in New York (the school's time zone).
+#
+# What it does: builds the site and runs the website tests, so a broken build is never deployed. Then, if the
+# repository secret CLOUDFLARE_PAGES_DEPLOY_HOOK is set (Phase 5: a Cloudflare Pages deploy hook URL), it asks
+# Cloudflare Pages to rebuild production from main. Until that secret exists, the step is skipped and the run still
+# succeeds. The hook URL is a secret: it is never written in the repository or printed in the log.
+#
+# GitHub runs schedules in UTC from the default branch (main), sometimes late. 05:17 UTC is 00:17 in New York in
+# winter (EST) and 01:17 in summer (EDT); the 11:47 UTC run is a second chance if the first one is dropped.
+# Run it by hand from the Actions tab: "Daily site rebuild" > "Run workflow".
+name: Daily site rebuild
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+    - cron: '47 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-site
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Build the website
+        run: node scripts/build-site.mjs --out "$RUNNER_TEMP/site" --no-media
+      - name: Website tests
+        run: node --test "tests/site/*.test.mjs"
+      - name: Deploy hook not set yet
+        if: ${{ env.DEPLOY_HOOK == '' }}
+        run: echo "::notice::CLOUDFLARE_PAGES_DEPLOY_HOOK is not set, so production was not rebuilt. Add it at go-live (docs/admin-guide.md)."
+      - name: Rebuild production (Cloudflare Pages)
+        if: ${{ env.DEPLOY_HOOK != '' }}
+        run: curl --fail --silent --show-error --max-time 60 -X POST "$DEPLOY_HOOK" -o /dev/null

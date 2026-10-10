@@ -8,12 +8,8 @@ import { DemoPlayer, WatchTracker } from '../player.js';
 
 const notFound = () => new ApiError('Not found', 404, 'P0002');
 const STAFF = new Set(['instructor', 'admin']);
-const weekOf = (b) => {
-  const [y, m, d] = b.starts_on.split('-').map(Number);
-  const days = Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000);
-  return days < 0 ? 0 : Math.min(12, Math.floor(days / 7) + 1);
-};
-const weekLabel = (b) => (weekOf(b) === 0 ? `Starts ${fmtDate(b.starts_on)}` : `Week ${weekOf(b)} of 12`);
+// The week comes from the database (batch_week: the New York date by the database clock), as on the staff pages.
+const weekLabel = (b) => (b.week ? `Week ${b.week} of ${b.weeks}` : `Starts ${fmtDate(b.starts_on)}`);
 const joinButton = (s, cls = 'btn primary sm') => {
   const url = s.join_url && safeUrl(s.join_url);
   return url
@@ -36,13 +32,13 @@ function wireDownloads(root) {
   }
 }
 
-// Between terms: the next term's seat is held, but opens only once the enrollment is confirmed.
+// Between terms: the next term's seat is held and opens by itself on the term's start date.
 function reservedView(reserved) {
   return html`<header class="band"><div><h1>Your next term</h1><p class="sub">You finished your last term. Your seat in the next one is reserved.</p></div></header>
   <div class="content">${reserved.map((r) => html`<section class="card empty" aria-labelledby="r-${r.id}">
     <b id="r-${r.id}">Term ${r.term}: ${r.term_title} starts ${fmtDate(r.starts_on)}</b>
     <p>${r.program} · <span class="mono">${r.code}</span></p>
-    <p class="small" style="margin-top:10px">Your seat is reserved. Lessons and live classes open here as soon as your enrollment for the term is confirmed.</p>
+    <p class="small" style="margin-top:10px">Your seat is reserved. Lessons and live classes open here by themselves on ${fmtDate(r.starts_on)}.</p>
   </section>`)}</div>`;
 }
 
@@ -613,7 +609,7 @@ export async function assignments(ctx) {
 
 // ---------------------------------------------------------------- notifications
 const KIND_TARGET = {
-  welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past', achievement: '#/home', badge: '#/home', term_reserved: '#/home',
+  welcome: '#/home', graded: '#/assignments', recording: '#/live?tab=past', achievement: '#/home', badge: '#/home', term_reserved: '#/home', term_started: '#/home',
   access_stopped: '#/access', access_restored: '#/home', access_reminder_7d: '#/access', access_reminder_1d: '#/access',
 };
 export async function notifications(ctx) {

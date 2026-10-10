@@ -150,6 +150,9 @@ Counts for the admin home, and the two lists that need attention.
   "paused": 0,
   "new_seat_requests": 2,
   "batches_running": 4,
+  "now": "2026-10-11T16:00:00+00:00",
+  "clock_last_run": "2026-10-11T15:50:00+00:00",
+  "clock_errors": 0,
   "grace": [
     { "enrollment_id": "uuid", "student_id": "uuid", "name": "Ines Duarte", "email": "ines.student@nuvora.test",
       "program_id": "ms-ds", "program": "M.S. Data Science & Analytics", "batch_id": "uuid", "batch_code": "MSDS-T1-2026-08",
@@ -166,6 +169,9 @@ Counts for the admin home, and the two lists that need attention.
   `started_manual`. `ending_soon`: active enrollments whose access ends within 7 days.
 - `reserved`, `paused`: enrollments with that status. `new_seat_requests`: seat requests with status `new`.
   `batches_running`: batches that are scheduled or active.
+- `now`: the database clock (the Overview shows it as "as of"). `clock_last_run`: when `run_clock()` last
+  finished, or null if it has never run (the schedule is not on yet). `clock_errors`: how many of its steps
+  failed in that run (0 when all went well; the details are in `clock_state.last_result` and the database log).
 - `grace`: active enrollments in `grace`, soonest end first (at most 50). `stopped`: active enrollments whose
   access is stopped (`stopped_unpaid` or `stopped_manual`), most recent first (at most 50); `since` is when the
   stop was recorded in the access history (`null` until the hourly job or an admin action records it).
@@ -569,18 +575,66 @@ Notifications the student can receive: `access_reminder_7d`, `access_reminder_1d
    instead of the 7-day one when less than a day is left). One of each per end date; a new end date (for
    example a manual start) gets its own reminders.
 
-Running it again changes nothing and sends nothing. Like `update_batch_statuses` (daily) and
-`queue_session_reminders` (hourly), it is not scheduled from this repository yet. On hosted Supabase, enable
-the `pg_cron` extension and schedule the jobs, for example:
+Running it again changes nothing and sends nothing. It runs as step 3 of the school clock (next section).
 
-```sql
-select cron.schedule('nuvora-access-rules',   '5 * * * *',  $$select public.apply_access_rules()$$);
-select cron.schedule('nuvora-class-reminders', '0 * * * *',  $$select public.queue_session_reminders(24)$$);
-select cron.schedule('nuvora-batch-statuses', '5 5 * * *',  $$select public.update_batch_statuses((now() at time zone 'America/New_York')::date)$$);
-select cron.schedule('nuvora-monthly-batches', '0 19 1 * *', $$select public.create_monthly_batches()$$);
+## The school clock: `run_clock()` and its schedule
+
+Every date-driven job runs from one entry point, `public.run_clock(p_now timestamptz default now()) returns
+jsonb` (service role and scheduler only; migration `20261010120000_clock.sql`). "Today" is always the New
+York date, `school_today(p_now)` = `(p_now at time zone 'America/New_York')::date`, whatever the server's time
+zone (hosted Supabase runs in UTC, already the next day from 19:00 EST / 20:00 EDT). Every function that takes a
+date defaults to it: `next_start_date`, `create_monthly_batches`, `progress_terms`, `update_batch_statuses`,
+`open_reserved_seats`, `ensure_batches_ahead`.
+
+1. **Batches ahead** (`ensure_batches_ahead(p_today, p_starts default 8)`): every active program has a term-1
+   batch for each of the next 8 start dates whose seat requests are open (the website lists 6, the form offers
+   3, `request_seat` accepts starts up to 200 days ahead, at most 7). Every batch with active or reserved
+   students that has not ended has its next term's batch ready (on `next_term_start(ends_on)`). Each batch gets
+   its classes, project due dates and Jitsi links from `create_batch` as before.
+2. **Statuses and terms** (`update_batch_statuses(p_today)`): scheduled -> active -> completed;
+   `progress_terms` completes finished terms and reserves the next term's seat as soon as a term's requirements
+   are met (or an admin marks it completed), while the term still runs; `open_reserved_seats` makes a reserved
+   seat `active` on its batch's start date when the previous term is completed, and notifies the student
+   (`term_started`). The 30-day unpaid rule then counts from 00:00 on that start date. Admins can pause or
+   withdraw a reserved seat before then; only seats still `reserved` are opened.
+3. **The access rule** (`apply_access_rules()`, above), always on the database clock.
+4. **Class reminders** (`queue_session_reminders(24, p_now)`).
+
+It returns, for example:
+
+```json
+{ "today": "2026-10-11", "batches_created": 0, "status_changes": 1,
+  "access": { "starts_ended": 0, "stopped": 1, "restored": 0, "reminders_7d": 2, "reminders_1d": 0 },
+  "class_reminders": 14, "errors": [] }
 ```
 
-The local dev server does not run jobs; it runs `apply_access_rules()` once when it loads the demo data.
+Each step changes only what is due, so it is safe to run as often as you like. A run takes a transaction-level
+advisory lock: a second run that starts while one is going returns `{ "today": ..., "skipped": "another run is
+in progress" }`. A step that fails is listed in `errors` (and logged as a warning) without stopping the other
+steps. The last result is kept in `clock_state` and shown on the admin Overview.
+
+**Schedule (hosted Supabase).** The same migration calls `public.schedule_clock()`. When the `pg_cron`
+extension is available it switches it on (`create extension if not exists pg_cron with schema pg_catalog`) and
+schedules, by name (scheduling a name again replaces that job, so this is safe to repeat):
+
+| job | schedule (UTC) | command |
+|---|---|---|
+| `nuvora-clock` | `*/10 * * * *` (every 10 minutes) | `select public.run_clock()` |
+| `nuvora-clock-history` | `30 5 * * *` (daily) | delete `cron.job_run_details` older than 14 days (pg_cron never cleans them) |
+
+It also removes the four job names earlier versions of this page suggested pasting by hand
+(`nuvora-access-rules`, `nuvora-class-reminders`, `nuvora-batch-statuses`, `nuvora-monthly-batches`). If
+pg_cron could not be switched on from the migration, enable **pg_cron** in the Supabase dashboard (Database >
+Extensions) and run `select public.schedule_clock();` once in the SQL Editor. Check with
+`select jobname, schedule, command from cron.job;`.
+
+Without pg_cron (the local database, PGlite) `schedule_clock()` does nothing and returns `not scheduled: pg_cron
+is not available here`. Access is still decided on every request by the database clock; only the batches made
+ahead, status changes, notices and reminders wait for a run. A Supabase project on the Free plan is paused after
+7 quiet days, and a paused database runs no jobs.
+
+**Locally**, `npm run dev` runs `run_clock()` once at start (after loading the demo data) and then every 10
+minutes. `--no-clock` turns it off; the browser tests use it, so nothing changes under a running test.
 
 ## Local demo data (`npm run dev`)
 
