@@ -9,7 +9,7 @@
     "seed": "node scripts/build-seed.mjs",
     "build:site": "node scripts/build-site.mjs",
     "test": "node tests/run-3x.mjs",
-    "test:db": "node --test \"tests/db/*.test.mjs\"",
+    "test:db": "node --test --test-concurrency=4 \"tests/db/*.test.mjs\"",
     "test:server": "node --test \"tests/server/*.test.mjs\"",
     "test:site": "node --test \"tests/site/*.test.mjs\"",
     "test:e2e": "playwright test",

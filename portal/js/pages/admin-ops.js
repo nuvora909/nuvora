@@ -2,7 +2,7 @@
 // requests from the website, and PDF materials (upload, attach to a lesson or project, remove).
 // Admins only: every call below starts with require_admin() in the database.
 import { rpc, uploadPdf, removeFiles, pdfProblem } from '../api.js';
-import { html, icon, toast, $, $$, safeUrl, fmtDate, fmtDateTime, fmtBytes } from '../ui.js';
+import { html, icon, toast, $, $$, safeUrl, fmtDate, fmtDateTime, fmtBytes, schoolToday } from '../ui.js';
 import { REQUEST_STATUS, programs, programOptions, options, onSubmit, dialog, problem } from '../admin-kit.js';
 
 const BATCH_STATUS = { scheduled: 'Scheduled', active: 'Active', completed: 'Completed', cancelled: 'Cancelled' };
@@ -12,9 +12,10 @@ const ROLES = [['student', 'Student'], ['instructor', 'Instructor'], ['admin', '
 
 // The next Monday on or after today: batches always start on a Monday.
 function nextMonday() {
-  const d = new Date();
-  d.setDate(d.getDate() + ((8 - d.getDay()) % 7));
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const [y, m, day] = schoolToday().split('-').map(Number);   // today in the school's time zone
+  const d = new Date(Date.UTC(y, m - 1, day));
+  d.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7));
+  return d.toISOString().slice(0, 10);
 }
 const isMonday = (ymd) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d).getDay() === 1; };
 

@@ -23,6 +23,11 @@ export function safeUrl(url) {
   try { const u = new URL(String(url)); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null; } catch { return null; }
 }
 
+// The school's calendar: "today" follows US Eastern Time, as the database does (batch dates, payments, access).
+export const SCHOOL_TZ = 'America/New_York';
+export const schoolToday = (at = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: SCHOOL_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 

@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process';
 
 const SUITES = {
-  db: { label: 'database', args: ['--test', '--test-reporter=spec', 'tests/db/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
+  db: { label: 'database', args: ['--test', '--test-concurrency=4', '--test-reporter=spec', 'tests/db/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
   server: { label: 'server', args: ['--test', '--test-reporter=spec', 'tests/server/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
   site: { label: 'website', args: ['--test', '--test-reporter=spec', 'tests/site/*.test.mjs'], count: /^ℹ (tests|pass|fail) (\d+)$/gm },
   e2e: { label: 'browser', args: ['node_modules/@playwright/test/cli.js', 'test', '--reporter=line'], count: /^\s+(\d+) (passed|failed|flaky)/gm },

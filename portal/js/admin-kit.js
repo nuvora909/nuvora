@@ -1,7 +1,7 @@
 // Shared pieces of the admin area: access and payment labels, money, the program list, forms and dialogs.
 // Every admin action is checked again by the database (require_admin, the access rule, the audit log);
 // what the browser checks here is only for quick, clear messages.
-import { html, icon, toast, busy, $, $$ } from './ui.js';
+import { html, icon, toast, busy, $, $$, schoolToday } from './ui.js';
 
 // Access states as the database names them (docs/admin-api.md). Never colour alone: an icon and words too.
 export const ACCESS = {
@@ -49,10 +49,8 @@ export const programOptions = (list, selected = '', any = 'All programs') => htm
 export const options = (pairs, selected = '') => pairs.map(([v, label]) => html`<option value="${v}"${v === selected ? ' selected' : ''}>${label}</option>`);
 
 /** Today's date (YYYY-MM-DD) in this browser, only as a default for date fields; the database checks dates. */
-export function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+// Today in the school's time zone (US Eastern), the date the database checks against.
+export const today = () => schoolToday();
 
 /**
  * Wires a form: on submit, runs fn(form) with the button busy (it keeps focus); an error shows inside the form
