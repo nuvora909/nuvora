@@ -2,7 +2,7 @@
 // overlay is removed from the page when it has finished, and the end is announced to the rest of the site.
 //
 // For other scripts that should wait for the intro: once the intro has ended, been
-// skipped, or was never shown (a later page of the visit, reduced motion, a hidden tab), <html> gets the attribute
+// skipped, or was never shown (a later page of the visit, reduced motion), <html> gets the attribute
 // data-intro-done and document receives one "nuvora:intro-done" event with detail { shown, skipped }.
 // A module that may run after the event checks the attribute first:
 //   if (document.documentElement.hasAttribute('data-intro-done')) start();
@@ -45,16 +45,29 @@ function skip(event) {
   end(true);
 }
 
-if (!el || getComputedStyle(el).display === 'none' || document.hidden) end(false);
-else {
+function start() {
   // Only the overlay's own fade ends the intro. Animations of its ::before/::after layers also report the overlay
   // as their target, so the animation name and pseudoElement are checked too.
   el.addEventListener('animationend', (e) => {
     if (e.target === el && !e.pseudoElement && e.animationName === 'intro-out') end(true);
   });
   for (const type of SKIP_ON) addEventListener(type, skip, { capture: true, passive: type !== 'pointerdown' });
-  // A safety net only, for an animationend that never arrives: the CSS hides the overlay 1.5 s after its first frame
-  // on its own (a slow first paint can delay that frame), so it ends here once its animation is no longer running.
+  // A safety net only, for an animationend that never arrives: the CSS hides the overlay about 3.2 s after its first
+  // frame on its own (a slow first paint can delay that frame), so it ends here once its animation has stopped.
   const settle = () => (el.getAnimations().some((a) => a.playState === 'running') ? setTimeout(settle, 1000) : end(true));
-  setTimeout(settle, 3000);
+  setTimeout(settle, 4000);
 }
+
+if (!el || getComputedStyle(el).display === 'none') end(false);
+else if (document.hidden) {
+  // Opened in a background tab (or a window nobody is looking at): the intro waits on its first frame and plays
+  // from the start the first time the page is shown, instead of running unseen.
+  const all = () => el.getAnimations({ subtree: true });
+  all().forEach((a) => a.pause());
+  document.addEventListener('visibilitychange', function shown() {
+    if (document.hidden) return;
+    document.removeEventListener('visibilitychange', shown);
+    all().forEach((a) => { a.currentTime = 0; a.play(); });
+    start();
+  });
+} else start();

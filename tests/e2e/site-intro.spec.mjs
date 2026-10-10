@@ -171,6 +171,25 @@ test('a key skips it; focus is never trapped and the skip link still works', asy
   expect(errors, errors.join('\n')).toEqual([]);
 });
 
+test('a page opened in a background tab keeps the intro until it is first shown, then plays it in full', async ({ context }) => {
+  const page = await context.newPage();
+  // The page believes it is hidden (a background tab) until window.__show() makes it visible.
+  await page.addInitScript(() => {
+    let hidden = true;
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (hidden ? 'hidden' : 'visible') });
+    window.__show = () => { hidden = false; document.dispatchEvent(new Event('visibilitychange')); };
+  });
+  await page.goto('/');
+  await page.waitForTimeout(4500);   // longer than the whole intro: nothing may have played unseen
+  expect(await page.evaluate(() => ({ inDom: !!document.querySelector('[data-intro]'), done: document.documentElement.hasAttribute('data-intro-done') })))
+    .toEqual({ inDom: true, done: false });
+  await page.evaluate(() => window.__show());
+  await expect(page.locator(INTRO)).toBeVisible();
+  await expect(page.locator(INTRO)).toHaveCount(0, { timeout: 4500 });
+  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-intro-done'))).toBe(true);
+});
+
 test('with reduced motion the intro never shows, and the page is ready at once', async ({ browser }) => {
   const errors = [];
   const context = await freshContext(browser, { reducedMotion: 'reduce' });
