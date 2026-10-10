@@ -188,8 +188,28 @@ test('class times are in US Eastern Time, and no word was broken by the Zoom-to-
   const problems = [];
   for (const { path, html } of site.pages) {
     const text = visibleText(html);
-    for (const m of text.matchAll(/\bIST\b|India time|Kolkata|Calcutta|\bZoom\b|does not Jitsi|Jitsi\.us/g)) {
+    for (const m of text.matchAll(/\bIST\b|India time|Kolkata|Calcutta|\bZoom\b|does not Jitsi|Jitsi\.us|\bjitsi\b/g)) {
       problems.push(`${path}: "${m[0]}" in "…${text.slice(Math.max(0, m.index - 50), m.index + m[0].length + 50).replace(/\s+/g, ' ').trim()}…"`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('names and acronyms keep their capitals in project titles and on every page (no "sql", "ml", "kpis")', () => {
+  const LOWERED = /\b(sql|ml|ai|kpis?|mlops|llms?|python|jitsi|nlp|etl)\b/g;
+  const problems = [];
+  for (const p of PROGRAMS) {
+    for (const [i, t] of p.terms.entries()) {
+      for (const pr of t.projects) {
+        const title = Array.isArray(pr) ? pr[0] : (pr.title ?? String(pr));
+        for (const m of title.matchAll(LOWERED)) problems.push(`${p.id} term ${i + 1}: "${m[0]}" in "${title}"`);
+      }
+    }
+  }
+  for (const { path, html } of site.pages) {
+    const text = visibleText(html);
+    for (const m of text.matchAll(LOWERED)) {
+      problems.push(`${path}: "${m[0]}" in "…${text.slice(Math.max(0, m.index - 40), m.index + m[0].length + 40).replace(/\s+/g, ' ').trim()}…"`);
     }
   }
   assert.deepEqual(problems, []);

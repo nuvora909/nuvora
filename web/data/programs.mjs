@@ -1,9 +1,9 @@
 // Website view of the catalog. Curriculum, terms, schedule and tuition come from scripts/catalog.mjs (the same
 // source the database uses); this file adds the decision-making facts a prospective student needs.
 // Every statement here must be true today. No outcome numbers, ratings or popularity claims.
-import { PROGRAMS as CORE, TERMS, TUITION, LIVE_PATTERN, TIMEZONE } from '../../scripts/catalog.mjs';
+import { PROGRAMS as CORE, TERMS, TUITION, LIVE_PATTERN, TIMEZONE, lowerFirst } from '../../scripts/catalog.mjs';
 
-export { TUITION, LIVE_PATTERN, TIMEZONE };
+export { TUITION, LIVE_PATTERN, TIMEZONE, lowerFirst };
 
 // Owner decisions (2026-10-02): flexible + live pace; Nuvora certificate of completion, not an accredited degree.
 export const PACE = {
