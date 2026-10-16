@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.4 1.1 40 40" width="512" height="512" role="img" aria-label="Nuvora">
+  <defs>
+    <linearGradient id="nuvora-ring" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#0064E0"/>
+      <stop offset="1" stop-color="#0082FB"/>
+    </linearGradient>
+  </defs>
+  <circle cx="19" cy="23" r="13.5" fill="none" stroke="url(#nuvora-ring)" stroke-width="6.5"/>
+  <circle cx="34" cy="7" r="4.5" fill="#0082FB"/>
+</svg>
