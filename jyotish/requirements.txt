@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic>=2
+numpy
+skyfield
+httpx
+reportlab>=4
+pypdf>=5

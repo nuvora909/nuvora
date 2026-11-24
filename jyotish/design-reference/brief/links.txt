@@ -1,0 +1,22 @@
+Nuvora design references (shared 2026-11-24)
+
+Study  - Notion portfolio templates
+https://app.notion.com/p/Free-portfolio-templates-PT-3-3f9aeb385d3a806ca6b0df6ae340b5d9
+
+Read   - Design Bookmark
+https://designbookmark.com/
+
+Library - RareUI (install if required)
+https://www.rareui.com/
+
+Library - Inspora
+https://www.inspora.design/
+
+Admin dashboard - make it like this
+https://www.inspora.design/posts/admin-dashboard
+
+Dark/light toggle - use a toggle like this
+https://www.inspora.design/posts/dark-light-mode-toggle
+
+Light theme - use this
+https://www.inspora.design/posts/daydream-studio

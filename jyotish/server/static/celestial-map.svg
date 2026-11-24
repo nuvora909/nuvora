@@ -1,0 +1,35 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 700' fill='none'>
+<defs>
+  <radialGradient id='planet' cx='34%' cy='24%' r='78%'><stop stop-color='#F6FFB8'/><stop offset='.18' stop-color='#DFFF78'/><stop offset='.42' stop-color='#FF9A73'/><stop offset='.68' stop-color='#A66DEB'/><stop offset='1' stop-color='#37204F'/></radialGradient>
+  <linearGradient id='orbitA' x1='105' y1='110' x2='606' y2='592' gradientUnits='userSpaceOnUse'><stop stop-color='#DFFF78' stop-opacity='.18'/><stop offset='.42' stop-color='#DFFF78' stop-opacity='.9'/><stop offset='.7' stop-color='#FF8D70' stop-opacity='.78'/><stop offset='1' stop-color='#B495FF' stop-opacity='.48'/></linearGradient>
+  <linearGradient id='orbitB' x1='112' y1='572' x2='604' y2='122' gradientUnits='userSpaceOnUse'><stop stop-color='#71E7D0' stop-opacity='.16'/><stop offset='.45' stop-color='#71E7D0' stop-opacity='.86'/><stop offset='1' stop-color='#E3FF77' stop-opacity='.5'/></linearGradient>
+  <radialGradient id='halo'><stop stop-color='#E3FF77' stop-opacity='.35'/><stop offset='.45' stop-color='#A96CDE' stop-opacity='.2'/><stop offset='1' stop-color='#39204F' stop-opacity='0'/></radialGradient>
+  <filter id='bloom' x='-90%' y='-90%' width='280%' height='280%'><feGaussianBlur stdDeviation='15' result='blur'/><feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge></filter>
+  <filter id='shadow' x='-60%' y='-60%' width='220%' height='220%'><feDropShadow dx='0' dy='18' stdDeviation='18' flood-color='#160d24' flood-opacity='.42'/></filter>
+</defs>
+<circle cx='350' cy='350' r='310' fill='url(#halo)'/>
+<circle cx='350' cy='350' r='300' stroke='url(#orbitA)' stroke-width='1.4' stroke-dasharray='2 9'/>
+<circle cx='350' cy='350' r='276' stroke='url(#orbitB)' stroke-opacity='.72'/>
+<circle cx='350' cy='350' r='234' stroke='url(#orbitA)' stroke-opacity='.62' stroke-dasharray='1 7'/>
+<circle cx='350' cy='350' r='207' stroke='url(#orbitB)' stroke-opacity='.38'/>
+<ellipse cx='350' cy='350' rx='300' ry='118' transform='rotate(-31 350 350)' stroke='url(#orbitA)' stroke-width='2'/>
+<ellipse cx='350' cy='350' rx='293' ry='142' transform='rotate(45 350 350)' stroke='url(#orbitB)' stroke-width='1.5'/>
+<ellipse cx='350' cy='350' rx='266' ry='91' transform='rotate(72 350 350)' stroke='#FFC0A8' stroke-opacity='.35' stroke-dasharray='4 9'/>
+<path d='M350 50v88M350 562v88M50 350h88M562 350h88M138 138l62 62M500 500l62 62M562 138l-62 62M200 500l-62 62' stroke='url(#orbitA)' stroke-width='1.5'/>
+<path d='M244 72l30 78M426 550l30 78M72 244l78 30M550 426l78 30M456 72l-30 78M274 550l-30 78M628 244l-78 30M150 426l-78 30' stroke='url(#orbitB)' stroke-width='1.2'/>
+<circle cx='350' cy='350' r='152' fill='url(#halo)' filter='url(#bloom)'/>
+<circle cx='350' cy='350' r='119' fill='#60427D' fill-opacity='.26' stroke='#E6FF86' stroke-opacity='.55' stroke-width='1.5'/>
+<circle cx='350' cy='350' r='102' fill='url(#planet)' fill-opacity='.9' stroke='#FFF0BD' stroke-opacity='.75' stroke-width='1.5' filter='url(#shadow)'/>
+<path d='M289 294c31-36 83-49 123-29M274 364c36 17 83 21 135 9' stroke='#FFF9D9' stroke-opacity='.36' stroke-width='2' stroke-linecap='round'/>
+<circle cx='350' cy='350' r='75' stroke='#FFF8DF' stroke-opacity='.32'/>
+<path d='M350 272v156M272 350h156M295 295l110 110M405 295 295 405' stroke='#FFF8DF' stroke-opacity='.2'/>
+<circle cx='350' cy='350' r='7' fill='#FFF8D9' filter='url(#bloom)'/>
+<circle cx='350' cy='63' r='8' fill='#E4FF78' filter='url(#bloom)'/><circle cx='554' cy='146' r='6' fill='#75E9D2'/><circle cx='637' cy='350' r='8' fill='#FF9273' filter='url(#bloom)'/><circle cx='554' cy='554' r='6' fill='#D0A7FF'/><circle cx='350' cy='637' r='8' fill='#E4FF78' filter='url(#bloom)'/><circle cx='146' cy='554' r='6' fill='#75E9D2'/><circle cx='63' cy='350' r='8' fill='#FF9273' filter='url(#bloom)'/><circle cx='146' cy='146' r='6' fill='#D0A7FF'/>
+<circle cx='475' cy='231' r='16' fill='#FF8F72' stroke='#FFE2A2' stroke-opacity='.8' stroke-width='2' filter='url(#bloom)'/><circle cx='220' cy='465' r='12' fill='#71E7D0' stroke='#D9FFF5' stroke-opacity='.75' stroke-width='2' filter='url(#bloom)'/><circle cx='444' cy='507' r='9' fill='#E2FF77' filter='url(#bloom)'/>
+<path d='m498 164 12 22 24 3-18 17 4 25-22-12-22 12 4-25-18-17 24-3 12-22Z' fill='#DFFF78' fill-opacity='.88'/>
+<path d='m177 428 8 14 16 2-12 11 3 16-15-8-15 8 3-16-12-11 16-2 8-14Z' fill='#FF9474'/>
+<text x='350' y='337' text-anchor='middle' fill='#38204E' fill-opacity='.83' font-family='Georgia,serif' font-size='12' letter-spacing='5'>YOUR SKY</text>
+<text x='350' y='369' text-anchor='middle' fill='#2C1B3B' font-family='Georgia,serif' font-weight='bold' font-size='27' letter-spacing='4'>NUVORA</text>
+<text x='350' y='393' text-anchor='middle' fill='#352048' fill-opacity='.78' font-family='Arial,sans-serif' font-size='9' letter-spacing='3'>NATAL MAP  /  VEDIC</text>
+<text x='350' y='95' text-anchor='middle' fill='#E6FF87' fill-opacity='.9' font-family='Arial,sans-serif' font-size='9' letter-spacing='4'>A PERSONAL MAP OF THE SKY</text>
+</svg>
