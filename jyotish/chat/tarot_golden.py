@@ -196,44 +196,117 @@ def _distil_tarot(text: str, max_words: int = 300) -> str:
     return result
 
 
-def tarot_golden_guidance(spread: str, question: str, language: Language = "en") -> str:
-    """Return a compact, card-grounded example the model can match for structure and depth.
+# Hand-written golden readings: how a thoughtful reader answers, one per spread size. They use the fixed
+# draws above, so the tests can check that every card is read and the score stays high.
+TAROT_EXEMPLARS: dict[str, dict] = {
+    "1": {
+        "question": "What energy should I focus on today?",
+        "reading": {
+            "verdict": "YES",
+            "summary": "The energy to lean into today is hope that you rebuild on purpose. The Star asks you to look past "
+                       "what has been draining you and put your attention on something that restores you, and the Three of "
+                       "Cups says that restoration comes easiest in good company.",
+            "card_readings": [
+                {"position": "Focus", "text": "The Star, upright, is a card of renewal after a hard stretch. It is not "
+                 "dramatic; it is the quiet moment when you breathe again and remember what you are working toward. As "
+                 "today's focus it asks you to protect your optimism, choose one thing that feeds you rather than drains "
+                 "you, and trust that small, steady repair counts."},
+                {"position": "Extra clarifier", "text": "The Three of Cups adds who to do it with: friends, community, "
+                 "people you can laugh with. The Star's renewal is not meant to be solitary today; a conversation or a "
+                 "shared moment will do more for your energy than another hour alone with your list."},
+            ],
+            "synthesis": "Together the two cards point the same way: today is for refilling, not pushing. The Star "
+                         "names the need (hope and perspective) and the Three of Cups names the source (connection), so "
+                         "the day goes best when you treat rest and company as part of the work rather than a reward "
+                         "after it.",
+            "next_step": "Message one person who lifts your mood and make a small plan to see or call them today, "
+                         "then choose one task to finish slowly and well instead of five done in a rush.",
+        },
+    },
+    "3": {
+        "question": "Should I accept the new job offer?",
+        "reading": {
+            "verdict": "YES",
+            "summary": "The cards lean yes, provided you go in with your eyes open. The Chariot says you have the drive "
+                       "to make this move work, and the reversed Five of Swords suggests an old conflict is losing its "
+                       "grip. Temperance's condition is pace: negotiate and settle in gradually rather than charging in "
+                       "to prove something.",
+            "card_readings": [
+                {"position": "Situation", "text": "The Chariot, upright, shows you ready to move: ambitious, focused and "
+                 "tired of standing still. In a job decision it is the card of choosing a direction and steering it, so "
+                 "the offer fits where your energy already is."},
+                {"position": "Challenge", "text": "The Five of Swords reversed points to friction that is winding down: "
+                 "a rivalry, an argument or a bruising experience at your current job. The challenge is not the new role; "
+                 "it is not letting that old fight shape how you negotiate or how you leave."},
+                {"position": "Guidance", "text": "Temperance asks you to blend, not swing. Accept on terms that work for "
+                 "you, give yourself a realistic settling-in period, and keep relationships intact on the way out rather "
+                 "than burning bridges."},
+                {"position": "Extra clarifier", "text": "The Knight of Pentacles adds steadiness: this choice pays off "
+                 "through reliable, consistent effort over months, not a dramatic first week. It supports the yes and "
+                 "slows its tempo."},
+            ],
+            "synthesis": "The Chariot and Temperance work as a pair: drive gets you to the new role, balance keeps you "
+                         "there. The reversed Five of Swords sits between them as the thing to leave behind, and the "
+                         "Knight of Pentacles confirms that the payoff is real but gradual. Read together, the spread "
+                         "favours accepting, as long as you move deliberately rather than in reaction to past conflict.",
+            "next_step": "Before you sign, write down the three terms that matter most to you — pay, role scope and "
+                         "start date — and ask for them in one calm conversation; then give your current team a clean, "
+                         "courteous handover.",
+        },
+    },
+    "7": {
+        "question": "I feel stuck in life. What do I need to understand to move forward?",
+        "reading": {
+            "verdict": "MAYBE",
+            "summary": "The spread is mixed but hopeful: you are not as stuck as you feel, you are in the middle of a "
+                       "shake-up that has not finished yet. The Tower says old assumptions are falling away, the Ace of Pentacles shows something "
+                       "practical and new arriving next, and the World asks you to finish the chapter you are in rather "
+                       "than looking for a shortcut out of it.",
+            "card_readings": [
+                {"position": "Context", "text": "The Moon sets the scene: uncertainty, mixed feelings and a sense that "
+                 "you cannot see the path clearly. Part of feeling stuck is simply not having enough information yet."},
+                {"position": "Root", "text": "The Eight of Cups underneath says you already know something no longer "
+                 "satisfies you. The deeper driver is a wish to leave a pattern behind and look for something with more "
+                 "meaning."},
+                {"position": "Past influence", "text": "The Six of Swords reversed shows an earlier move that did not "
+                 "fully happen: you started to leave a difficult situation but parts of it came with you."},
+                {"position": "Present", "text": "The Tower is the honest picture of now: structures you relied on are "
+                 "shifting. It feels like disruption, but it is also what clears the ground."},
+                {"position": "Challenge", "text": "The Five of Wands names the friction: competing demands, other "
+                 "people's agendas and your own scattered priorities pulling in different directions."},
+                {"position": "Near-term direction", "text": "The Ace of Pentacles is the hopeful card here: a concrete, "
+                 "practical opening, such as work, a skill or a resource, is next on the road if you stay ready for it."},
+                {"position": "Guidance", "text": "The World asks you to complete what you started. Closing a loose end "
+                 "gives you the stable footing the Ace of Pentacles needs."},
+                {"position": "Extra clarifier", "text": "The Queen of Cups reversed adds that you have been caring for "
+                 "everyone but yourself; some of the stuck feeling is emotional exhaustion, not lack of direction."},
+            ],
+            "synthesis": "The story runs from the Six of Swords reversed (an unfinished move) through the Tower (the shake-"
+                         "up now) to the Ace of Pentacles (a practical new start), so the direction is upward. The Five of "
+                         "Wands and the World answer each other: scattered effort is the obstacle and completion is the "
+                         "remedy. The Moon and the reversed Queen of Cups explain why it feels worse than it is: unclear "
+                         "information and an emotional tank running low.",
+            "next_step": "List the unfinished things competing for your attention, choose the one whose completion would "
+                         "free you most, and finish it this month; protect two evenings a week for rest so you can see "
+                         "the next opening when it arrives.",
+        },
+    },
+}
 
-    The returned text is clearly marked as a reference exemplar; the model should match
-    its structure, depth, honesty and position-aware discipline. Do not copy its
-    card names or positions verbatim — answer the user's actual drawn cards.
-    """
-    case = tarot_golden_case(question, spread, language)
-    reading = case.answer["reading"]
 
-    # Build a distilled version from the reading
-    summary = reading.get("summary", "")
-    synthesis = reading.get("synthesis", "")
-    next_step = reading.get("next_step", "")
-    card_readings = reading.get("card_readings", [])
+def tarot_golden_guidance(spread: str, question: str = "", language: Language = "en") -> str:
+    """The hand-written golden reading for this spread size, shown to the model as a model of reasoning and tone.
 
-    distilled_parts = []
-    if summary:
-        distilled_parts.append(f"### Summary\n{summary}")
-    if card_readings:
-        card_text = "\n".join(f"- {cr['position']}: {cr['card_name']} ({cr['orientation']}) — {cr['text'][:150]}"
-                              for cr in card_readings[:3])
-        distilled_parts.append(f"### Card readings\n{card_text}")
-    if synthesis:
-        distilled_parts.append(f"### Synthesis\n{synthesis[:200]}")
-    if next_step:
-        distilled_parts.append(f"### Next step\n{next_step}")
-
-    distilled = "\n\n".join(distilled_parts)
-    distilled = _distil_tarot(distilled, max_words=250)
-
+    It belongs to a different question and draw: the model must read the user's own cards."""
+    import json as _json
+    ex = TAROT_EXEMPLARS.get(str(spread)) or TAROT_EXEMPLARS["3"]
     return (
-        "## Golden Tarot example — reference structure (different wording is fine)\n"
-        "The exemplar below is a verified reading for the question shown. Match its structure, "
-        "depth, honesty and position-aware discipline. Do not copy its card names, positions, "
-        "or orientations verbatim — answer the user's actual drawn cards.\n\n"
-        f"Spread: {spread}-card + clarifier\n"
-        f"Q: {question}\n\n{distilled}"
+        "## Golden Tarot example (DIFFERENT QUESTION AND CARDS: copy the reasoning and tone, never the cards)\n"
+        "Qualities to match: answer the question in the first sentence; read each card in its position as it "
+        "applies to THIS question; show how the cards answer one another (obstacle and advice, past to future, "
+        "the clarifier as a modifier); state any caveat once, not per card; end with one concrete step.\n\n"
+        f"Spread: {ex['reading'] and len(ex['reading']['card_readings']) - 1}-card + clarifier\n"
+        f"Q: {ex['question']}\n" + _json.dumps(ex["reading"], ensure_ascii=False, indent=1)
     )
 
 
@@ -269,7 +342,6 @@ def evaluate_tarot(answer: dict, question: str, spread: str, language: Language 
                             for cr in card_readings)
 
     # High stakes check
-    from .tarot_reading import HIGH_STAKES_RE
     high_stakes = bool(HIGH_STAKES_RE.search(question))
     high_stakes_handled = high_stakes and verdict == "MAYBE"
 

@@ -177,3 +177,58 @@ Keep every fact tag you keep exactly as it is (do not change attribute values), 
 dates, and do not add new chart claims. Open with the direct answer and the central theme, explain each piece of
 evidence as cause and effect, name the main counterweight, give a reason for every timing window, end with
 concrete steps and a reasoned **Confidence:** line."""
+
+
+# ------------------------------------------------------------------ Tarot
+
+TAROT_BOILERPLATE = (
+    "comes upright in the", "speaking to", "in a work context, this points to where your energy is",
+    "take this as a mirror for your own reflection", "the the ", "balance of selected symbols",
+    "it's a quiet note beneath the main message", "this is about the professional energy around",
+)
+TAROT_LEAN = re.compile(r"\b(yes|no|lean\w*|encouraging|mixed|caution\w*|possibl\w*|likely|unlikely|clean|clear\w*|"
+                        r"favourabl\w*|supportive|hopeful|not yet)\b", re.I)
+TAROT_LINK = re.compile(r"\b(together|through|while|but|because|so|agrees?|tempers?|answers?|belongs?|"
+                        r"connects?|against|whereas|which|then)\b", re.I)
+
+
+def _card_mentioned(text: str, name: str) -> bool:
+    bare = name[4:] if name.startswith("The ") else name
+    return bare.lower() in text.lower()
+
+
+def score_tarot(reading: dict, cards: list[dict]) -> dict:
+    """0-100 quality score for a Tarot reading dict (summary, card_readings, synthesis, next_step)."""
+    summary, synthesis = reading.get("summary", ""), reading.get("synthesis", "")
+    next_step, items = reading.get("next_step", ""), reading.get("card_readings", [])
+    everything = " ".join([summary, synthesis, next_step] + [i.get("text", "") for i in items])
+    checks: dict[str, tuple[float, str, int]] = {}
+
+    first = re.split(r"(?<=[.!?])\s", summary.strip(), maxsplit=1)[0] if summary else ""
+    checks["direct_answer"] = ((1.0, "summary opens with a clear lean", 20) if TAROT_LEAN.search(first)
+                               else (0.0, "summary does not open with an answer", 20))
+
+    named = sum(1 for i, c in zip(items, cards) if _card_mentioned(i.get("text", ""), c["name"]))
+    checks["every_card_read"] = (named / max(1, len(cards)), f"{named}/{len(cards)} card readings name their card", 15)
+
+    in_synthesis = sum(1 for c in cards if _card_mentioned(synthesis, c["name"]))
+    connected = (min(1.0, in_synthesis / 2) * 0.6 + (0.4 if TAROT_LINK.search(synthesis) else 0.0)) if len(cards) > 2 \
+        else (1.0 if TAROT_LINK.search(synthesis) or in_synthesis else 0.0)
+    checks["cards_in_conversation"] = (connected, f"synthesis links {in_synthesis} cards", 20)
+
+    sentences = [s.strip().lower() for s in re.split(r"(?<=[.!?])\s+", everything) if len(s.split()) >= 5]
+    repeats = sum(n - 1 for n in __import__("collections").Counter(sentences).values() if n > 1)
+    checks["no_repetition"] = (max(0.0, 1.0 - 0.34 * repeats), "no repeated sentences" if not repeats
+                               else f"{repeats} sentences repeated", 20)
+
+    hits = [b for b in TAROT_BOILERPLATE if b in everything.lower()]
+    checks["no_boilerplate"] = (max(0.0, 1.0 - 0.5 * len(hits)), "no template phrases" if not hits
+                                else "template phrases: " + "; ".join(hits[:3]), 15)
+
+    actionable = len(next_step.split()) >= 8 and bool(ACTION_START.search(next_step) or
+                                                       re.search(r"\b(say|ask|write|call|check|try|decide|list|take|pick|finish|complete|choose|book|talk|commit|send|plan)\b", next_step, re.I))
+    checks["next_step"] = ((1.0, "concrete next step", 10) if actionable else (0.0, "next step is vague", 10))
+
+    score = round(sum(w * v for v, _, w in checks.values()))
+    return {"score": score, "issues": [n for v, n, _ in checks.values() if v < 0.75],
+            "checks": {k: {"points": round(w * v, 1), "max": w, "note": n} for k, (v, n, w) in checks.items()}}
