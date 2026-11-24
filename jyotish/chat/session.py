@@ -7,11 +7,13 @@ from datetime import datetime, timedelta, timezone
 from .context import build_context
 from .facts import extract_and_verify
 from .golden import golden_guidance
+from .judgment import judge, working_notes
 from .llm import LLM, LLMError, get_llm
 from .offline import LABEL as OFFLINE_LABEL
 from .offline import offline_answer
 from .prashna import build_prashna, prashna_prompt
 from .prompt import REPAIR_PROMPT, SYSTEM_PROMPT
+from .quality import STYLE_REPAIR_PROMPT, score_reading
 from .render import render, strip_facts
 from .tools import TOOLS, run_tool
 from .topics import deep_prompt, detect_topic, is_decision_question
@@ -19,6 +21,8 @@ from .topics import deep_prompt, detect_topic, is_decision_question
 MAX_TOOL_ROUNDS = 6
 MAX_REPAIRS = 2
 HISTORY_TURNS = 8
+STYLE_REPAIR_BELOW = 72      # quality score under which a factually clean answer gets one rewrite
+SHORT_ANSWER_WORDS = 160     # quick follow-ups are not held to the full-reading rubric
 
 
 class ChatSession:
@@ -31,14 +35,16 @@ class ChatSession:
         self.system = SYSTEM_PROMPT + "\n\n" + build_context(report, today=today)
         self.history: list[dict] = []          # neutral messages, user/assistant only (final texts)
 
-    def reader_label(self, mode: str | None = None, error: str | None = None) -> str:
+    def reader_label(self, mode: str | None = None, error: str | None = None, language: str = "en") -> str:
         mode = mode or ("llm" if self.llm else "offline")
         if mode == "offline":
+            hindi = language == "hi"
             if not self.llm:
-                return "Offline chart reader · AI consent off"
+                return "ऑफ़लाइन कुंडली-पाठक · AI सहमति बंद" if hindi else "Offline chart reader · AI consent off"
             if error and "rejected" in error.lower():
-                return "Offline fallback · AI answer failed chart checks"
-            return "Offline fallback · AI unavailable"
+                return ("ऑफ़लाइन विकल्प · AI उत्तर कुंडली-जाँच में असफल" if hindi
+                        else "Offline fallback · AI answer failed chart checks")
+            return "ऑफ़लाइन विकल्प · AI उपलब्ध नहीं" if hindi else "Offline fallback · AI unavailable"
         model = getattr(getattr(self.llm, "cfg", None), "model", "")
         if "gemma-4-31b" in model.lower():
             return "Gemma 4 31B"
@@ -122,14 +128,16 @@ class ChatSession:
         if language == "hi-Latn" and not self.llm:
             language_notice = "Hinglish needs the AI reader; the chart reader is answering in Hindi instead."
         text = None
+        quality = None
         if self.llm:
-            # Add golden guidance as a few-shot example for the LLM
+            # The hand-written golden exemplar for this topic: a model of reasoning and tone, not of facts.
             if self.use_golden:
-                response_system += "\n\n" + golden_guidance(topic.key, self.chart, self.report, asked_at)
+                response_system += "\n\n" + golden_guidance(topic.key)
             prashna_evidence = prashna_prompt(prashna, topic.houses) if prashna else ""
+            judgment = judge(self.chart, self.report, topic, asked_at)
             msgs = self.history[-2 * HISTORY_TURNS:] + [
                 {"role": "user", "content": question + "\n" + deep_prompt(topic)
-                 + self._topic_evidence(topic, asked_at) + prashna_evidence}
+                 + self._topic_evidence(topic, asked_at) + "\n\n" + working_notes(judgment) + prashna_evidence}
             ]
             try:
                 text = self._run_model(msgs, trace, response_system)
@@ -143,6 +151,9 @@ class ChatSession:
                 if rep.contradicted:
                     error = f"Live answer rejected: {len(rep.contradicted)} chart facts remained contradicted after repair."
                     mode, text = "offline", None
+                else:
+                    text, rep, quality = self._style_repair(text, rep, msgs, trace, response_system, prashna_cr)
+                    repairs += quality.pop("rewrites", 0)
             except LLMError as e:
                 error, mode, text = str(e), "offline", None
         if text is None:
@@ -153,11 +164,36 @@ class ChatSession:
             rep = extract_and_verify(text, self.chart, self.report, prashna_cr)
         self.history += [{"role": "user", "content": question}, {"role": "assistant", "content": text}]
         summary = rep.summary()
+        if quality is None:
+            quality = score_reading(text)
         return {
-            "mode": mode, "label": self.reader_label(mode, error),
+            "mode": mode, "label": self.reader_label(mode, error, language),
             "language": language, "language_notice": language_notice,
             "html": render(text, rep), "text": strip_facts(text),
             "checks": [c.as_dict() for c in rep.checks], "summary": summary, "repairs": repairs,
+            "quality": {"score": quality["score"], "issues": quality["issues"]},
             "tools_used": trace, "error": error, "seconds": round(time.perf_counter() - t0, 2),
             "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
+
+    def _style_repair(self, text, rep, msgs, trace, system_prompt, prashna_cr):
+        """One rewrite when a factually clean answer reads mechanically; keep it only if it is better
+        on quality and still fully consistent with the chart."""
+        quality = score_reading(text)
+        quality["rewrites"] = 0
+        if quality["score"] >= STYLE_REPAIR_BELOW or quality["words"] < SHORT_ANSWER_WORDS:
+            return text, rep, quality
+        issues = "\n".join(f"- {issue}" for issue in quality["issues"])
+        attempt = msgs + [{"role": "assistant", "content": text},
+                          {"role": "user", "content": STYLE_REPAIR_PROMPT.format(issues=issues)}]
+        try:
+            rewritten = self._run_model(attempt, trace, system_prompt)
+        except LLMError:
+            return text, rep, quality
+        new_rep = extract_and_verify(rewritten, self.chart, self.report, prashna_cr)
+        new_quality = score_reading(rewritten)
+        if not new_rep.contradicted and new_quality["score"] > quality["score"]:
+            new_quality["rewrites"] = 1
+            return rewritten, new_rep, new_quality
+        quality["rewrites"] = 1
+        return text, rep, quality

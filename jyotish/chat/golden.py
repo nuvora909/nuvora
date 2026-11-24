@@ -1,45 +1,39 @@
-"""Golden responses: canonical verified readings for the reading model.
+"""Golden responses: the quality bar for the reading model.
 
-A golden response is a complete reading grounded in the deterministic offline reader
-that sets the quality bar: honest framing, balanced support/friction, exact fact-tag
-discipline, and the six-part structure mandated by the system prompt. Every golden
-answer here is produced by the deterministic offline reader and passes the same
-verifier as a live AI answer, so no golden response ever contains a claim the engine
-cannot support.
+Two sources, two jobs:
 
-Two jobs:
+1. Golden exemplars (chat/golden_exemplars.py) are hand-written master readings for one fixed
+   reference chart. They teach *how* to read: lead with the answer and a central theme, explain each
+   fact as cause and effect, weigh the counterweight, give reasons for timing, end with concrete steps
+   and calibrated confidence. golden_guidance() shows the model the exemplar for the user's topic with
+   its fact tags removed, so it copies the reasoning and never another person's placements.
 
-1. Guidance.  golden_guidance(topic_key, chart, report, asked_at) returns a compact,
-   chart-grounded example the model can match for structure and depth (clearly marked as
-   reference structure, never to be copied verbatim).
+2. The offline dataset (golden_dataset) runs every canonical deep-reading question through the
+   deterministic offline reader for a chart. It is a factual regression set: every claim must verify.
 
-2. Evaluation. golden_dataset(chart, report, asked_at) returns every canonical question
-   with its verified golden answer, so tests/test_golden.py can enforce that the quality
-   bar never regresses.
+evaluate() combines both bars: the verifier (are the chart facts true?) and the quality rubric from
+chat/quality.py (does it read like a considered reading?).
 """
-
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 
+from .golden_exemplars import EXEMPLARS, exemplar_for
 from .offline import offline_answer
-from .topics import MODE_QUESTIONS
+from .quality import score_reading
 
 
 @dataclass(frozen=True)
 class GoldenCase:
-    """One canonical question→answer pair for the quality reference set."""
+    """One canonical question->answer pair for the offline regression set."""
     question: str
     topic_key: str
     answer: str  # raw offline_answer output (contains fact tags)
 
 
-# --------------------------- canonical question list ---------------------------
-
 GOLDEN_QUESTIONS: dict[str, str] = {
-    # MODE_QUESTIONS keys: each gives a deep reading question.
     "general": "Give me a deep full-life reading: my core pattern, strongest and weakest factors, career, relationships, home, current dasha and the most useful next steps.",
     "career": "Give me a deep career and business analysis: the 10th, 6th and 11th houses, their lords, Saturn and Mercury, D10 confirmation, job versus business indications, challenges and the best timing windows.",
     "marriage": "Give me a deep marriage and partnership analysis: the 7th, 2nd and 8th houses, Venus and Jupiter, D9 confirmation, likely relationship patterns, challenges and timing windows without making promises.",
@@ -55,107 +49,57 @@ GOLDEN_QUESTIONS: dict[str, str] = {
     "lifetime": "Give me deep lifetime predictions: my enduring natal pattern, strengths, duties, relationships, career and resources, then explain the major mahadasha life chapters ahead. Separate lifelong promise from period activation and never present events as guaranteed.",
     "health": "Analyse vitality, health routines and resilience in depth: the 1st, 6th and 8th houses, Sun and Moon, current periods requiring better self-care, without diagnosing any illness.",
 }
-
-# Keep a stable iteration order matching MODE_QUESTIONS keys.
 GOLDEN_KEYS = list(GOLDEN_QUESTIONS.keys())
 
+_TAG = re.compile(r"<fact\b[^>]*>(.*?)</fact>", re.S)
 
-# --------------------------- golden case generation ---------------------------
 
 def golden_case(topic_key: str, chart, report, asked_at: datetime) -> GoldenCase:
-    """Return a GoldenCase for the given topic key, chart, report, and asked_at.
-
-    The answer is the raw offline_answer output — it contains <fact> tags and will
-    pass the same verifier as a live AI answer.
-    """
     question = GOLDEN_QUESTIONS[topic_key]
-    answer = offline_answer(chart, report, question, question_time=asked_at)
-    return GoldenCase(question, topic_key, answer)
+    return GoldenCase(question, topic_key, offline_answer(chart, report, question, question_time=asked_at))
 
 
 def golden_dataset(chart, report, asked_at: datetime) -> list[GoldenCase]:
-    """Return all 13 GoldenCases — one per MODE_QUESTIONS key.
-
-    Each answer has been through the deterministic offline reader and verified
-    by the same extract_and_verify pipeline the live reader uses.
-    """
+    """Every canonical question answered by the deterministic offline reader for this chart."""
     return [golden_case(k, chart, report, asked_at) for k in GOLDEN_KEYS]
 
 
-# --------------------------- golden guidance (compact distillation) ---------------------------
+def golden_guidance(topic_key: str, chart=None, report=None, asked_at: datetime | None = None) -> str:
+    """The hand-written exemplar for this topic, shown to the model as a reasoning and style model.
 
-_SECTION_SPLIT = re.compile(r"(?m)(^### )")
-
-
-def _distil(text: str, max_words: int = 320) -> str:
-    """Distil a golden answer into a compact guidance exemplar.
-
-    Keeps whole sections (heading + body) until the word budget is exhausted,
-    always starting with the "### Bottom line" section.  Returns at most
-    ``max_words`` words total across kept sections.
-
-    Structure preserved: Bottom line → Why the chart → Natural significators →
-    What this means in practice → Timing → How to use this → Confidence.
-    """
-    parts = _SECTION_SPLIT.split(text)
-    # parts: ["", "### ", "Bottom line\n\n...", "### ", "Why the chart...", ...]
-    # Reconstruct sections by pairing "### " + body
-    blocks: list[str] = []
-    for i in range(1, len(parts), 2):
-        heading = parts[i]  # "### "
-        body = parts[i + 1] if i + 1 < len(parts) else ""
-        blocks.append(heading + body.strip())
-    # Filter empty (shouldn't happen)
-    blocks = [b for b in blocks if b.strip()]
-    keep: list[str] = []
-    used = 0
-    for block in blocks:
-        w = len(block.split())
-        if used == 0 or used + w <= max_words:
-            keep.append(block)
-            used += w
-        else:
-            break
-    result = "\n\n".join(keep).strip()
-    if "**Confidence:**" not in result:
-        result += "\n\n**Confidence:** moderate — evidence is consistent within the chart but birth-time sensitivity limits precise timing."
-    return result
-
-
-def golden_guidance(topic_key: str, chart, report, asked_at: datetime) -> str:
-    """Return a compact, chart-grounded example the model can match for structure and depth.
-
-    The returned text is clearly marked as a reference exemplar; the model should match
-    its structure and depth, not copy placements or dates verbatim.
-    """
-    case = golden_case(topic_key, chart, report, asked_at)
-    distilled = _distil(case.answer, max_words=300)
+    Fact tags are removed: the exemplar belongs to a different person's chart, so the model must learn
+    its structure and reasoning while taking every fact from the user's own chart context."""
+    key, ex = exemplar_for(topic_key)
+    body = _TAG.sub(lambda m: m.group(1), ex["answer"])
     return (
-        "## Golden example — reference structure (different wording is fine)\n"
-        "The exemplar below is a verified reading for the question shown.  Match its structure, "
-        "depth, honesty and fact-tag discipline.  Do not copy its placements or dates verbatim — "
-        "answer the user's actual chart.\n\n"
-        f"Q: {case.question}\n\n{distilled}"
+        "## Golden example — how a master reading sounds (DIFFERENT PERSON'S CHART: copy the reasoning, never the facts)\n"
+        f"This is a verified {key} reading written for another chart. Match its qualities: answer first with a "
+        "calibrated lean and a central theme; explain every placement as cause and effect for this person; name "
+        "the main counterweight; give each timing window a reason (period lord's link plus any double transit); "
+        "close with concrete steps and a reasoned confidence line. Every placement, date and yoga in YOUR answer "
+        "must come from the user's chart context, tools or working notes, wrapped in fact tags.\n\n"
+        f"Q: {ex['question']}\n\n{body}"
     )
 
 
-# --------------------------- evaluation ---------------------------
-
 def evaluate(answer_text: str, chart, report) -> dict:
-    """Evaluate an answer against the verifier and structural quality checks.
-
-    Returns a dict with pass/fail flags and key metrics.
-    """
+    """Both quality bars for one answer: verifier (truth) and rubric (reading quality)."""
     from .facts import extract_and_verify
     rep = extract_and_verify(answer_text, chart, report, prashna=None)
+    quality = score_reading(answer_text)
     return {
         "verified": rep.summary()["verified"],
         "contradicted": len(rep.contradicted),
         "total_checks": len(rep.checks),
-        "has_bottom_line": "### Bottom line" in answer_text,
         "has_confidence": "**Confidence:**" in answer_text,
         "sections": sum(1 for line in answer_text.split("\n") if line.startswith("### ")),
         "word_count": len(answer_text.split()),
         "fact_count": answer_text.count("<fact"),
+        "quality": quality["score"],
+        "quality_issues": quality["issues"],
         "passes": len(rep.contradicted) == 0,
     }
+
+
+__all__ = ["EXEMPLARS", "GOLDEN_KEYS", "GOLDEN_QUESTIONS", "GoldenCase", "evaluate", "golden_case",
+           "golden_dataset", "golden_guidance"]

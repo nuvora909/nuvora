@@ -154,8 +154,19 @@ def draw_cards(spread: int) -> list[dict]:
     return cards
 
 
+def _human_card_summary(cards: list[dict]) -> str:
+    """Create a human-readable summary of key cards."""
+    if not cards:
+        return "no cards drawn"
+    parts = []
+    for c in cards[:3]:
+        orient = "reversed" if c["orientation"] == "reversed" else "upright"
+        parts.append(f"{c['name']} ({orient}) — {c['theme']}")
+    return "; ".join(parts)
+
+
 def _fallback(question: str, cards: list[dict], language: str) -> dict:
-    """Enhanced fallback interpreter with nuanced, position-aware card readings."""
+    """Human, empathetic fallback interpreter — speaks to the heart of the question."""
     score = sum(card["polarity"] * (-1 if card["orientation"] == "reversed" else 1) for card in cards[:-1])
     verdict = "YES" if score >= 2 else "NO" if score <= -2 else "POSSIBLE" if score == 1 else "MAYBE"
     high_stakes = _is_high_stakes(question)
@@ -168,111 +179,161 @@ def _fallback(question: str, cards: list[dict], language: str) -> dict:
         verdict_words = {key: key.title() for key in ("YES", "NO", "MAYBE", "POSSIBLE")}
 
     question_lower = question.lower()
-    relationship = bool(re.search(r"\b(love|feelings?|relationship|partner|marriage|crush|like me|dating|girlfriend|boyfriend|spouse)\b", question_lower))
+    relationship = bool(re.search(r"\b(love|feelings?|relationship|partner|marriage|marry|crush|like me|dating|girlfriend|boyfriend|spouse)\b", question_lower))
     career = bool(re.search(r"\b(job|career|work|business|interview|offer|company|join|promotion|profession)\b", question_lower))
     money = bool(re.search(r"\b(money|finance|financial|investment|invest|debt|loan|purchase|profit|salary)\b", question_lower))
 
-    # Context-aware framing
+    # Detect names/people in question for personalization
+    # First, try to match known names (case insensitive)
+    known_names = (
+        "pinki|priya|rahul|amit|sita|anita|sunita|rajesh|vikas|sanjay|arun|deepak|manoj|raj|"
+        "rajesh|sunil|anil|ravi|amit|sumit|nitesh|vikram|arjun|karan|varun|rahul|rohit|"
+        "sachin|sandeep|manish|naveen|pankaj|atul|vineet|ankit|nitin|pravin|mukesh|"
+        "dinesh|yogesh|rajiv|sanjay|santosh|ravi|mohan|shyam|ram|lakhan|hanuman|"
+        "ganesh|krishna|shiva|vishnu|durga|laxmi|saraswati|parvati|kali"
+    )
+    name_match = re.search(rf"\b({known_names})\b", question, re.IGNORECASE)
+    person_name = name_match.group(1) if name_match else None
+
+    # If no known name found, try capitalized words that aren't question starters
+    if not person_name:
+        question_starters = {'does', 'do', 'is', 'will', 'when', 'where', 'who', 'what', 'why', 'how', 'can', 'could', 'would', 'should', 'may', 'might', 'shall'}
+        cap_match = re.search(r"\b([A-Z][a-z]{2,})\b", question)
+        if cap_match:
+            candidate = cap_match.group(1)
+            if candidate.lower() not in question_starters:
+                person_name = candidate
+
+    if person_name:
+        person_name = person_name.capitalize()
+
+    # Context-aware framing - human, empathetic
     if relationship:
-        context = "For a relationship question, this cannot confirm another person's private feelings; compare the card's theme with honest words, mutual effort, and consistent actions."
+        context = "This doesn't tell us what someone else feels — only they know that. But the cards show the energy around your connection."
         domain_focus = "relationship"
     elif career:
-        context = "For this work decision, compare the card's theme with the role's real responsibilities, terms, growth, and timing."
+        context = "For your career question, the cards point to where your energy is and what practical steps might help."
         domain_focus = "career"
     elif money:
-        context = "For a money question, use the card as a prompt to check the numbers, risks, and practical options before deciding."
+        context = "For financial matters, this invites you to look at the practical reality beneath the symbol."
         domain_focus = "money"
     else:
-        context = "Connect the card's theme to observable details in your situation; it is a reflective lens, not a guaranteed event."
+        context = "Take this as a mirror for your own reflection, not a prediction."
         domain_focus = "general"
 
-    # Rich position guidance with domain awareness
+    # Rich position guidance with domain awareness - human, empathetic
     position_guidance = {
         "Focus": {
-            "base": "names the central theme to consider",
-            "relationship": "reveals the emotional core of the connection",
-            "career": "identifies the key professional energy at play",
-            "money": "points to the primary financial theme",
+            "base": "what's at the heart of this",
+            "relationship": "the emotional core of your connection",
+            "career": "the key professional energy at play",
+            "money": "the primary financial theme",
         },
         "Situation": {
-            "base": "describes the current pattern around the question",
-            "relationship": "shows the present dynamic between you and the other person",
-            "career": "describes your current professional landscape",
-            "money": "reflects your present financial flow",
+            "base": "where things stand right now",
+            "relationship": "the present dynamic between you",
+            "career": "your current professional landscape",
+            "money": "your present financial flow",
         },
         "Context": {
-            "base": "sets the wider conditions around the question",
-            "relationship": "shows external factors shaping the connection",
-            "career": "reveals the broader industry or organizational climate",
-            "money": "indicates the economic or situational backdrop",
+            "base": "the bigger picture around this",
+            "relationship": "external factors shaping the connection",
+            "career": "the broader industry climate",
+            "money": "the economic backdrop",
         },
         "Root": {
-            "base": "points to an underlying influence",
-            "relationship": "uncovers a deep pattern or history beneath the surface",
-            "career": "reveals a foundational skill, value, or past choice driving things",
-            "money": "points to a root cause or long-standing financial habit",
+            "base": "what's underneath it all",
+            "relationship": "a deep pattern or history beneath the surface",
+            "career": "a foundational skill or value driving things",
+            "money": "a root cause or long-standing habit",
         },
         "Past influence": {
-            "base": "suggests a past pattern still affecting the situation",
-            "relationship": "a previous dynamic or unresolved matter still echoing now",
-            "career": "past experience or training still shaping your path",
-            "money": "a prior financial decision or habit influencing the present",
+            "base": "what from the past still echoes here",
+            "relationship": "a previous dynamic still echoing now",
+            "career": "past experience still shaping your path",
+            "money": "a prior decision influencing the present",
         },
         "Present": {
-            "base": "describes the current dynamic",
-            "relationship": "what is happening between you right now",
+            "base": "what's happening in this moment",
+            "relationship": "what's happening between you right now",
             "career": "your immediate professional reality",
             "money": "your current financial position",
         },
         "Challenge": {
-            "base": "highlights the tension that needs attention",
-            "relationship": "the friction or obstacle testing the bond",
-            "career": "the professional hurdle or competing demand",
-            "money": "the financial pressure or risk to navigate",
+            "base": "what's making this hard",
+            "relationship": "the friction testing the bond",
+            "career": "the professional hurdle",
+            "money": "the financial pressure to navigate",
         },
         "Near-term direction": {
-            "base": "shows a possible direction if the current pattern continues",
+            "base": "where this is heading",
             "relationship": "where the connection may naturally evolve",
             "career": "the likely trajectory of your work path",
             "money": "the probable financial flow ahead",
         },
         "Guidance": {
-            "base": "offers an attitude or action to consider",
-            "relationship": "an approach that could nurture or clarify the bond",
-            "career": "a strategic stance or step to advance your work",
-            "money": "a practical habit or decision to improve your position",
+            "base": "what might help you move forward",
+            "relationship": "an approach that could nurture the bond",
+            "career": "a strategic step to advance your work",
+            "money": "a practical habit to improve your position",
         },
         CLARIFIER_POSITION: {
-            "base": "adds context to the main spread without replacing it",
-            "relationship": "brings an additional emotional nuance to consider",
-            "career": "adds a practical detail or caution to the reading",
-            "money": "offers a supplementary financial perspective",
+            "base": "an added note to consider",
+            "relationship": "an additional emotional nuance",
+            "career": "a practical detail or caution",
+            "money": "a supplementary financial perspective",
         },
     }
 
     readings = []
     for card in cards:
-        direction = "Upright" if card["orientation"] == "upright" else "Reversed"
         meaning = card["theme"]
-        pos_guide = position_guidance.get(card["position"], {"base": "adds a theme to the spread"})
-        guide_text = pos_guide.get(domain_focus, pos_guide["base"])
+        pos_name = card["position"]
+        orient = card["orientation"]
 
+        # Human-readable position meaning
+        pos_meaning = {
+            "Focus": "what's at the heart of this",
+            "Situation": "where things stand right now",
+            "Context": "the bigger picture around this",
+            "Root": "what's underneath it all",
+            "Past influence": "what from the past still echoes here",
+            "Present": "what's happening in this moment",
+            "Challenge": "what's making this hard",
+            "Near-term direction": "where this is heading",
+            "Guidance": "what might help you move forward",
+            "Extra clarifier": "an added note to consider",
+        }.get(pos_name, "what this brings to the reading")
+
+        # Human reversal interpretation
         if card["orientation"] == "reversed":
-            # More nuanced reversal interpretations
-            reversal_nuance = (
-                "may be delayed, blocked, turned inward, or seeking rebalancing"
-                if card["polarity"] >= 0
-                else "may be releasing its difficult edge, easing, or asking for conscious integration"
-            )
+            if card["polarity"] >= 0:
+                reversal_sense = "isn't flowing freely right now — it may be blocked, turned inward, or asking for patience"
+            else:
+                reversal_sense = "is showing its gentler side — the difficult edge is softening, or it's asking you to integrate this consciously"
             reading = (
-                f"{card['name']} reversed in {card['position']}: its theme of {meaning} "
-                f"{reversal_nuance}. In this position it {guide_text}. {context}"
+                f"The {card['name']} appears reversed in the {pos_name} position. "
+                f"Its theme — {meaning} — {reversal_sense}. "
+                f"Here, it speaks to {pos_meaning}."
             )
         else:
             reading = (
-                f"{card['name']} upright in {card['position']}: it brings forward {meaning}. "
-                f"Here it {guide_text}. {context}"
+                f"The {card['name']} comes upright in the {pos_name} position. "
+                f"It brings forward {meaning}, speaking to {pos_meaning}."
             )
+
+        # Add gentle context
+        if person_name and relationship:
+            reading += f" This doesn't tell us what {person_name} feels — only they know that. But it shows the energy around your question."
+        elif relationship:
+            reading += " This doesn't confirm another person's private feelings, but it reflects the emotional landscape around your connection."
+        elif career:
+            reading += " In a work context, this points to where your energy is and what might help."
+        elif money:
+            reading += " For financial matters, this invites you to look at the practical reality beneath the symbol."
+        else:
+            reading += " Take this as a mirror for your own reflection, not a prediction."
+
         readings.append({"position": card["position"], "card_name": card["name"], "orientation": card["orientation"], "text": reading})
 
     main_cards = cards[:-1]
@@ -293,44 +354,104 @@ def _fallback(question: str, cards: list[dict], language: str) -> dict:
         for card in key_cards
     )
 
-    # Richer summary
+    # Human summary that addresses the question directly
     verdict_word = verdict_words[verdict].lower()
-    summary = (
-        f"For “{question}”, the spread leans {verdict_word}: {key_meanings}. "
-        f"The extra clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. {context}"
-    )
 
-    # More sophisticated synthesis
-    main_card_names = ", ".join(f"{c['name']} ({c['orientation']})" for c in key_cards[:3])
-    clarifier_note = f"The {clarifier['name']} clarifier ({clarifier['orientation']}) adds {clarifier['theme']}; read it alongside the main spread, not as a separate verdict."
-    synthesis = (
-        f"The core message emerges from {main_card_names}. {clarifier_note} "
-        f"This is a symbolic reflection — verify it against what you can observe, then choose a grounded next step."
-    )
-
-    # Context-specific next step
-    if domain_focus == "relationship":
-        next_step = "Name one honest conversation you can initiate, or one boundary you can clarify."
-    elif domain_focus == "career":
-        next_step = "Identify one concrete professional action — a conversation, application, or skill to develop — within the next week."
-    elif domain_focus == "money":
-        next_step = "Review one specific number (budget, rate, offer) and decide on one practical adjustment."
+    # Human summary that addresses the question directly
+    if person_name and relationship:
+        summary = (
+            f"For your question about {person_name}, the spread leans {verdict_word}. "
+            f"The cards show {_human_card_summary(main_cards)}. "
+            f"The clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. "
+            f"Remember: the cards reflect the energy around your question — they don't speak for {person_name}'s heart."
+        )
+    elif relationship:
+        summary = (
+            f"Regarding your relationship question, the spread leans {verdict_word}. "
+            f"{_human_card_summary(main_cards)}. "
+            f"The extra clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. "
+            f"These symbols reflect the emotional landscape — not anyone's private thoughts."
+        )
+    elif career:
+        summary = (
+            f"For your career question, the spread leans {verdict_word}. "
+            f"{_human_card_summary(main_cards)}. "
+            f"The clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. "
+            f"This is about the professional energy around your situation."
+        )
+    elif money:
+        summary = (
+            f"On this financial matter, the spread leans {verdict_word}. "
+            f"{_human_card_summary(main_cards)}. "
+            f"The clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. "
+            f"Use this as a prompt to check the practical details."
+        )
     else:
-        next_step = "Identify one real-world fact you can verify and one small, respectful action within your control."
+        summary = (
+            f"For your question, the spread leans {verdict_word}. "
+            f"{_human_card_summary(main_cards)}. "
+            f"The clarifier, {clarifier['name']} ({clarifier['orientation']}), adds {clarifier['theme']}. "
+            f"Take this as a reflection, not a prediction."
+        )
+
+    # Human synthesis
+    main_card_names = ", ".join(f"{c['name']} ({c['orientation']})" for c in main_cards[:3])
+    synthesis = (
+        f"The heart of the reading comes through {main_card_names}. "
+        f"The {clarifier['name']} clarifier ({clarifier['orientation']}) adds {clarifier['theme']}; "
+        f"it's a quiet note beneath the main message, not a separate verdict. "
+        f"This is a symbolic reflection — let it sit with you, then choose a step that feels true."
+    )
+
+    # Human next step
+    if domain_focus == "relationship":
+        next_step = (
+            "If there's something you've been holding back, consider one honest conversation — "
+            "not to get an answer, but to speak your truth."
+        )
+    elif domain_focus == "career":
+        next_step = (
+            "Identify one concrete step you can take this week — a conversation, an application, "
+            "a skill to explore — that moves you toward what you want."
+        )
+    elif domain_focus == "money":
+        next_step = (
+            "Look at one concrete number this week — a budget line, an offer, a rate — "
+            "and decide on one practical adjustment."
+        )
+    else:
+        next_step = (
+            "Notice one thing you can verify in your reality, and one small step you can take "
+            "that feels aligned with what matters to you."
+        )
 
     if high_stakes:
         if language == "hi":
-            summary = "इस विषय में Tarot तथ्यात्मक हाँ या ना नहीं बता सकता। निर्णय के लिए विश्वसनीय जानकारी और योग्य पेशेवर सहायता लें; कार्ड केवल अपनी भावनाओं और प्रश्नों पर विचार करने का माध्यम हैं।"
+            summary = "इस विषय में Tarot तथ्यात्मक हाँ या ना नहीं बता सकता। ऐसे फैसलों के लिए कृपया योग्य पेशेवर की मदद लें और भरोसेमंद जानकारी पर भरोसा करें। कार्ड सिर्फ़ आपकी भावनाओं को समझने का एक ज़रिया हैं, कोई फैसला नहीं।"
             synthesis = "इस निर्णय के लिए Tarot निश्चित उत्तर नहीं दे सकता। भरोसेमंद जानकारी लें और किसी योग्य पेशेवर से बात करें।"
-            next_step = "अगला कदम लेने से पहले उपयुक्त योग्य पेशेवर या भरोसेमंद सहायता सेवा से बात करें।"
+            next_step = "अगला कदम लेने से पहले, कृपया किसी योग्य पेशेवर या भरोसेमंद सहायता सेवा से बात कर लें।"
         else:
-            summary = "Tarot cannot answer this as a factual yes or no. Use qualified professional support and reliable evidence; treat the cards only as a prompt to notice your feelings and questions."
-            synthesis = "Use qualified professional support and reliable evidence for this decision. The cards can only prompt reflection, not establish a fact."
+            summary = "Tarot cannot give a factual yes or no on this. Please seek qualified professional support and reliable evidence; the cards are only a prompt for reflection."
+            synthesis = "For decisions like this, Tarot cannot give a definite answer. Please rely on trustworthy information and qualified professional guidance."
             next_step = "Speak with an appropriately qualified professional or trusted support service before acting."
-    elif language == "hi":
+    elif language == "hi" and not high_stakes:
+        verdict_word = verdict_words[verdict]
+        summary = (
+            f"आपके सवाल के लिए, कार्ड्स {verdict_word} की ओर इशारा करते हैं। "
+            f"{_human_card_summary(main_cards).replace('reversed', 'उल्टा').replace('upright', 'सीधा')}। "
+            f"अतिरिक्त कार्ड, {clarifier['name']} ({clarifier['orientation']}), {clarifier['theme']} जोड़ता है। "
+            f"यह एक प्रतीकात्मक प्रतिबिंब है — किसी के निजी विचारों की पुष्टि नहीं।"
+        )
+        card_names_hi = ", ".join(f'{c["name"]} ({c["orientation"]})' for c in main_cards[:3])
         synthesis = (
-            f"आपके प्रश्न के लिए चुने गए प्रतीकों का संकेत {verdict_words[verdict]} की ओर झुकता है। "
-            f"इसे निश्चित भविष्यवाणी नहीं, बल्कि सोचने का एक दृष्टिकोण मानें; अतिरिक्त कार्ड मुख्य संदेश को और संदर्भ देता है।"
+            f"पढ़ने का सार {card_names_hi} से निकलता है। "
+            f"स्पष्टीकरण कार्ड, {clarifier['name']} ({clarifier['orientation']}), {clarifier['theme']} जोड़ता है; "
+            f"यह मुख्य संदेश में एक शांत टिप्पणी है, अलग फैसला नहीं। "
+            f"यह एक प्रतीकात्मक प्रतिबिंब है — इसे अपने साथ रहने दें, फिर वह कदम चुनें जो सच लगे।"
+        )
+        next_step = (
+            "अगर कुछ है जो आप रोक रहे हैं, तो एक ईमानदार बातचीत पर विचार करें — "
+            "जवाब पाने के लिए नहीं, बल्कि अपनी सच्चाई बोलने के लिए।"
         )
 
     return {"verdict": verdict, "summary": summary if language != "hi" or high_stakes else synthesis,
