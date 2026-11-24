@@ -76,12 +76,28 @@
     document.getElementById("matchReportPanel").hidden = true;
   }
 
+  // Downloads are binary, so they bypass api(); retry once through the shared saved-Kundli reload
+  // when the server's in-memory chart session has expired.
+  async function postWithChart(url, payload) {
+    var send = function () {
+      return fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
+    };
+    var response = await send();
+    if (response.status === 404) {
+      var body = await response.clone().json().catch(function () { return {}; });
+      if (isExpiredChart(response.status, body.detail) && await reloadSavedChart()) {
+        payload.chart_id = CID;
+        response = await send();
+      }
+    }
+    return response;
+  }
+
   async function downloadSample(product) {
     status("Preparing a one-page sample from your calculated chart…");
     try {
       if (!(await ensureChart())) throw new Error("Create or select a Kundli first.");
-      var response = await fetch("/api/reports/sample", {method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({chart_id:CID, product:product})});
+      var response = await postWithChart("/api/reports/sample", {chart_id: CID, product: product});
       if (!response.ok) {
         var body = await response.json().catch(function () { return {}; });
         throw new Error(body.detail || "The sample page could not be generated.");
@@ -121,7 +137,7 @@
         if (!partner) throw new Error("Choose the second saved chart.");
         payload.person2 = partner.body;
       }
-      var response = await fetch("/api/reports/pdf", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
+      var response = await postWithChart("/api/reports/pdf", payload);
       if (!response.ok) {
         var body = await response.json().catch(function () { return {}; });
         throw new Error(body.detail || "The PDF could not be generated.");

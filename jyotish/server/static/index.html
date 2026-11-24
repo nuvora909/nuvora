@@ -637,12 +637,33 @@ const BEN = new Set(["JUPITER","VENUS","MOON","MERCURY"]);
 const GRAHAS = Object.keys(ABBR);
 let R = null, CID = null, place = null, chartStyle = "north", varga = "D1", selectedHouse = 1, selectedPlanet = null, verifiedRevealTimer = 0;
 
-async function api(path, body, options = {}) {
+// The server keeps a calculated chart in memory only, so after a restart or a long gap its session
+// expires. Recalculate the same saved Kundli quietly (same kundli_id, so no new slot is used) and let
+// the user's action continue. Concurrent callers share one recalculation.
+const isExpiredChart = (status, detail) => status === 404 && /chart session expired/i.test(String(detail || ""));
+let chartReload = null;
+function reloadSavedChart() {
+  if (chartReload) return chartReload;
+  chartReload = (async () => {
+    const id = loadedId || store.current();
+    const k = id && store.all().find(x => x.id === id);
+    if (!k) return false;
+    const j = await api("/api/chart", {...k.body, kundli_id: id, language: $("#responseLanguage").value}, {}, true);
+    R = j.report; CID = j.chart_id; loadedId = id;
+    return true;
+  })().catch(() => false).finally(() => { chartReload = null; });
+  return chartReload;
+}
+
+async function api(path, body, options = {}, retried = false) {
   const init = body
     ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body), ...options}
     : options;
   const r = await fetch(path, init);
   const j = await r.json().catch(() => ({}));
+  if (!r.ok && !retried && body && body.chart_id && isExpiredChart(r.status, j.detail) && await reloadSavedChart()) {
+    return api(path, {...body, chart_id: CID}, options, true);
+  }
   if (!r.ok) {
     const d = j.detail;
     // Validation errors arrive as a list; show a plain message with a friendly field name.
@@ -1697,7 +1718,7 @@ updateScrollEffects();
 <script src="/static/theme.js?v=20261124-2"></script>
 <script src="/static/youpi.js"></script>
 <script src="/static/account.js?v=20261124-2"></script>
-<script src="/static/reports.js?v=20261118-2"></script>
+<script src="/static/reports.js?v=20261124-1"></script>
 <script src="/static/tarot.js?v=20261118-7"></script>
 </body>
 </html>
