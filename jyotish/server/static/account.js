@@ -60,7 +60,7 @@
     document.body.classList.add("signed-out");
     root.style.display = "block";
   }
-  function showAuthMode() {
+  function showAuthMode(keepError) {
     var signup = authMode === "signup";
     document.getElementById("authTitle").textContent = signup ? "Create your account" : "Welcome back";
     document.getElementById("authSubtitle").textContent = signup ? "Start with two free questions. No card needed." : "Sign in to return to your chart workspace.";
@@ -70,7 +70,7 @@
     document.getElementById("regionLabel").hidden = !signup;
     googleAuthPanel.hidden = !googleClientId;
     authSwitch.textContent = signup ? "Already have an account? Sign in" : "New to Nuvora? Create an account";
-    authError.textContent = "";
+    if (!keepError) authError.textContent = "";
   }
   authSwitch.addEventListener("click", function () { authMode = authMode === "signup" ? "login" : "signup"; showAuthMode(); });
   authForm.addEventListener("submit", async function (event) {
@@ -79,8 +79,12 @@
     var payload = {email: document.getElementById("authEmail").value.trim(), password: document.getElementById("authPassword").value};
     if (authMode === "signup") payload.country_code = document.getElementById("authRegion").value;
     try { await api("/api/auth/" + authMode, payload); window.location.reload(); }
-    catch (error) { authError.textContent = error.message || "Could not continue. Please try again."; }
-    finally { authSubmit.disabled = false; showAuthMode(); }
+    catch (error) {
+      authError.textContent = error.message || "Could not continue. Please try again.";
+      if (authMode === "login") document.getElementById("authPassword").select();
+    }
+    // Restore the button label but keep the error visible until the visitor retries or switches mode.
+    finally { authSubmit.disabled = false; showAuthMode(true); }
   });
 
   function loadGoogleSdk() {

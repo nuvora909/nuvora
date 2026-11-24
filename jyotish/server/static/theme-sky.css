@@ -71,3 +71,20 @@ body.signed-out .theme-float {
   background: rgba(232, 242, 255, 0.62);
   backdrop-filter: blur(10px) saturate(120%);
 }
+
+/* Sign-in / sign-up errors: a visible tinted notice rather than easy-to-miss red text. */
+.auth-error:not(:empty) {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 500;
+  animation: auth-nudge 0.35s ease;
+}
+@keyframes auth-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
