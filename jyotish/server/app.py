@@ -359,20 +359,7 @@ def report_sample(req: ReportPdfRequest, user: dict = Depends(require_user)):
             sample_note = "Illustrative sample page; the second chart is an example, not a partner forecast."
     try:
         title, subtitle, sections = build_report(req.product, sess.chart, full_report, c2, r2)
-        if req.product.startswith("life_"):
-            sample_section = next((item for item in sections if item["title"].startswith("Year 1 ·")), sections[-1])
-        elif req.product == "match":
-            sample_section = next((item for item in sections if item["title"] == "Match summary"), sections[-1])
-        else:
-            sample_titles = {
-                "sade_sati": "Sade Sati status and phase analysis",
-                "dosha": "Manglik (Kuja) Dosha",
-                "marriage": "Marriage conditions",
-                "gemstone": "Chart-linked gemstone suggestion",
-                "rudraksha": "Chart-linked rudraksha suggestion",
-            }
-            sample_title = sample_titles.get(req.product)
-            sample_section = next((item for item in sections if item["title"] == sample_title), sections[-1])
+        sample_section = next((item for item in sections if item.get("sample")), sections[-1])
         complete_pdf = render_pdf(title, sample_note, [sample_section])
         reader = PdfReader(BytesIO(complete_pdf))
         if len(reader.pages) < 2:
