@@ -445,6 +445,8 @@ def _dasha_chapter(ctx, years=None):
                     trs.append([a["label"].replace("-", "–"), _dmy(max(s, ctx.now)), _dmy(e), act, cap(focus)])
         blocks += [H(f"Sub-periods in the next {years} year{'s' if years > 1 else ''}"),
                    TABLE(["Period", "From", "To", "Lord's role", "Brings into focus"], trs, [1.3, .95, .95, 1.2, 2.1], 7.6)]
+    from . import report_extras as X
+    blocks += X.yogini_blocks(ctx)
     return chapter("Your planetary periods", blocks, "The dasha clock: which planet is in charge of your life, and when that changes.")
 
 
@@ -474,6 +476,8 @@ def _yearly_chapters(ctx, years):
         sat_signs = list(dict.fromkeys([ctx.sign_at("SATURN", ys), ctx.sign_at("SATURN", mid), ctx.sign_at("SATURN", ye)]))
         jup_h = [ctx.from_moon(s) for s in jup_signs]
         sat_h = [ctx.from_moon(s) for s in sat_signs]
+        from . import report_extras as X
+        node_sign, node_h, node_text = X.node_transit_text(ctx, mid)
         sade = next((p for p in ss_periods if _dt(p["start"]) < ye and (not p["end"] or _dt(p["end"]) > ys)), None)
         score = sum(1 if K.JUPITER_FROM_MOON[h][0] == "good" else 0 for h in jup_h[-1:]) + \
             sum(1 if K.SATURN_FROM_MOON[h][0] == "good" else (-1 if K.SATURN_FROM_MOON[h][0] == "hard" else 0) for h in sat_h[-1:])
@@ -511,11 +515,13 @@ def _yearly_chapters(ctx, years):
             FACTS([("Planetary periods", dasha_txt or "—"),
                    ("Jupiter from Moon", " → ".join(f"{SIGNS[s]} ({ordinal(h)})" for s, h in zip(jup_signs, jup_h))),
                    ("Saturn from Moon", " → ".join(f"{SIGNS[s]} ({ordinal(h)})" for s, h in zip(sat_signs, sat_h))),
-                   ("Sade Sati", "Running" if sade else "Not running")], cols=2),
+                   ("Sade Sati", "Running" if sade else "Not running"),
+                   ("Rahu–Ketu from Moon", f"Rahu in {node_sign} ({ordinal(node_h)})")], cols=2),
             CALL("Focus for the year", focus, tone),
             H("The transits"),
             P(" ".join(K.JUPITER_FROM_MOON[h][1] for h in dict.fromkeys(jup_h))),
             P(" ".join(K.SATURN_FROM_MOON[h][1] for h in dict.fromkeys(sat_h))),
+            P(node_text),
         ]
         if highlights:
             blocks += [H("What the chart activates"), BUL(highlights)]
@@ -702,11 +708,15 @@ def _life(ctx, item):
         lean = (HEALTH_LEAN if key == "health" else LEAN_WORDS).get(j.lean, j.lean_text)
         verdicts.append(f"**{label}** — {lean}.")
     sections.append(_cover(ctx, "At a glance", verdicts, _how_to_read("life")))
-    sections += [_chart_chapter(ctx), _identity_chapter(ctx), _strength_chapter(ctx)]
+    from . import report_extras as X
+    sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
+                 _strength_chapter(ctx), X.bhava_chapter(ctx)]
     for key, label, kicker in LIFE_TOPICS:
         sections.append(chapter(label, _topic_blocks(ctx, key), kicker))
     sections.append(_dasha_chapter(ctx, years))
+    sections.append(X.varshaphal_chapter(ctx, min(years, 5)))
     sections += _yearly_chapters(ctx, years)
+    sections.append(X.monthly_chapter(ctx, 12))
     d = _dosha_checks(ctx)
     ss = ctx.r["transits"]["sade_sati"]
     sections.append(chapter("Yogas and doshas", _yoga_blocks(ctx) + [
@@ -1253,6 +1263,8 @@ def _appendix(ctx, brk=True):
         blocks += [H("Birth-time sensitivity"),
                    P(f"Robustness of the supplied birth time: {guidance.get('summary', '')}."),
                    BUL(guidance.get("recommendations") or [])]
+    from . import report_extras as X
+    blocks += X.bav_blocks(ctx)
     return chapter("Technical appendix", blocks, "The calculated data behind every conclusion in this report.", brk=brk)
 
 
@@ -1263,7 +1275,9 @@ def _core(ctx):
         f"Running period: **{(ctx.running()[1] or ctx.running()[0] or {}).get('label', '—').replace('-', '–')}**.",
         "Inside: charts, planets, houses, divisional charts, dashas and transits — each explained."],
         _how_to_read("core"))]
-    sections += [_chart_chapter(ctx), _identity_chapter(ctx), _strength_chapter(ctx)]
+    from . import report_extras as X
+    sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
+                 _strength_chapter(ctx), X.bhava_chapter(ctx)]
     keys = [k for k in ("D9", "D10", "D7", "D2", "D3", "D4", "D12", "D60", "D24") if k in r["vargas"]]
     grid = V.ChartGrid([V.chart_from_report(r, k, f"{k} · {r['vargas'][k]['name']}", 50 * mm) for k in keys], cols=3)
     sections.append(chapter("Divisional charts", [

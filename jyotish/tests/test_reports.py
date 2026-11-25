@@ -22,9 +22,12 @@ PARTNER = dict(year=1992, month=5, day=16, hour=12, minute=0, lat=28.6139, lon=7
 
 # Chapters each product must contain: the report has to be about its own subject.
 EXPECTED = {
-    "core": ["Your birth chart", "Divisional charts", "Your planetary periods", "Current transits"],
-    "life_1": ["Career and status", "Marriage and relationships", "Wealth and finances", "Year by year"],
-    "life_5": ["Health and vitality", "Year by year"],
+    "core": ["Your birth chart", "Avakhada chakra and favourable points", "Numerology",
+             "House-by-house results (Bhava phal)", "Divisional charts", "Your planetary periods", "Current transits"],
+    "life_1": ["Career and status", "Marriage and relationships", "Wealth and finances", "Year by year",
+               "Avakhada chakra and favourable points", "House-by-house results (Bhava phal)",
+               "Varshaphal: your annual charts", "Month by month"],
+    "life_5": ["Health and vitality", "Year by year", "Varshaphal: your annual charts"],
     "sade_sati": ["Sade Sati status and phase analysis", "How strongly it is felt in your chart", "Phase by phase"],
     "dosha": ["Manglik (Kuja) Dosha", "Kaal Sarp Yoga", "Other classical checks"],
     "marriage": ["Marriage conditions", "Your partner as the chart describes", "Candidate Shubh Vivah Muhurat dates"],
@@ -98,3 +101,27 @@ def test_legacy_sections_still_render():
                                                "bullets": ["one"], "table": {"headers": ["A"], "rows": [["1"]]}}])
     reader = PdfReader(BytesIO(pdf))
     assert len(reader.pages) == 2 and "Test Kundli" in reader.pages[1].extract_text()
+
+
+def test_classical_tables_are_computed_correctly(charts):
+    from server.report_content import Ctx
+    from server import report_extras as X
+    c, r, _, _ = charts
+    ctx = Ctx(c, r, REFERENCE_ASKED_AT)
+    # Bhinnashtakavarga totals are fixed by the classical rules for every chart
+    bav = r["ashtakavarga"]["bav_by_sign"]
+    assert {g: sum(v) for g, v in bav.items()} == {"SUN": 48, "MOON": 49, "MARS": 39, "MERCURY": 54,
+                                                     "JUPITER": 56, "VENUS": 52, "SATURN": 39}
+    # Yogini dasha: periods tile time with the 1..8-year lengths in fixed order
+    periods = X.yogini_periods(ctx, years=60)
+    order = [name for name, _, _ in X.YOGINI]
+    for a, b in zip(periods, periods[1:]):
+        assert a["end"] == b["start"]
+        assert order.index(b["name"]) == (order.index(a["name"]) + 1) % 8
+    # Varshaphal: the Sun returns to its natal sidereal longitude, near the birthday
+    when = X.solar_return(ctx, 2026)
+    lon = float(c.eph.sidereal_longitude_series([when], "SUN")[0])
+    assert abs((lon - c.lon["SUN"] + 180) % 360 - 180) < 0.001
+    assert abs((when - when.replace(month=1, day=1, hour=6, minute=30)).days) <= 2
+    annual = X.annual_chart(ctx, 2026)
+    assert annual["muntha"] == (c.lagna_sign + 36) % 12
