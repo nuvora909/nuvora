@@ -1326,4 +1326,7 @@ def build_report(product_key, c, report, c2=None, report2=None, now=None):
         return _marriage(ctx, item)
     if kind in ("gemstone", "rudraksha"):
         return _suggestion(ctx, item, kind)
+    if kind == "child":
+        from . import report_child
+        return report_child.build(ctx, item)
     raise ValueError(f"Unknown report kind {kind!r}")

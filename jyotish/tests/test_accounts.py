@@ -496,10 +496,10 @@ def test_match_requires_standalone_report_entitlement(client, monkeypatch):
     assert seen == [report, report]
 
 
-def test_report_catalogue_has_ten_exact_half_price_non_call_products(client):
+def test_report_catalogue_has_eleven_exact_half_price_non_call_products(client):
     signup(client, "IN")
     options = client.get("/api/billing/options").json()
-    assert len(options["reports"]) == 10
+    assert len(options["reports"]) == 11
     assert {item["key"] for item in options["reports"]} == set(accounts.PRODUCTS)
     assert all(item["kind"] not in ("call", "consultation") for item in options["reports"])
     for item in options["reports"]:
@@ -508,7 +508,7 @@ def test_report_catalogue_has_ten_exact_half_price_non_call_products(client):
         assert item["owned"] is False
     prices = {item["key"]: item["amount"] for item in options["reports"]}
     assert prices == {"life_1": "149.50", "life_5": "199.50", "life_10": "249.50", "life_20": "349.50",
-                      "sade_sati": "62.50", "dosha": "49.50", "match": "124.50", "marriage": "94.50",
+                      "sade_sati": "62.50", "dosha": "49.50", "match": "124.50", "marriage": "94.50", "child": "99.50",
                       "rudraksha": "24.50", "gemstone": "37.50"}
 
 

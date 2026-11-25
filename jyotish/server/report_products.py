@@ -22,6 +22,8 @@ _CATALOGUE = [
      "features": ["Detailed Ashtakoota factor analysis", "Manglik and Kaal Sarp checks for both charts", "Transparent dosha-cancellation review", "D9 and relationship indicators", "Practical compatibility conversations"]},
     {"key": "marriage", "name": "Favourable Marriage Timing", "kind": "marriage", "reference": 189,
      "features": ["Birth details, Lagna and Moon chart data", "Relationship conditions from the calculated chart", "Ranked marriage activation windows", "Candidate Shubh Vivah dates", "Tithi and Nakshatra for each candidate"]},
+    {"key": "child", "name": "Child Kundli", "kind": "child", "reference": 199,
+     "features": ["Temperament from ascendant, Moon and nakshatra", "Name letters (Namakshar) and Avakhada chakra", "Gandmool and birth-dosha checks with shanti dates", "Namkaran, Annaprashan, Mundan and Vidyarambh muhurats", "Childhood dashas, learning and health indications"]},
     {"key": "rudraksha", "name": "Rudraksha Suggestion", "kind": "rudraksha", "reference": 49,
      "features": ["Birth details, Lagna and Moon chart data", "Planet and ascendant assessment", "Transparent planet-selection rationale", "Traditional Rudraksha association", "Non-guaranteeing use guidance"]},
     {"key": "gemstone", "name": "Gemstone Suggestion", "kind": "gemstone", "reference": 75,

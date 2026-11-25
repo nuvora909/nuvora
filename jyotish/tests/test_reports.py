@@ -34,6 +34,8 @@ EXPECTED = {
     "gemstone": ["Chart-linked gemstone suggestion", "Supporting stones and stones to avoid"],
     "rudraksha": ["Chart-linked rudraksha suggestion", "How to wear and care for it"],
     "match": ["Match summary", "The eight factors explained", "Doshas and cancellations"],
+    "child": ["Temperament and nature", "Name letters (Namakshar)", "Birth doshas and remedies",
+              "Planetary periods of childhood", "Sanskar muhurats"],
 }
 
 
