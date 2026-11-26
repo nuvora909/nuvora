@@ -610,7 +610,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
           </div>
           <div class="row">
             <label class="f">Date of birth<input id="fDate" type="date" required min="1850-01-01" max="2149-12-31"></label>
-    <label class="f">Time of birth<input id="fTime" type="time" step="1" required><small class="field-help">Use your best estimate if you’re unsure. We’ll show which chart factors may shift with birth time.</small></label>
+    <label class="f">Time of birth<input id="fTime" type="time" step="1" required><small class="field-help">Use your best estimate if you’re unsure. We’ll show which chart factors may shift with birth time.</small><button class="btn ghost" type="button" id="rectifyOpen" style="margin-top:6px;font-size:.8rem">Not sure of the exact time? Correct it from life events</button></label>
           </div>
           <label class="ai-consent"><input id="aiConsent" type="checkbox">Use the AI reader for my answers. My chart context and questions will be sent to the configured AI provider. If unchecked, use the chart reader without AI.</label>
           <label class="f" style="margin-bottom:12px">Place of birth
@@ -638,6 +638,22 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
         </form>
       </div>
     </div>
+</div></div>
+<style>#rectEvents .rect-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
+#rectEvents .rect-row .f{margin:0}@media (max-width:520px){#rectEvents .rect-row{grid-template-columns:minmax(0,1fr) auto}#rectEvents .rect-row .f:first-child{grid-column:1/-1}}</style>
+<div class="modal" id="rectifyModal"><div class="modal-box">
+  <div class="card">
+    <div class="card-h"><h3>Correct your birth time</h3><button class="btn ghost" type="button" id="rectifyClose" style="margin-left:auto">Close</button></div>
+    <div class="card-b">
+      <p class="muted" style="margin-top:0">A few minutes of birth time can move your period dates by weeks. Add 3 to 8 important events from your life with their dates. We test every minute around your recorded time and keep the one your life fits best, using your dashas, KP cusps and Jupiter–Saturn transits — the method astrologers use by hand.</p>
+      <div id="rectEvents"></div>
+      <button class="btn ghost" type="button" id="rectAdd">+ Add another event</button>
+      <label class="f" style="margin-top:12px">Search around my recorded time<select id="rectWindow"><option value="30">± 30 minutes</option><option value="60" selected>± 1 hour</option><option value="120">± 2 hours</option></select></label>
+      <button class="btn full" type="button" id="rectGo">Find my birth time</button>
+      <div class="err" id="rectErr"></div>
+      <div id="rectOut" aria-live="polite"></div>
+    </div>
+  </div>
 </div></div>
 <div class="modal" id="libModal"><div class="modal-box"><div class="card">
   <div class="card-h"><h3>Prompt library</h3><button class="btn ghost" type="button" id="libClose" style="margin-left:auto">Close</button></div>
@@ -849,6 +865,70 @@ function pickPlace(p) {
   $("#placeInfo").className = "placeinfo ok";
   $("#formErr").textContent = "";
 }
+
+/* ---------- birth-time correction from life events ---------- */
+const RECT_KINDS = [["marriage","Marriage"],["job","First job or a new job"],["promotion","Promotion or big career rise"],
+  ["business","Started a business"],["child","Birth of a child"],["education","Graduation or major exam success"],
+  ["abroad","Moved or travelled abroad for long"],["property","Bought a home or property"],["father_loss","Loss of father"],
+  ["mother_loss","Loss of mother"],["separation","Divorce or separation"],["illness","Serious illness, surgery or accident"]];
+function rectRow(kind = "marriage", date = "") {
+  const row = document.createElement("div");
+  row.className = "row rect-row";
+  row.innerHTML = `<label class="f">Event<select class="rect-kind">${RECT_KINDS.map(([k, l]) =>
+      `<option value="${k}"${k === kind ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="f">Date<input class="rect-date" type="date" value="${esc(date)}" min="1850-01-01"></label>
+    <button class="btn ghost" type="button" aria-label="Remove event" style="align-self:end">✕</button>`;
+  row.querySelector("button").onclick = () => row.remove();
+  $("#rectEvents").appendChild(row);
+}
+function birthFormBody() {
+  const lat = parseFloat($("#fLat").value), lon = parseFloat($("#fLon").value);
+  const tz = $("#fTz").value.trim(), off = $("#fOff").value.trim();
+  if (!$("#fDate").value || !$("#fTime").value) return "Enter your date and recorded time of birth first.";
+  if (isNaN(lat) || isNaN(lon) || (!tz && off === "")) return "Pick your place of birth from the list first.";
+  let t = $("#fTime").value; if (t.length === 5) t += ":00";
+  return {date: $("#fDate").value, time: t, lat, lon, tz: tz || null, utc_offset_hours: off === "" ? null : parseFloat(off),
+    place: $("#fPlace").value, node: $("#fNode").value, dasha_year: $("#fYear").value, node_aspects: $("#fNodeAsp").checked};
+}
+$("#rectifyOpen").onclick = () => {
+  const b = birthFormBody();
+  if (typeof b === "string") { $("#formErr").textContent = b; return; }
+  if (!$("#rectEvents").children.length) { rectRow("marriage"); rectRow("job"); rectRow("child"); }
+  $("#rectErr").textContent = ""; $("#rectOut").innerHTML = "";
+  $("#rectifyModal").classList.add("on");
+};
+$("#rectifyClose").onclick = () => $("#rectifyModal").classList.remove("on");
+$("#rectAdd").onclick = () => rectRow("property");
+$("#rectGo").onclick = async () => {
+  $("#rectErr").textContent = ""; $("#rectOut").innerHTML = "";
+  const b = birthFormBody();
+  if (typeof b === "string") { $("#rectErr").textContent = b; return; }
+  const events = [...document.querySelectorAll(".rect-row")].map(r => ({kind: r.querySelector(".rect-kind").value,
+    date: r.querySelector(".rect-date").value})).filter(e => e.date);
+  if (!events.length) { $("#rectErr").textContent = "Add at least one event with its date."; return; }
+  const go = $("#rectGo"); go.disabled = true; go.innerHTML = `<span class="spinner"></span>Testing every minute around ${esc(b.time.slice(0, 5))}…`;
+  try {
+    const r = await api("/api/rectify", {...b, events, window_minutes: parseInt($("#rectWindow").value, 10)});
+    const chip = {high: "good", moderate: "gold", low: "warn"}[r.confidence] || "warn";
+    const tick = v => v === true ? "✓" : v === false ? "—" : "·";
+    const rows = r.best.detail.map(d => `<tr><td>${esc(d.label)}</td><td>${esc(d.date)}</td><td>${esc(d.dasha.replaceAll("-", "–"))}</td>
+      <td>${Math.round(Math.min(1, d.fit) * 100)}%</td><td>${tick(d.kp)}</td><td>${tick(d.transit)}</td></tr>`).join("");
+    $("#rectOut").innerHTML = `<div class="card" style="margin-top:14px"><div class="card-b">
+      <p style="margin-top:0"><span class="chip ${chip}">Confidence: ${esc(r.confidence)}</span></p>
+      <p><strong>${esc(r.message)}</strong></p>
+      ${r.lagna_note ? `<p class="muted">${esc(r.lagna_note)}</p>` : ""}
+      <p class="muted">Best fit: ${esc(r.best_range.from)}${r.best_range.to !== r.best_range.from ? "–" + esc(r.best_range.to) : ""} · ${esc(r.best.lagna)} ascendant.
+        How well your events fit: recorded time ${Math.round(r.given.score * 80)}%, best time ${Math.round(r.best.score * 80)}%.</p>
+      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Event</th><th>Date</th><th>Running period</th><th>Fit</th><th>KP</th><th>Transit</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${r.verdict === "change" ? `<button class="btn full" type="button" id="rectUse" style="margin-top:12px">Use ${esc(r.best.time)} as my birth time</button>` : ""}
+      <p class="faint" style="font-size:.8rem">Only accept a new time if your event dates are accurate. A change of more than a few minutes is worth checking against your birth certificate or family records.</p>
+    </div></div>`;
+    const use = $("#rectUse");
+    if (use) use.onclick = () => { $("#fTime").value = r.best.time + ":00"; $("#rectifyModal").classList.remove("on");
+      $("#formErr").textContent = `Birth time set to ${r.best.time}. Press “Calculate chart” to save it.`; };
+  } catch (err) { $("#rectErr").textContent = err.message; }
+  finally { go.disabled = false; go.textContent = "Find my birth time"; }
+};
 
 /* ---------- calculate ---------- */
 $("#birthForm").addEventListener("submit", async e => {

@@ -206,18 +206,46 @@ def places(q: str = Query(..., min_length=2, max_length=80), limit: int = Query(
     return {"results": place_search(q, limit)}
 
 
-def _calculate_chart(req: ChartRequest):
+def _birth_input(req: ChartRequest) -> BirthInput:
     y, m, d = map(int, req.date.split("-"))
     hms = [int(x) for x in req.time.split(":")] + [0]
     if not (0 <= hms[0] <= 23 and 0 <= hms[1] <= 59 and 0 <= hms[2] <= 59):
         raise HTTPException(400, "Invalid time")
     if not req.tz and req.utc_offset_hours is None:
         raise HTTPException(400, "Provide a timezone (pick a city) or a UTC offset")
-    birth = BirthInput(year=y, month=m, day=d, hour=hms[0], minute=hms[1], second=hms[2], lat=req.lat, lon=req.lon,
-                       tz_name=req.tz or None, utc_offset_hours=None if req.tz else req.utc_offset_hours,
-                       name=req.name.strip(), gender=req.gender, place=req.place.strip())
+    return BirthInput(year=y, month=m, day=d, hour=hms[0], minute=hms[1], second=hms[2], lat=req.lat, lon=req.lon,
+                      tz_name=req.tz or None, utc_offset_hours=None if req.tz else req.utc_offset_hours,
+                      name=req.name.strip(), gender=req.gender, place=req.place.strip())
+
+
+def _calculate_chart(req: ChartRequest):
+    birth = _birth_input(req)
     try:
         return analyse(birth, Options(node=req.node, dasha_year=req.dasha_year, node_aspects=req.node_aspects))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+class RectifyEvent(BaseModel):
+    kind: str = Field(..., max_length=20)
+    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class RectifyRequest(ChartRequest):
+    events: list[RectifyEvent] = Field(..., min_length=1, max_length=12)
+    window_minutes: int = Field(60, ge=5, le=120)
+
+
+@app.post("/api/rectify")
+def rectify_birth_time(req: RectifyRequest, user: dict = Depends(require_user)):
+    """Find the birth time near the recorded one that best explains the person's dated life events."""
+    from vedic.rectify import Event, rectify
+    birth = _birth_input(req)
+    try:
+        events = [Event.parse(e.kind, e.date) for e in req.events]
+        return rectify(birth, events, window_minutes=req.window_minutes,
+                       step_minutes=2 if req.window_minutes > 60 else 1,
+                       options=Options(node=req.node, dasha_year=req.dasha_year, node_aspects=req.node_aspects))
     except ValueError as e:
         raise HTTPException(400, str(e)) from None
 
