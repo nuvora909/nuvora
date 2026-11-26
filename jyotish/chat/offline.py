@@ -623,10 +623,18 @@ class Reader:
         else:
             opening = (f"On this question your chart is **{j.lean_text}**. {j.theme} "
                        "Read what follows as tendencies and timing, not fixed events.")
+        # A question about a coming period ("next few months") is answered month by month first;
+        # the natal promise becomes the background.
+        from .near_term import analyse as near_term, offline_sections
+        nt = None if prashna or topic.key == "lifetime" else near_term(self.c, topic, question, self.now)
+        near_sections = []
+        if nt:
+            opening, near_sections = offline_sections(nt, topic, j.lean_text)
         if topic.key == "foreign":
             opening += ("\n\nThese are three different outcomes, and the chart treats them differently:\n"
                         + self.foreign_split())
         parts.append("### The short answer\n\n" + opening)
+        parts += near_sections
         if prashna_text:
             parts.append(prashna_text)
         if topic.key == "general":

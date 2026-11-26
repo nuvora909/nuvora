@@ -60,7 +60,11 @@ class LLMConfig:
             timeout = float(os.environ.get("LLM_TIMEOUT", "").strip() or 60.0)
         except ValueError:
             timeout = 60.0
-        return cls(prov, key, model, base.rstrip("/"), timeout=max(5.0, timeout),
+        try:  # thinking models spend part of the budget on hidden reasoning before the answer
+            max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "").strip() or 4096)
+        except ValueError:
+            max_tokens = 4096
+        return cls(prov, key, model, base.rstrip("/"), timeout=max(5.0, timeout), max_tokens=max(1024, max_tokens),
                    reasoning_effort=os.environ.get("LLM_REASONING_EFFORT", "").strip() or None)
 
     def public(self):

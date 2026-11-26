@@ -8,6 +8,7 @@ from .context import build_context
 from .facts import extract_and_verify
 from .golden import golden_guidance
 from .judgment import judge, working_notes
+from .near_term import analyse as near_term, notes as near_term_notes
 from .llm import LLM, LLMError, get_llm
 from .offline import LABEL as OFFLINE_LABEL
 from .offline import offline_answer
@@ -135,9 +136,11 @@ class ChatSession:
                 response_system += "\n\n" + golden_guidance(topic.key)
             prashna_evidence = prashna_prompt(prashna, topic.houses) if prashna else ""
             judgment = judge(self.chart, self.report, topic, asked_at)
+            nt = None if prashna else near_term(self.chart, topic, question, asked_at)
+            near = ("\n\n" + near_term_notes(nt, topic)) if nt else ""
             msgs = self.history[-2 * HISTORY_TURNS:] + [
                 {"role": "user", "content": question + "\n" + deep_prompt(topic)
-                 + self._topic_evidence(topic, asked_at) + "\n\n" + working_notes(judgment) + prashna_evidence}
+                 + self._topic_evidence(topic, asked_at) + "\n\n" + working_notes(judgment) + near + prashna_evidence}
             ]
             try:
                 text = self._run_model(msgs, trace, response_system)
