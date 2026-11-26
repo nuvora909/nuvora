@@ -23,7 +23,7 @@ PARTNER = dict(year=1992, month=5, day=16, hour=12, minute=0, lat=28.6139, lon=7
 # Chapters each product must contain: the report has to be about its own subject.
 EXPECTED = {
     "core": ["Your birth chart", "Avakhada chakra and favourable points", "Numerology",
-             "House-by-house results (Bhava phal)", "Divisional charts", "Your planetary periods", "Current transits"],
+             "House-by-house results (Bhava phal)", "KP system (Krishnamurti Paddhati)", "Divisional charts", "Your planetary periods", "Current transits"],
     "life_1": ["Career and status", "Marriage and relationships", "Wealth and finances", "Year by year",
                "Avakhada chakra and favourable points", "House-by-house results (Bhava phal)",
                "Varshaphal: your annual charts", "Month by month"],

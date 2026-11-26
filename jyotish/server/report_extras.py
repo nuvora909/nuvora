@@ -361,3 +361,62 @@ def bav_blocks(ctx):
             P("Each planet gives 0–8 points to every sign. A transiting planet does well in signs where it has 4 or "
               "more of its own points; the total row is the Sarvashtakavarga used elsewhere in this report."),
             TABLE(head, rows, [1.1] + [.55] * 12 + [.7], 6.6)]
+
+
+# ---------------------------------------------------------------- KP system
+
+def _dms(deg: float) -> str:
+    d = int(deg)
+    m = int(round((deg - d) * 60))
+    if m == 60:
+        d, m = d + 1, 0
+    return f"{d}°{m:02d}′"
+
+
+def kp_chapter(ctx, brk=True):
+    from vedic.kp import kp_chart
+    kp = kp_chart(ctx.c)
+    star = lambda row: "*" if row["sensitive"] else ""  # noqa: E731
+    cusp_rows = [[str(c["cusp"]), c["sign"], _dms(c["deg"]), pname(c["sign_lord"]), pname(c["star_lord"]),
+                  pname(c["sub_lord"]) + star(c)] for c in kp["cusps"]]
+    planet_rows = [[pname(g), p["sign"], _dms(p["deg"]), str(p["house"]), pname(p["star_lord"]),
+                    pname(p["sub_lord"]) + star(p), ", ".join(str(h) for h in kp["signifies"][g])]
+                   for g, p in kp["planets"].items()]
+    sig_rows = [[str(h)] + [", ".join(pname(g) for g in s[k]) or "—" for k in ("a", "b", "c", "d")]
+                for h, s in kp["significators"].items()]
+    events = []
+    for key, e in kp["events"].items():
+        verdict = "promised" if e["promised"] else "not clearly promised"
+        text = (f"The {ordinal(e['cusp'])} cusp sub lord **{pname(e['sub_lord'])}** signifies houses "
+                f"{', '.join(str(h) for h in e['signifies'])}. Favourable houses touched: "
+                f"{', '.join(str(h) for h in e['favourable']) or 'none'}; opposing houses: "
+                f"{', '.join(str(h) for h in e['against']) or 'none'}.")
+        if e["sensitive"]:
+            text += " This cusp sits near a sub boundary, so the result depends on an accurate birth time."
+        from vedic.kp import EVENTS
+        wanted = ", ".join(str(h) for h in sorted(EVENTS[key][1]))
+        text = f"KP looks for houses {wanted}. " + text
+        events.append(CALL(e["label"], text, "good" if e["promised"] else "gold", verdict.capitalize()))
+    blocks = [
+        P("Krishnamurti Paddhati (KP) is a precise school of Vedic astrology. It uses Placidus house cusps and divides "
+          "every nakshatra into nine unequal 'subs' in Vimshottari proportions. The deciding factor for any matter is "
+          "the sub lord of that house's cusp: an event is promised when the cusp sub lord signifies the houses that "
+          "support it."),
+        H("Cuspal positions (Placidus)"),
+        TABLE(["Cusp", "Sign", "Degree", "Sign lord", "Star lord", "Sub lord"], cusp_rows, [.5, 1, .8, .9, .9, .9], 7.8),
+        H("Planets"),
+        TABLE(["Planet", "Sign", "Degree", "House", "Star lord", "Sub lord", "Signifies houses"], planet_rows,
+              [.8, .9, .7, .5, .8, .8, 1.3], 7.6),
+        H("House significators"),
+        P("For each house, planets are listed in KP order of strength: A — planets in the star of the house's "
+          "occupants; B — the occupants; C — planets in the star of the cusp's sign lord; D — the sign lord itself."),
+        TABLE(["House", "A (star of occupants)", "B (occupants)", "C (star of owner)", "D (owner)"], sig_rows,
+              [.5, 1.6, 1.1, 1.6, .8], 7.4),
+        H("What the cusps promise"),
+    ] + events + [
+        NOTE("Ayanamsa: Lahiri (KP traditionally uses the Krishnamurti ayanamsa, about 6′ smaller). An asterisk (*) "
+             "marks a sub lord that could change with that difference or a small birth-time error. Rahu and Ketu also "
+             "act as agents of their sign lords."),
+    ]
+    return chapter("KP system (Krishnamurti Paddhati)", blocks,
+                   "Placidus cusps, sub lords, significators and what each key cusp promises.", brk=brk)

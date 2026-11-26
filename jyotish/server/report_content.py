@@ -710,7 +710,7 @@ def _life(ctx, item):
     sections.append(_cover(ctx, "At a glance", verdicts, _how_to_read("life")))
     from . import report_extras as X
     sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
-                 _strength_chapter(ctx), X.bhava_chapter(ctx)]
+                 _strength_chapter(ctx), X.bhava_chapter(ctx), X.kp_chapter(ctx)]
     for key, label, kicker in LIFE_TOPICS:
         sections.append(chapter(label, _topic_blocks(ctx, key), kicker))
     sections.append(_dasha_chapter(ctx, years))
@@ -1311,7 +1311,7 @@ def _core(ctx):
         _how_to_read("core"))]
     from . import report_extras as X
     sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
-                 _strength_chapter(ctx), X.bhava_chapter(ctx)]
+                 _strength_chapter(ctx), X.bhava_chapter(ctx), X.kp_chapter(ctx)]
     keys = [k for k in ("D9", "D10", "D7", "D2", "D3", "D4", "D12", "D60", "D24") if k in r["vargas"]]
     grid = V.ChartGrid([V.chart_from_report(r, k, f"{k} · {r['vargas'][k]['name']}", 50 * mm) for k in keys], cols=3)
     sections.append(chapter("Divisional charts", [
