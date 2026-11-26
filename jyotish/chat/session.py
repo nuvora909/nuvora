@@ -32,9 +32,14 @@ class ChatSession:
         self.chart, self.report = chart, report
         self.llm = llm if llm is not None else (get_llm() if use_env_llm else None)
         self.use_golden = use_golden
+        self.history: list[dict] = []          # neutral messages, user/assistant only (final texts)
+        self.refresh(chart, report)
+
+    def refresh(self, chart, report: dict) -> None:
+        """Swap in a chart and report recalculated for today; the conversation history is kept."""
+        self.chart, self.report = chart, report
         today = datetime.now(chart.time.local.tzinfo).date().isoformat()
         self.system = SYSTEM_PROMPT + "\n\n" + build_context(report, today=today)
-        self.history: list[dict] = []          # neutral messages, user/assistant only (final texts)
 
     def reader_label(self, mode: str | None = None, error: str | None = None, language: str = "en") -> str:
         mode = mode or ("llm" if self.llm else "offline")

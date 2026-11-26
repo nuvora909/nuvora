@@ -675,6 +675,7 @@ const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio
 const ABBR = {SUN:"Su",MOON:"Mo",MARS:"Ma",MERCURY:"Me",JUPITER:"Ju",VENUS:"Ve",SATURN:"Sa",RAHU:"Ra",KETU:"Ke"};
 const BEN = new Set(["JUPITER","VENUS","MOON","MERCURY"]);
 const GRAHAS = Object.keys(ABBR);
+let loadedDay = "";
 let R = null, CID = null, place = null, chartStyle = "north", varga = "D1", selectedHouse = 1, selectedPlanet = null, verifiedRevealTimer = 0;
 
 // The server keeps a calculated chart in memory only, so after a restart or a long gap its session
@@ -689,7 +690,7 @@ function reloadSavedChart() {
     const k = id && store.all().find(x => x.id === id);
     if (!k) return false;
     const j = await api("/api/chart", {...k.body, kundli_id: id, language: $("#responseLanguage").value}, {}, true);
-    R = j.report; CID = j.chart_id; loadedId = id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString(); loadedId = id;
     return true;
   })().catch(() => false).finally(() => { chartReload = null; });
   return chartReload;
@@ -874,7 +875,7 @@ $("#birthForm").addEventListener("submit", async e => {
   try {
     const kundliId = editingId || newKundliId();
     const j = await api("/api/chart", {...body, kundli_id: kundliId});
-    R = j.report; CID = j.chart_id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString();
     $("#readerChip").textContent = j.chat.label;
     $("#readerChip").className = "chip " + (j.chat.mode === "llm" ? "good" : "warn");
     finishBirth(body, kundliId);
@@ -1408,13 +1409,13 @@ async function ensureChart() {
   const id = $("#homeKundli").value || store.current();
   if (!id) return false;
   store.setCurrent(id);
-  if (R && loadedId === id) return true;
+  if (R && loadedId === id && loadedDay === new Date().toDateString()) return true;  // a new day means new periods and transits
   const k = store.all().find(x => x.id === id);
   if (!k) return false;
   setLoading(true, "Computing chart, dashas and transits…");
   try {
     const j = await api("/api/chart", {...k.body, kundli_id: id, language: $("#responseLanguage").value});
-    R = j.report; CID = j.chart_id; loadedId = id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString(); loadedId = id;
     $("#readerChip").textContent = j.chat.label + (j.chat.preparing ? ` · preparing ${j.chat.preparing} answers` : "");
     $("#readerChip").className = "chip " + (j.chat.mode === "llm" ? "good" : "warn");
     showApp();

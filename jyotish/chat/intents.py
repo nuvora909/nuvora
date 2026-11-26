@@ -211,18 +211,27 @@ def _verdict_word(lean: str) -> str:
             "mixed": "It can happen, but it won't be handed to you.", "demanding": "Not easily, and not quickly."}.get(lean, "")
 
 
-def _windows_text(ctx, topic, limit=2, after=None, before=None) -> list[str]:
+def _windows_text(ctx, topic, limit=2, after=None, before=None, best_first=False) -> list[str]:
+    """Windows as readable phrases. A window with a Jupiter–Saturn trigger is named by the trigger months (the
+    sharpest timing the chart gives), with its longer period as context. With best_first, the strongest window
+    leads and the rest follow in date order."""
     j = ctx.j(topic)
+    wins = list(j.windows)
+    if best_first and wins:
+        top = max(wins, key=lambda w: (w.score, -w.start.timestamp()))
+        wins = [top] + [w for w in wins if w is not top]
     lines = []
-    for w in j.windows:
+    for w in wins:
         if after and w.end < after or before and w.start > before:
             continue
         label = "–".join(_t(x) for x in w.dasha.lords)
-        trigger = ""
         if w.double_transit:
             a, b = w.double_transit[0], w.double_transit[1]
-            trigger = f", with the strongest push between {_my(a)} and {_my(b)} when Jupiter and Saturn both reach the area"
-        lines.append(f"**{_my(w.start)} – {_my(w.end)}** (the {label} period{trigger})")
+            span = _my(a) if _my(a) == _my(b) else f"{_my(a)} – {_my(b)}"
+            lines.append(f"**{span}** (inside the {label} period, {_my(w.start)} – {_my(w.end)}, when Jupiter and "
+                         "Saturn both reach the area)")
+        else:
+            lines.append(f"**{_my(w.start)} – {_my(w.end)}** (the {label} period)")
         if len(lines) >= limit:
             break
     return lines
@@ -271,27 +280,27 @@ def answer_topic(ctx, part, topic, mode="topic"):
 
 def answer_when(ctx, part, topic):
     j = ctx.j(topic)
-    wins = _windows_text(ctx, topic, limit=3)
+    wins = _windows_text(ctx, topic, limit=3, best_first=True)
     if not wins:
         return (f"I'll be honest: your chart doesn't point to one sharp date for this in the next few years.",
                 [f"For {topic.label.lower()} the chart is {_lean_phrase(j.lean, topic.key == 'health')}, and "
                  "progress here builds through effort rather than a single event. Watch the months when your running "
-                 f"period changes — {_strip(j.activation_now).split('.')[0]}."])
+                 f"period changes. {_strip(j.activation_now).split('.')[0]}."])
     first = wins[0]
     lead = f"The most likely window is {first}."
     body = []
     if len(wins) > 1:
-        body.append("If it doesn't happen then, the next opportunities are " + _join(wins[1:]) + ".")
+        body.append("The other real openings are " + _join(wins[1:]) + ".")
     why = [f.text for f in j.drivers[:2]]
     if why:
         body.append("I'm basing this on the chart itself: " + "; and ".join(_lc(w) for w in why)
                     + ". These periods activate exactly that.")
-    if j.windows and j.windows[0].double_transit:
-        body.append("Within a window, the stretch where Jupiter and Saturn both reach the area is when things usually move "
-                    "from talk to action.")
-    running = j.activation_now.split(". ")[0]
+    if any(w.double_transit for w in j.windows):
+        body.append("I name the months when Jupiter and Saturn both reach the area because that is when things usually "
+                    "move from talk to action; the wider period around them is the build-up.")
+    running = ". ".join(j.activation_now.split(". ")[:2]).rstrip(".")
     if running:
-        body.append(f"For context, here is what is running now: {_lc(running)}.")
+        body.append(f"For context: {running}.")
     body.append("Treat these as the times to push, apply and say yes — not dates when something will happen to you "
                 "without effort.")
     return lead, body
@@ -309,8 +318,8 @@ def answer_year(ctx, part, topic):
     wins = _windows_text(ctx, topic, limit=2, after=start, before=end)
     good = [mm for mm in months if mm.label in ("strong", "favourable")]
     if wins and good:
-        lead = (f"Yes, {year} looks genuinely promising for {topic.label.lower()}. The window {wins[0]} falls in that "
-                f"year, and the strongest months are **{_join([_my(x.start) for x in good[:3]])}**.")
+        lead = (f"Yes, {year} looks genuinely promising for {topic.label.lower()}. The window {wins[0]} is open in "
+                f"that year, and the strongest months are **{_join([_my(x.start) for x in good[:3]])}**.")
     elif wins:
         lead = f"{year} has potential: the window {wins[0]} overlaps it, though the monthly transits are mixed."
     elif good:
@@ -319,6 +328,12 @@ def answer_year(ctx, part, topic):
     else:
         lead = f"{year} is more of a building year for {topic.label.lower()} than a breakthrough year."
     body = []
+    if (end - ctx.now).days < 75:
+        # Little of the year is left, so "this year" really means "soon": say what comes straight after.
+        later = [w for w in _windows_text(ctx, topic, limit=3, after=end) if not wins or w != wins[0]]
+        left = f"Only a few weeks of {year} are left, so it is worth looking just past it"
+        body.append(f"{left}: the next opening is {later[0]}." if later else
+                    f"{left}: no new period trigger follows straight away, so act on the months above.")
     hard = [mm for mm in months if mm.label == "demanding"]
     if hard:
         body.append(f"Go easier in {_join([_my(x.start) for x in hard[:2]])}.")

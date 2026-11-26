@@ -177,6 +177,16 @@ class Judgment:
     confidence: str
     confidence_reason: str
     notes: list[str] = field(default_factory=list)
+    kp: dict | None = None             # KP cuspal sub-lord promise for event topics, an independent second system
+
+
+LAYER_NAMES = {"promise": "the birth chart", "confirmation": "the divisional chart", "activation": "the running period",
+               "trigger": "the Jupiter–Saturn transits", "kp": "the KP sub-lord check"}
+
+
+def _names(items) -> str:
+    items = list(items)
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
 
 
 def _sign_intervals(chart, planet: str, start: datetime, end: datetime):
@@ -207,7 +217,7 @@ def double_transits(chart, targets: dict[int, str], start: datetime, end: dateti
             st = [s for s in targets if (s - ss) % 12 in SATURN_REACH]
             if jt and st:
                 shared = [s for s in jt if s in st]
-                label = targets[shared[0]] if shared else f"{targets[jt[0]]} (Jupiter) and {targets[st[0]]} (Saturn)"
+                label = targets[shared[0]] if shared else f"{targets[jt[0]]} and {targets[st[0]]} between them"
                 hits.append((lo, hi, js, ss, label))
     merged = []
     for h in sorted(hits):
@@ -251,17 +261,18 @@ class Judge:
         from_moon = (self.c.sign[lord] - moon) % 12 + 1
         occupants = [g for g in self.c.sign if self.c.sign[g] == sign and g not in ("RAHU", "KETU")]
         if from_moon in KENDRAS or from_moon in TRIKONAS:
-            weight, how = 0.75, "well placed from the Moon too, so the emotional and practical sides of the topic pull together"
+            weight, how = 0.75, "a strong spot, so how this feels inside and how it works out in practice pull the same way"
         elif from_moon in DUSTHANAS:
-            weight, how = -0.75, "in a difficult house counted from the Moon, so the topic can feel harder inwardly than it looks on paper"
+            weight, how = -0.75, "a difficult spot, so this can feel harder inwardly than it looks on paper"
         else:
-            weight, how = 0.0, "neutrally placed from the Moon, so the Moon chart neither adds to nor subtracts from the D1 picture"
+            weight, how = 0.0, "a neutral spot, so the Moon view neither adds to nor takes away from the main picture"
         tag = (f'<fact kind="placement" planet="{_t(lord)}" sign="{SIGNS[self.c.sign[lord]]}">'
                f'{_t(lord)} in {SIGNS[self.c.sign[lord]]}</fact>')
-        text = (f"Counted from the Moon, the {_ord(h)} house is {SIGNS[sign]}; its lord, {tag}, falls "
-                f"{_ord(from_moon)} from the Moon, {how}.")
-        if occupants:
-            text += " " + ", ".join(_t(g) for g in occupants) + f" also sit{'s' if len(occupants) == 1 else ''} in that sign."
+        text = (f"Checked from your Moon sign as well (the classical second ascendant), the {_ord(h)} house is "
+                f"{SIGNS[sign]}, and its ruler, {tag}, sits {_ord(from_moon)} from the Moon: {how}.")
+        others = [g for g in occupants if g != lord]
+        if others:
+            text += " " + " and ".join(_t(g) for g in others) + f" also sit{'s' if len(others) == 1 else ''} in that sign."
         return text, weight
 
     def _house_factors(self, h: int, scale: float) -> list[Factor]:
@@ -276,7 +287,7 @@ class Judge:
             out.append(Factor(text, label, weight * scale, "promise", key))
 
         if lh in KENDRAS or lh in TRIKONAS:
-            add(f"{rd.f_lord(h)}, a strong position that plugs {area} into {LORD_OUTLET[lh]}",
+            add(f"{rd.f_lord(h)}, a strong position that links {area} with {LORD_OUTLET[lh]}",
                 f"the {_ord(h)} lord {_t(lord)} in a strong house", 1.25, ("lord_place", lord))
         elif lh in DUSTHANAS:
             if h in DUSTHANAS:
@@ -331,12 +342,14 @@ class Judge:
             elif g in ("SATURN", "MARS"):
                 add(f"{rd.f_aspect(g, h)}, adding pressure, delay or a need for structure",
                     f"{_t(g)}'s aspect on the {_ord(h)} house", -0.5, ("aspect", g, h))
-        sav_tag, sav = rd.f_sav(h)
+        sav = self.r["ashtakavarga"]["sav_by_house"][h - 1]["sav"]
+        sav_tag = (f'<fact kind="sav" house="{h}" value="{sav}">your {_ord(h)} house scores {sav} points '
+                   f'in Ashtakavarga</fact>')
         if sav >= 28:
-            add(f"{sav_tag}, above the 28-bindu average, so transits through this house tend to land constructively",
+            add(f"{sav_tag} (the average is 28), so transits through this house tend to land well",
                 f"strong Ashtakavarga support for the {_ord(h)} house", 1.0, ("sav", h))
         elif sav < 25:
-            add(f"{sav_tag}, below average, so this house needs more deliberate effort to deliver",
+            add(f"{sav_tag} (the average is 28), so this house needs more deliberate effort to deliver",
                 f"thin Ashtakavarga support for the {_ord(h)} house", -1.0, ("sav", h))
         return out
 
@@ -417,14 +430,15 @@ class Judge:
         rd = self.reader
         own_main = [h for h in topic.houses if self.c.house_lord[h] == g]
         own_side = [h for h in topic.secondary if self.c.house_lord[h] == g]
-        lord_tag = lambda h: (f'<fact kind="house_lord" house="{h}" lord="{_t(g)}">the {_ord(h)} house</fact>')
+        lord_tag = lambda h: (f'<fact kind="house_lord" house="{h}" lord="{_t(g)}">the {_ord(h)} house</fact> '
+                              f'({HOUSE_MEANING[h]})')
         aspect_tag = lambda h: f'<fact kind="aspect" planet="{_t(g)}" house="{h}">the {_ord(h)} house</fact>'
         join = lambda items: items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
         bits = []
         if own_main:
             bits.append("rules " + join([lord_tag(h) for h in own_main]))
         if self.c.house[g] in topic.houses:
-            bits.append("occupies a core house as " + rd.f_place(g, compact=True))
+            bits.append("sits in a house this question depends on, as " + rd.f_place(g, compact=True))
         aspected = [h for h in topic.houses if self.c.aspects(g, h) and self.c.house[g] != h]
         if aspected and not bits:
             bits.append("aspects " + join([aspect_tag(h) for h in aspected[:2]]))
@@ -432,7 +446,7 @@ class Judge:
             bits.append("supports the question as lord of " + join([lord_tag(h) for h in own_side]))
         if not bits and self.c.house[g] in topic.secondary:
             bits.append("sits in a supporting house as " + rd.f_place(g, compact=True))
-        return "; ".join(bits) or "works only in the background for this question"
+        return " and ".join(bits) or "works only in the background for this question"
 
     def _relevance(self, g, topic: Topic) -> int:
         rel = self.reader.relevance(g, topic)
@@ -445,18 +459,21 @@ class Judge:
         if not running:
             return "No running dasha in range.", 0
         rel = max(self._relevance(p.lord, topic) for p in running)
-        parts = []
-        for i, p in enumerate(running):
-            if i and p.lord == running[i - 1].lord:
-                parts.append(f"{self.reader.f_dasha(p)}, the same lord's own sub-period, which concentrates that agenda")
+        md = running[0]
+        text = f"You are in the {self.reader.f_dasha(md)}, and {_t(md.lord)} {self._link(md.lord, topic)}."
+        if len(running) > 1:
+            ad = running[1]
+            if ad.lord == md.lord:
+                text += (f" Inside it runs the {self.reader.f_dasha(ad)}, {_t(md.lord)}'s own sub-period, which "
+                         "concentrates the same agenda.")
             else:
-                parts.append(f"{self.reader.f_dasha(p)}, whose lord {self._link(p.lord, topic)}")
-        verdict = ("The running period speaks directly to this question, so it is live now."
+                text += f" Inside it runs the {self.reader.f_dasha(ad)}; {_t(ad.lord)} {self._link(ad.lord, topic)}."
+        verdict = ("So this question is live right now."
                    if rel == 2 else
-                   "The running period touches the question indirectly; expect preparation more than decisive movement."
+                   "So the present period touches this question indirectly: expect preparation more than decisive movement."
                    if rel == 1 else
-                   "The running period is about other parts of life; this topic is quieter until a connected period begins.")
-        return "Now running: " + "; then ".join(parts) + ". " + verdict, rel
+                   "The present period is mostly about other parts of life, so this topic stays quieter until a connected period begins.")
+        return text + " " + verdict, rel
 
     # ---------------------------------------------------------------- windows
     def _horizon(self, topic: Topic):
@@ -493,27 +510,69 @@ class Judge:
                 if (hi - lo).days >= 20 and (overlap is None or (hi - lo) > (overlap[1] - overlap[0])):
                     overlap = (lo, hi, d[2], d[3], d[4])
             md_rel = self._relevance(p.lords[0], topic) if len(p.lords) > 1 else 0
-            score = 1.2 * rel + (1.5 if overlap else 0.0) + 0.4 * (md_rel > 0) - (0.3 if p.lords == current_lords else 0.0)
+            score = 1.2 * rel + (1.5 if overlap else 0.0) + 0.4 * (md_rel > 0)
+            if overlap:
+                # Classical refinement: a transit delivers when the planet has 4+ of its own 8 Ashtakavarga points
+                # in the sign it moves through, and a trigger on one shared target is stronger than a split one.
+                jb, sb = self._bav("JUPITER", overlap[2]), self._bav("SATURN", overlap[3])
+                score += sum(0.25 if b >= 4 else -0.25 for b in (jb, sb) if b is not None)
+                score += 0.25 if not overlap[4].endswith("between them") else 0.0
             out.append(Window(start, finish, p, rel, overlap, score))
         out.sort(key=lambda w: (-w.score, w.start))
         best = sorted(out[:3], key=lambda w: w.start)
+        explained = False
         for w in best:
             w.text = self._window_text(w, topic)
+            if w.double_transit:
+                if explained:      # explain the trigger once; later windows just name it
+                    w.text = w.text.replace("— a Jupiter–Saturn double transit, the classical trigger that turns a "
+                                            "period's promise into real events.", "— another Jupiter–Saturn double transit.")
+                explained = True
         return best
 
+    def span(self, lo: datetime, hi: datetime) -> str:
+        """A readable date range: 'Now until January 2027', 'February – July 2028', 'March 2029'."""
+        a, b = lo.astimezone(self.tz), hi.astimezone(self.tz)
+        if lo <= self.now + timedelta(days=20):
+            return f"Now until {b:%B %Y}"
+        if (a.year, a.month) == (b.year, b.month):
+            return f"{a:%B %Y}"
+        if a.year == b.year:
+            return f"{a:%B} – {b:%B %Y}"
+        return f"{a:%B %Y} – {b:%B %Y}"
+
+    def _bav(self, planet: str, sign: int) -> int | None:
+        try:
+            return int(self.r["ashtakavarga"]["bav_by_sign"][planet][sign])
+        except (KeyError, IndexError, TypeError):
+            return None
+
     def _window_text(self, w: Window, topic: Topic) -> str:
-        base = f"{self.reader.f_dasha(w.dasha)}: the period lord {self._link(w.dasha.lord, topic)}"
+        lord = _t(w.dasha.lord)
+        why = f"{lord} {self._link(w.dasha.lord, topic)}"
         if w.double_transit:
             lo, hi, js, ss, label = w.double_transit
             mid = (lo + (hi - lo) / 2).astimezone(self.tz).date().isoformat()
             jtag = f'<fact kind="transit" planet="Jupiter" sign="{SIGNS[js]}" date="{mid}">Jupiter in {SIGNS[js]}</fact>'
             stag = f'<fact kind="transit" planet="Saturn" sign="{SIGNS[ss]}" date="{mid}">Saturn in {SIGNS[ss]}</fact>'
-            span = f"{lo.astimezone(self.tz):%b %Y} to {hi.astimezone(self.tz):%b %Y}"
-            return (f"{base}. Inside it, from {span}, {jtag} and {stag} both reach {label} — a Jupiter–Saturn "
-                    "double transit, the classical trigger that turns a period's promise into visible movement. "
-                    "This is the most concrete window of the set.")
-        return (f"{base}. No Jupiter–Saturn double transit falls inside it, so treat it as a build-up period: "
-                "good for preparation, applications and groundwork rather than a single decisive event.")
+            verb = "between them reach" if label.endswith("between them") else "both reach"
+            target = label.removesuffix(" between them")
+            text = (f"**{self.span(lo, hi)}**, inside the {self.reader.f_dasha(w.dasha)}: {jtag} and {stag} {verb} "
+                    f"{target} — a Jupiter–Saturn double transit, the classical trigger that turns a period's promise "
+                    f"into real events. It matters here because {why}.")
+            jb, sb = self._bav("JUPITER", js), self._bav("SATURN", ss)
+            if jb is not None and sb is not None:
+                if jb >= 4 and sb >= 4:
+                    text += (f" Both transits carry good Ashtakavarga support ({jb} and {sb} of 8 points), "
+                             "so the trigger should land well.")
+                else:
+                    weak = [(n, b) for n, b in (("Jupiter", jb), ("Saturn", sb)) if b < 4]
+                    text += (" " + " and ".join(f"{n} has only {b} of 8 Ashtakavarga points there" for n, b in weak)
+                             + ", so this trigger is softer than it looks.")
+            return text
+        return (f"**{self.span(w.start, w.end)}**, the {self.reader.f_dasha(w.dasha)}: {why}. Without the "
+                "Jupiter–Saturn trigger this is a build-up period, good for preparation, applications and groundwork "
+                "rather than one decisive event.")
 
     # ---------------------------------------------------------------- judgment
     def promise_score(self, topic: Topic) -> float:
@@ -546,36 +605,54 @@ class Judge:
         activation_now, act_rel = self._activation_now(topic)
         windows = self._windows(topic)
         notes = self.reader.sensitivity_notes(topic)
+        kp = self._kp(topic)
         layers = {
             "promise": {"strong": True, "supportive": True, "demanding": False}.get(lean),
             "confirmation": (None if not varga else varga["agreement"] == "agree"),
             "activation": act_rel >= 1,
             "trigger": any(w.double_transit for w in windows) if topic.key != "lifetime" else None,
+            # KP is a second, independent system; a sub lord near a boundary is too birth-time dependent to count.
+            "kp": None if not kp or kp["sensitive"] else kp["promised"],
         }
         agree = sum(1 for v in layers.values() if v)
         disagree = sum(1 for v in layers.values() if v is False)
-        applicable = sum(1 for v in layers.values() if v is not None)
+        yes = [LAYER_NAMES[k] for k, v in layers.items() if v]
+        no = [LAYER_NAMES[k] for k, v in layers.items() if v is False]
         if layers["promise"] is None:
             confidence = "moderate" if agree >= 2 and disagree == 0 else "low"
-            reason = ("the natal promise itself is mixed, so even well-timed periods bring mixed results"
+            reason = ("the birth chart itself is mixed, so even well-timed periods bring mixed results"
                       if confidence == "moderate" else
-                      "the natal promise is mixed and the timing layers do not line up")
+                      "the birth chart is mixed and the timing checks do not line up")
         elif agree >= 3 and disagree == 0:
             confidence = "high"
-            reason = f"all {agree} applicable layers point the same way"
+            reason = f"{_names(yes)} all point the same way"
         elif agree >= 2 and disagree <= 1:
-            confidence, reason = "moderate", f"{agree} of {applicable} layers agree, but not all of them"
+            confidence = "moderate"
+            reason = f"{_names(yes)} agree, but {_names(no)} {'does' if len(no) == 1 else 'do'} not" if no else \
+                f"{_names(yes)} agree"
         else:
-            confidence, reason = "low", "the layers disagree, so the chart supports themes more than firm conclusions"
+            confidence, reason = "low", "the checks disagree, so the chart supports themes more than firm conclusions"
         if notes and confidence == "high":
             confidence = "moderate"
-            reason += ", but birth-time sensitivity limits precise timing"
+            reason += ", but exact dates depend on an accurate birth time"
         elif notes:
-            reason += "; birth-time sensitivity limits precise timing"
+            reason += "; exact dates depend on an accurate birth time"
         lean_text = (HEALTH_LEAN if topic.key == "health" else LEAN_WORDS)[lean]
         return Judgment(topic, lean, lean_text, self._theme(topic, lean, drivers, counters), drivers, counters,
                         moon_text, varga, activation_now, act_rel, windows, round(promise, 2), layers, confidence,
-                        reason, notes)
+                        reason, notes, kp)
+
+    def _kp(self, topic: Topic) -> dict | None:
+        """The KP verdict for event topics: does the sub lord of the deciding cusp signify the right houses?"""
+        from vedic.kp import EVENTS, kp_chart
+        if topic.key not in EVENTS:
+            return None
+        try:
+            e = dict(kp_chart(self.c)["events"][topic.key])
+        except Exception:      # a polar birth place where Placidus cusps are undefined
+            return None
+        e["wanted"] = sorted(EVENTS[topic.key][1])
+        return e
 
 
 def judge(chart, report, topic: Topic, now: datetime | None = None) -> Judgment:
@@ -602,9 +679,19 @@ def working_notes(j: Judgment) -> str:
         lines += [f"  {i}. {w.text}" for i, w in enumerate(j.windows, 1)]
     else:
         lines.append("- No dasha period in the horizon connects directly to this topic; do not force a date.")
+    if j.kp:
+        k = j.kp
+        lines.append(f"- KP cross-check (independent system): the {_ord(k['cusp'])} cusp sub lord {_t(k['sub_lord'])} "
+                     f"signifies houses {k['signifies']}; KP wants {k['wanted']} for this, so it "
+                     f"{'promises' if k['promised'] else 'does not clearly promise'} the event"
+                     + (f"; it also touches {k['against']}, which adds delay or conditions" if k['against'] else "")
+                     + (" (cusp near a sub boundary: birth-time dependent, do not lean on it)" if k['sensitive'] else "") + ".")
     lines.append("- Layer agreement: " + ", ".join(f"{k} {layer(v)}" for k, v in j.layers.items()))
     lines.append(f"- Confidence the evidence supports: **{j.confidence}** — {j.confidence_reason}.")
     lines.append("Use these as your reasoning backbone: open with the lean and the theme in plain words, explain the "
                  "two or three supports and the main counterweight as cause and effect, then the windows with their "
-                 "reasons. You may reorder or rephrase; never contradict a fact tag, and keep the tags you reuse intact.")
+                 "reasons. You may reorder or rephrase; never contradict a fact tag, and keep the tags you reuse intact. "
+                 "Write for a person, not an astrologer: name the best window in the first paragraph, write dates as "
+                 "months ('February – July 2028'), never as 2028-02-12, explain any technical term in a few plain words "
+                 "the first time, and do not repeat the same explanation for every window.")
     return "\n".join(lines)

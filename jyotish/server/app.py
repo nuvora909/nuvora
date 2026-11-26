@@ -14,6 +14,7 @@ import re
 import secrets
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
@@ -230,6 +231,8 @@ def _chart_key(req: ChartRequest) -> str:
     payload = req.model_dump(exclude={"language"})
     cfg = llm_mod.LLMConfig.from_env()
     payload["engine"] = ENGINE_VERSION
+    # Saved answers speak about "now" (running periods, this month's transits), so they last one day at most.
+    payload["day"] = datetime.now(timezone.utc).date().isoformat()
     payload["model"] = cfg.model if cfg and req.ai_consent else "offline"
     payload["provider"] = cfg.provider if cfg and req.ai_consent else "offline"
     payload["endpoint"] = cfg.base_url if cfg and req.ai_consent else "offline"
@@ -278,8 +281,30 @@ def _user_session(chart_id: str, user_id: int) -> ChatSession | None:
         entry = _sessions.get(chart_id)
         if entry and entry[0] == user_id:
             _sessions.move_to_end(chart_id)
-            return entry[1]
-    return None
+            sess = entry[1]
+        else:
+            return None
+    return _keep_current(sess)
+
+
+def _keep_current(sess: ChatSession) -> ChatSession:
+    """A report is a snapshot of 'now' (running periods, transits, Sade Sati). When the birth place's local day
+    has changed since it was calculated, recalculate it so answers and PDFs always use today's position."""
+    req = getattr(sess, "chart_request", None)
+    if req is None or not hasattr(sess, "refresh") or not isinstance(getattr(sess, "report", None), dict):
+        return sess
+    tz = sess.chart.time.local.tzinfo
+    at = (sess.report.get("transits") or {}).get("at")
+    try:
+        made = datetime.fromisoformat(at).astimezone(tz).date() if at else None
+    except ValueError:
+        made = None
+    if made == datetime.now(tz).date():
+        return sess
+    c, report = _calculate_chart(req)
+    sess.refresh(c, report)
+    sess.full_report = report
+    return sess
 
 
 @app.post("/api/chart")
