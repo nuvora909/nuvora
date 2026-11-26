@@ -170,7 +170,9 @@ class ReportPdfRequest(BaseModel):
 def status():
     acc_path = ROOT / "reports" / "accuracy.json"
     acc = json.loads(acc_path.read_text(encoding="utf-8")) if acc_path.exists() else None
+    from .accounts import _purchase_terms
     return {"engine": ENGINE_VERSION, "llm": llm_mod.status(), "accuracy": acc,
+            "support_email": _purchase_terms()["support_email"],
             "attribution": "Place data: GeoNames.org (CC BY 4.0). Ephemeris: NASA JPL DE440s."}
 
 
