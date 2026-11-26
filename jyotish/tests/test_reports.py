@@ -23,7 +23,7 @@ PARTNER = dict(year=1992, month=5, day=16, hour=12, minute=0, lat=28.6139, lon=7
 # Chapters each product must contain: the report has to be about its own subject.
 EXPECTED = {
     "core": ["Your birth chart", "Avakhada chakra and favourable points", "Numerology",
-             "House-by-house results (Bhava phal)", "KP system (Krishnamurti Paddhati)", "Divisional charts", "Your planetary periods", "Current transits"],
+             "House-by-house results (Bhava phal)", "KP system (Krishnamurti Paddhati)", "Lal Kitab", "Divisional charts", "Your planetary periods", "Current transits"],
     "life_1": ["Career and status", "Marriage and relationships", "Wealth and finances", "Year by year",
                "Avakhada chakra and favourable points", "House-by-house results (Bhava phal)",
                "Varshaphal: your annual charts", "Month by month"],
@@ -127,3 +127,15 @@ def test_classical_tables_are_computed_correctly(charts):
     assert abs((when - when.replace(month=1, day=1, hour=6, minute=30)).days) <= 2
     annual = X.annual_chart(ctx, 2026)
     assert annual["muntha"] == (c.lagna_sign + 36) % 12
+
+
+def test_lal_kitab_rules(charts):
+    from server.report_content import Ctx
+    from server.report_lalkitab import RINS, lal_kitab
+    c, r, _, _ = charts
+    lk = lal_kitab(Ctx(c, r, REFERENCE_ASKED_AT))
+    assert set(lk["houses"]) == {"SUN", "MOON", "MARS", "MERCURY", "JUPITER", "VENUS", "SATURN", "RAHU", "KETU"}
+    for rin in lk["rins"]:  # every reported debt really is formed by its rule
+        rule = next(x for x in RINS if x[0] == rin["name"])
+        assert all(g in rule[1] and lk["houses"][g] in rule[2] for g in rin["planets"])
+    assert all(g in lk["weak"] for rin in lk["rins"] for g in rin["planets"])
