@@ -384,6 +384,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
   <link rel="stylesheet" href="/static/tarot-visual.css?v=20261122-2">
   <link rel="stylesheet" href="/static/theme-toggle.css?v=20261124-1">
   <link rel="stylesheet" href="/static/theme-sky.css?v=20261124-6">
+<style>.ai-off .ai-consent,.ai-off .tarot-ai-consent{display:none}</style>
 </head>
 <body class="auth-pending"><div id="accountRoot"></div>
 <button data-theme-toggle class="is-small theme-float"></button>
@@ -749,6 +750,8 @@ $("#modesBtn").onclick = () => $("#deepHome").scrollIntoView({behavior:"smooth",
 
 /* ---------- status ---------- */
 api("/api/status").then(s => {
+  // With NUVORA_AI_READER=off the site runs on the built-in readers, so the AI consent options are hidden.
+  if (s.llm && s.llm.disabled) document.body.classList.add("ai-off");
   if (s.support_email) document.querySelectorAll("[data-support-email]").forEach(link => {
     link.textContent = s.support_email; link.href = "mailto:" + s.support_email;
   });

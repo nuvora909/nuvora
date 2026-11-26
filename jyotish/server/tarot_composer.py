@@ -168,6 +168,23 @@ def _trajectory(main) -> str | None:
     return "Past, present and near future sit at a similar level: this is a steady road, and change will come from what you do"
 
 
+SUIT_PACE = {"Wands": "fast — days to a few weeks", "Swords": "quick but unsettled — a few weeks",
+             "Cups": "gentle — a few weeks to a couple of months", "Pentacles": "slow and steady — several months"}
+
+
+def _timing(main) -> str:
+    """Traditional suit timing: the dominant suit sets the pace; a spread of mostly Major Arcana is a longer arc."""
+    suits = [_rank_suit(c)[1] for c in main]
+    majors = sum(1 for s in suits if s is None)
+    if majors > len(main) / 2:
+        return ("On timing: most of these cards are Major Arcana, which traditionally means a longer arc — think in "
+                "months or a season rather than days, and look for one decisive turning point.")
+    minors = [s for s in suits if s]
+    suit = max(set(minors), key=minors.count)
+    return (f"On timing: the {suit} lead this spread, and traditionally that pace is {SUIT_PACE[suit]}. "
+            "Tarot shows the pace of things, not an exact date.")
+
+
 def compose(question: str, cards: list[dict]) -> dict:
     info = _classify(question)
     main, clarifier = cards[:-1], cards[-1]
@@ -196,7 +213,7 @@ def compose(question: str, cards: list[dict]) -> dict:
     if info["other_person"]:
         summary += " The cards describe the dynamic around you both; they cannot read another person's private feelings."
     if info["when"]:
-        summary += " Tarot speaks to conditions rather than dates: watch for the shift the direction card describes."
+        summary += " " + _timing(main)
 
     readings = [{"position": c["position"], "card_name": c["name"], "orientation": c["orientation"],
                  "text": _card_text(c, info, i)} for i, c in enumerate(cards)]

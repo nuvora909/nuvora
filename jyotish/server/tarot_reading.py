@@ -170,12 +170,30 @@ if SERVER_DIR_STR not in sys.path:
     sys.path.insert(0, SERVER_DIR_STR)
 
 
+# Questions where a card reading must not stand in for real-world help: these get the protective notice only.
+SEVERE_RE = re.compile(r"\b(treatment\w*|medicat\w*|medicine\w*|diagnos\w*|surgery|operation|cancer|tumou?r|pregnan\w*|"
+                       r"suicid\w*|kill|death|die|dying|harm\w*|abuse\w*|violen\w*|unsafe|emergency|legal\w*|lawsuit|court|"
+                       r"police|bet|betting|gambl\w*|lottery|crypto)\b|मरना|मृत्यु|कैंसर|गर्भावस्था|कानूनी", re.I)
+CAUTION = {
+    "health": " For anything about your body or mind, a doctor's advice comes first; take this as reflection, not diagnosis.",
+    "money": " This is reflection, not financial advice: check the numbers and talk to someone qualified before you commit money.",
+}
+
+
 def _fallback(question: str, cards: list[dict], language: str) -> dict:
     """Card-based reader used when the AI is off or unavailable. English and Hinglish requests get the
-    composed reading (tarot_composer.py); Hindi keeps the Devanagari wording below."""
-    if language != "hi" and not _is_high_stakes(question):
+    composed reading (tarot_composer.py), with a short professional note for everyday health or money questions;
+    only severe questions get the notice instead of a reading. Hindi keeps the Devanagari wording below."""
+    if language != "hi" and not SEVERE_RE.search(question):
         from tarot_composer import compose
-        return compose(question, cards)
+        reading = compose(question, cards)
+        if _is_high_stakes(question):
+            kind = "health" if re.search(r"health|ill|sick|disease|body|mental|symptom", question, re.I) else "money"
+            reading["summary"] += CAUTION[kind]
+            if reading["verdict"] == "YES" and kind == "money":
+                reading["verdict"] = "POSSIBLE"
+                reading["summary"] = reading["summary"].replace("The cards lean yes", "The cards lean cautiously toward yes", 1)
+        return reading
     return _fallback_classic(question, cards, language)
 
 

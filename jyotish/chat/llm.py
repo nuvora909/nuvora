@@ -9,6 +9,7 @@
                  fails; with no models listed, free models are chosen from its catalogue automatically
   LLM_BASE_URL   optional; default https://api.openai.com/v1 or https://api.anthropic.com
   LLM_TIMEOUT    optional; seconds to wait for the provider between streamed chunks (default 60)
+  NUVORA_AI_READER  "off" turns the AI reader off everywhere; the built-in rule-based readers answer instead
 
 Neutral message format used by the session:
   {"role": "user", "content": str}
@@ -83,6 +84,8 @@ class LLMConfig:
     @classmethod
     def from_env(cls) -> "LLMConfig | None":
         load_env_file()
+        if ai_disabled():
+            return None
         prov = os.environ.get("LLM_PROVIDER", "").strip().lower()
         key = os.environ.get("LLM_API_KEY", "").strip()
         models = [m.strip() for m in (os.environ.get("LLM_MODEL", "") + "," + os.environ.get("LLM_FALLBACK_MODELS", "")).split(",")
@@ -125,8 +128,15 @@ class LLMConfig:
         return out
 
 
+def ai_disabled() -> bool:
+    """NUVORA_AI_READER=off runs the whole site on the built-in, rule-based readers (Kundli chat and Tarot)."""
+    return os.environ.get("NUVORA_AI_READER", "on").strip().lower() in ("off", "false", "0", "no", "rules")
+
+
 def status() -> dict:
     cfg = LLMConfig.from_env()
+    if cfg is None and ai_disabled():
+        return {"configured": False, "disabled": True, "reader": "built-in rule-based reader"}
     if cfg is None:
         missing = [k for k in ("LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL") if not os.environ.get(k)]
         return {"configured": False, "missing": missing}

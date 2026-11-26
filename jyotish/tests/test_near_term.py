@@ -60,4 +60,4 @@ def test_good_days_pass_every_filter(chart):
 def test_plain_questions_keep_the_natal_reading(chart):
     c, r = chart
     text = offline_answer(c, r, "Is my chart good for wealth?", question_time=REFERENCE_ASKED_AT)
-    assert "### Month by month" not in text and "On this question your chart is" in text
+    assert "### Month by month" not in text and "### Why the chart says this" in text

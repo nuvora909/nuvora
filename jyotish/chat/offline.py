@@ -594,6 +594,11 @@ class Reader:
         topic = detect_topic(question)
         if classic:
             return self.answer_classic(question, prashna)
+        # Questions with a specific intent (when, a year, remedies, career choice, love vs arranged, a relative...)
+        # or several parts get a direct, human answer to each part; plain topic questions keep the full reading.
+        from .intents import compose, special_intent
+        if special_intent(question):
+            return compose(self.c, self.r, question, self.now)
         return self.answer_judged(question, topic, prashna)
 
     def foreign_split(self) -> str:
@@ -621,8 +626,12 @@ class Reader:
             opening = (self.decision_bottom(question, j.score, prashna_score, self.verdict(prashna_score))
                        + f" On the natal side, the picture is {j.lean_text}. {j.theme}")
         else:
-            opening = (f"On this question your chart is **{j.lean_text}**. {j.theme} "
-                       "Read what follows as tendencies and timing, not fixed events.")
+            opener = {"strong": "Let me give you the straight answer: the chart is firmly on your side here",
+                      "supportive": "The short version: your chart supports this, with one condition worth respecting",
+                      "mixed": "I'll be honest with you: this one is genuinely mixed",
+                      "demanding": "I'll be straight with you: this area asks for patience and structure"}.get(j.lean)
+            opening = ((f"{opener} — **{j.lean_text}**. " if opener else f"Your chart is **{j.lean_text}** here. ")
+                       + f"{j.theme} Read what follows as tendencies and timing, not fixed events.")
         # A question about a coming period ("next few months") is answered month by month first;
         # the natal promise becomes the background.
         from .near_term import analyse as near_term, offline_sections
