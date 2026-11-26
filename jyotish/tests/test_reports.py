@@ -33,7 +33,7 @@ EXPECTED = {
     "marriage": ["Marriage conditions", "Your partner as the chart describes", "Candidate Shubh Vivah Muhurat dates"],
     "gemstone": ["Chart-linked gemstone suggestion", "Supporting stones and stones to avoid"],
     "rudraksha": ["Chart-linked rudraksha suggestion", "How to wear and care for it"],
-    "match": ["Match summary", "The eight factors explained", "Doshas and cancellations"],
+    "match": ["Match summary", "The eight factors explained", "Porutham: South Indian matching", "Doshas and cancellations"],
     "child": ["Temperament and nature", "Name letters (Namakshar)", "Birth doshas and remedies",
               "Planetary periods of childhood", "Sanskar muhurats"],
 }

@@ -1183,6 +1183,40 @@ def _match(ctx, ctx2, item):
               highlight=[(i, 1, "good" if k["score"] >= k["max"] * .75 else ("gold" if k["score"] > 0 else "caution"))
                          for i, k in enumerate(m["kootas"])]),
     ], "What each koota measures and how the two charts compare.", brk=False))
+    from vedic.porutham import porutham
+    pr = porutham(c1, c2, ctx.now)
+    tones = {True: "good", None: "gold", False: "caution"}
+    sandhi = pr["dasha_sandhi"]
+    sections.append(chapter("Porutham: South Indian matching", [
+        P("South Indian families match horoscopes with the ten Poruthams, counted from the bride's birth star to the "
+          "groom's. Rajju and Vedha are decisive: if either fails, tradition does not recommend the match whatever the "
+          "other scores. The remaining eight are counted as agreeing or not."),
+        CALL("Porutham result", [f"**{pr['verdict']}.** {pr['agree']} of 10 poruthams agree"
+                                 + (f" and {pr['partly']} partly" if pr["partly"] else "") + ".",
+                                 f"Bride's star {pr['bride_star']} · groom's star {pr['groom_star']} · count {pr['count']}."],
+             pr["tone"], f"{pr['agree']}/10"),
+        TABLE(["Porutham", "Result", "Details", "What it protects"],
+              [[x["name"] + (" (key)" if x["weight"] == "decisive" else ""), x["status"], x["detail"], cap(x["meaning"])]
+               for x in pr["rows"]], [1, .9, 2.3, 1.8], 7.8,
+              highlight=[(i, 1, tones[x["ok"]]) for i, x in enumerate(pr["rows"])]),
+        NOTE("(key) marks a decisive porutham. Bride and groom follow the genders on the charts; otherwise partner 1 is read as the bride."),
+        H("Papasamyam (balance of malefics)"),
+        FACTS([(f"{pr['bride_name']} ({'bride' if pr['genders_known'] else 'partner 1, as bride'})", f"{pr['papa']['bride']:g} points"),
+               (f"{pr['groom_name']} ({'groom' if pr['genders_known'] else 'partner 2, as groom'})", f"{pr['papa']['groom']:g} points"),
+               ("Result", "Balanced" if pr["papa"]["ok"] else "Bride's side heavier")], cols=3),
+        P("Malefics (Mars, Saturn, Rahu, Ketu and, at half weight, the Sun) in the 1st, 2nd, 4th, 7th, 8th or 12th "
+          "house are counted from the ascendant, the Moon and Venus. Tradition is satisfied when the groom's total is "
+          "equal to or greater than the bride's. "
+          + ("That holds here." if pr["papa"]["ok"] else "Here the bride's total is higher, which astrologers weigh "
+             "with the rest of the match rather than reject outright.")),
+        H("Dasha Sandhi"),
+        P("Dasha Sandhi is the junction of major planetary periods. When both partners change major period within a "
+          "few months of each other, tradition advises extra care in those months.")
+        if not sandhi else
+        P("Both partners change major period within six months of each other around "
+          + _join([f"{min(a, b):%b %Y}" for a, b in sandhi]) + ". Tradition advises extra patience and care in those months."),
+        NOTE("No Dasha Sandhi falls in the next 30 years." if not sandhi else "Checked over the next 30 years."),
+    ], "The ten Poruthams, Papasamyam and Dasha Sandhi.", brk=True))
     ind1, ind2 = m["person1"]["relationship_indicators"], m["person2"]["relationship_indicators"]
     sections.append(chapter("The two charts side by side", [
         FLOW(V.SideBySide(V.chart_from_report(r1, "D1", n1, 74 * mm), V.chart_from_report(r2, "D1", n2, 74 * mm))),
