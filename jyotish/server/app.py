@@ -14,6 +14,8 @@ import re
 import secrets
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from functools import lru_cache
 from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
@@ -170,7 +172,9 @@ class ReportPdfRequest(BaseModel):
 def status():
     acc_path = ROOT / "reports" / "accuracy.json"
     acc = json.loads(acc_path.read_text(encoding="utf-8")) if acc_path.exists() else None
+    from .accounts import _purchase_terms
     return {"engine": ENGINE_VERSION, "llm": llm_mod.status(), "accuracy": acc,
+            "support_email": _purchase_terms()["support_email"],
             "attribution": "Place data: GeoNames.org (CC BY 4.0). Ephemeris: NASA JPL DE440s."}
 
 
@@ -203,18 +207,46 @@ def places(q: str = Query(..., min_length=2, max_length=80), limit: int = Query(
     return {"results": place_search(q, limit)}
 
 
-def _calculate_chart(req: ChartRequest):
+def _birth_input(req: ChartRequest) -> BirthInput:
     y, m, d = map(int, req.date.split("-"))
     hms = [int(x) for x in req.time.split(":")] + [0]
     if not (0 <= hms[0] <= 23 and 0 <= hms[1] <= 59 and 0 <= hms[2] <= 59):
         raise HTTPException(400, "Invalid time")
     if not req.tz and req.utc_offset_hours is None:
         raise HTTPException(400, "Provide a timezone (pick a city) or a UTC offset")
-    birth = BirthInput(year=y, month=m, day=d, hour=hms[0], minute=hms[1], second=hms[2], lat=req.lat, lon=req.lon,
-                       tz_name=req.tz or None, utc_offset_hours=None if req.tz else req.utc_offset_hours,
-                       name=req.name.strip(), gender=req.gender, place=req.place.strip())
+    return BirthInput(year=y, month=m, day=d, hour=hms[0], minute=hms[1], second=hms[2], lat=req.lat, lon=req.lon,
+                      tz_name=req.tz or None, utc_offset_hours=None if req.tz else req.utc_offset_hours,
+                      name=req.name.strip(), gender=req.gender, place=req.place.strip())
+
+
+def _calculate_chart(req: ChartRequest):
+    birth = _birth_input(req)
     try:
         return analyse(birth, Options(node=req.node, dasha_year=req.dasha_year, node_aspects=req.node_aspects))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+class RectifyEvent(BaseModel):
+    kind: str = Field(..., max_length=20)
+    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class RectifyRequest(ChartRequest):
+    events: list[RectifyEvent] = Field(..., min_length=1, max_length=12)
+    window_minutes: int = Field(60, ge=5, le=120)
+
+
+@app.post("/api/rectify")
+def rectify_birth_time(req: RectifyRequest, user: dict = Depends(require_user)):
+    """Find the birth time near the recorded one that best explains the person's dated life events."""
+    from vedic.rectify import Event, rectify
+    birth = _birth_input(req)
+    try:
+        events = [Event.parse(e.kind, e.date) for e in req.events]
+        return rectify(birth, events, window_minutes=req.window_minutes,
+                       step_minutes=2 if req.window_minutes > 60 else 1,
+                       options=Options(node=req.node, dasha_year=req.dasha_year, node_aspects=req.node_aspects))
     except ValueError as e:
         raise HTTPException(400, str(e)) from None
 
@@ -228,6 +260,8 @@ def _chart_key(req: ChartRequest) -> str:
     payload = req.model_dump(exclude={"language"})
     cfg = llm_mod.LLMConfig.from_env()
     payload["engine"] = ENGINE_VERSION
+    # Saved answers speak about "now" (running periods, this month's transits), so they last one day at most.
+    payload["day"] = datetime.now(timezone.utc).date().isoformat()
     payload["model"] = cfg.model if cfg and req.ai_consent else "offline"
     payload["provider"] = cfg.provider if cfg and req.ai_consent else "offline"
     payload["endpoint"] = cfg.base_url if cfg and req.ai_consent else "offline"
@@ -276,8 +310,30 @@ def _user_session(chart_id: str, user_id: int) -> ChatSession | None:
         entry = _sessions.get(chart_id)
         if entry and entry[0] == user_id:
             _sessions.move_to_end(chart_id)
-            return entry[1]
-    return None
+            sess = entry[1]
+        else:
+            return None
+    return _keep_current(sess)
+
+
+def _keep_current(sess: ChatSession) -> ChatSession:
+    """A report is a snapshot of 'now' (running periods, transits, Sade Sati). When the birth place's local day
+    has changed since it was calculated, recalculate it so answers and PDFs always use today's position."""
+    req = getattr(sess, "chart_request", None)
+    if req is None or not hasattr(sess, "refresh") or not isinstance(getattr(sess, "report", None), dict):
+        return sess
+    tz = sess.chart.time.local.tzinfo
+    at = (sess.report.get("transits") or {}).get("at")
+    try:
+        made = datetime.fromisoformat(at).astimezone(tz).date() if at else None
+    except ValueError:
+        made = None
+    if made == datetime.now(tz).date():
+        return sess
+    c, report = _calculate_chart(req)
+    sess.refresh(c, report)
+    sess.full_report = report
+    return sess
 
 
 @app.post("/api/chart")
@@ -375,6 +431,72 @@ def report_sample(req: ReportPdfRequest, user: dict = Depends(require_user)):
         "Content-Disposition": f'inline; filename="nuvora-{safe_name}-sample.pdf"',
         "Cache-Control": "private, no-store",
     })
+
+
+@lru_cache(maxsize=512)
+def _muhurat_cached(day: str, lat: float, lon: float, tz: str) -> dict:
+    from datetime import date as _date
+    from vedic.muhurat import day_muhurat
+    return day_muhurat(_date.fromisoformat(day), lat, lon, tz)
+
+
+@app.get("/api/muhurat")
+def muhurat(date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"), lat: float = Query(..., ge=-90, le=90),
+            lon: float = Query(..., ge=-180, le=180), tz: str = Query(..., min_length=3, max_length=64),
+            user: dict = Depends(require_user)):
+    """Good and bad times for one day at one place: Rahu Kaal, Choghadiya, Abhijit, Hora, panchang and more."""
+    y = int(date[:4])
+    if not 1900 <= y <= 2100:
+        raise HTTPException(400, "Choose a date between 1900 and 2100")
+    try:
+        return _muhurat_cached(date, round(lat, 3), round(lon, 3), tz)
+    except (ValueError, KeyError) as e:
+        raise HTTPException(400, str(e) or "Unknown timezone") from None
+
+
+class BoyGirlMatchRequest(BaseModel):
+    girl: ChartRequest
+    boy: ChartRequest
+
+
+def _match_charts(req: BoyGirlMatchRequest):
+    girl = req.girl.model_copy(update={"gender": "female"})
+    boy = req.boy.model_copy(update={"gender": "male"})
+    return _calculate_chart(girl), _calculate_chart(boy)
+
+
+def _match_unlocked(user_id: int) -> bool:
+    return has_report_entitlement(user_id, "match") or account_state(user_id)["subscription"]["active"]
+
+
+@app.post("/api/matching")
+def boy_girl_matching(req: BoyGirlMatchRequest, user: dict = Depends(require_user)):
+    """Complete boy-and-girl compatibility. Everyone sees the verdict and score; the full analysis is unlocked by the
+    matchmaking report or an active pass."""
+    from vedic.compat import full_match
+    (cg, rg), (cb, rb) = _match_charts(req)
+    result = full_match(cg, cb, rg, rb)
+    if _match_unlocked(user["id"]):
+        return {**result, "locked": False}
+    keep = ("verdict", "tone", "score", "adjusted_score", "maximum", "band", "girl", "boy")
+    return {**{k: result[k] for k in keep}, "locked": True,
+            "reasons": result["reasons"][:1],
+            "teaser": "Unlock the full analysis: all 8 kootas, dosha exceptions, Mangal Dosha for both, each person's "
+                      "marriage promise, navamsha rapport, shared wedding windows, Porutham and remedies."}
+
+
+@app.post("/api/matching/pdf")
+def boy_girl_matching_pdf(req: BoyGirlMatchRequest, user: dict = Depends(require_user)):
+    if not _match_unlocked(user["id"]):
+        raise HTTPException(402, "Purchase the matchmaking report to download the PDF")
+    (cg, rg), (cb, rb) = _match_charts(req)
+    try:
+        title, subtitle, sections = build_report("match", cg, rg, cb, rb)
+        content = render_pdf(title, subtitle, sections)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    return Response(content, media_type="application/pdf", headers={
+        "Content-Disposition": 'attachment; filename="nuvora-kundli-matching.pdf"', "Cache-Control": "private, no-store"})
 
 
 @app.post("/api/match")

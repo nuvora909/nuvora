@@ -185,6 +185,9 @@
     var regionName = region.country_code === "IN" ? "India · INR" : "UK / international · GBP";
     document.getElementById("billingRegion").innerHTML = '<span class="chip gold">' + escapeHtml(regionName) + '</span><span>Region source: ' + escapeHtml(region.source) + '</span><span>Prices are one-time; no automatic renewal.</span>';
     var terms = options.purchase_terms || {};
+    if (terms.support_email) document.querySelectorAll("[data-support-email]").forEach(function (link) {
+      link.textContent = terms.support_email; link.href = "mailto:" + terms.support_email;
+    });
     var support = terms.support_email ? '<p>Refund or cancellation requests: <a href="mailto:' + escapeHtml(terms.support_email) + '?subject=Refund%20or%20cancellation%20request">' + escapeHtml(terms.support_email) + '</a>. Include your order ID if available.</p>' : '<p>Refund requests are not available yet because no support contact has been published.</p>';
     document.getElementById("purchaseTerms").innerHTML = '<h2>Delivery, refunds &amp; support</h2><p>' + escapeHtml(terms.delivery || "Digital access is provided after payment verification.") + '</p><p><strong>Refund and cancellation terms:</strong> ' + escapeHtml(terms.published ? terms.refund_policy : "Not published yet. Checkout remains disabled until the policy and support contact are published.") + '</p>' + support;
     var grid = document.getElementById("pricingGrid");

@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import time
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -20,6 +21,9 @@ class StubChat:
     def ask(self, message, language="en"):
         self.last_language = language
         return {"html": "<p>stub answer</p>", "text": "stub answer", "language": language}
+
+    def reader_label(self, mode=None, error=None, language="en"):
+        return "Stub chart reader"
 
 
 @pytest.fixture
@@ -60,15 +64,20 @@ def configure_youpi(monkeypatch):
 
 def send_youpi_webhook(client, created, event, amount, *, settlement="NOT_RECONCILED", utr="123456789012",
                        delivery="delivery-12345678", signature=None):
+    timestamp = str(int(time.time()))
     payload = {"event": event, "paymentId": created["payment_id"], "orderId": "NUV-" + created["order_id"],
                "amount": amount, "amountPaise": str(int(Decimal(amount) * 100)), "currency": "INR", "method": "UPI",
-               "utr": utr, "settlementState": settlement}
+               "utr": utr, "settlementState": settlement, "deliveryId": delivery, "timestamp": timestamp}
     raw = json.dumps(payload, separators=(",", ":")).encode()
+    key = b"webhook-test-secret"
     if signature is None:
-        signature = "sha256=" + hmac.new(b"webhook-test-secret", raw, hashlib.sha256).hexdigest()
+        signature = "sha256=" + hmac.new(key, raw, hashlib.sha256).hexdigest()
+    # v2 binds the timestamp to the body so a captured notification cannot be replayed later
+    signature_v2 = "sha256=" + hmac.new(key, timestamp.encode() + b"." + raw, hashlib.sha256).hexdigest()
     return client.post("/api/billing/youpi/webhook", content=raw, headers={
         "Content-Type": "application/json", "X-Gateway-Event": event,
-        "X-Gateway-Signature": signature, "X-Gateway-Delivery-Id": delivery,
+        "X-Gateway-Signature": signature, "X-Gateway-Signature-V2": signature_v2,
+        "X-Gateway-Delivery-Id": delivery, "X-Gateway-Timestamp": timestamp,
     })
 
 
@@ -301,7 +310,7 @@ def test_free_chart_returns_only_birth_details_and_enforces_one_saved_kundli(cli
                    "ashtakavarga": {"score": 30}, "sensitivity": {"rating": "sensitive"},
                    "transits": {"visible": True}}
     monkeypatch.setattr(appmod, "_calculate_chart", lambda req: (object(), full_report))
-    monkeypatch.setattr(appmod, "ChatSession", lambda chart, report: StubChat())
+    monkeypatch.setattr(appmod, "ChatSession", lambda chart, report, **kw: StubChat())
 
     first = client.post("/api/chart", json=_chart_payload("kundli-1001"))
     assert first.status_code == 200, first.text
@@ -496,10 +505,10 @@ def test_match_requires_standalone_report_entitlement(client, monkeypatch):
     assert seen == [report, report]
 
 
-def test_report_catalogue_has_ten_exact_half_price_non_call_products(client):
+def test_report_catalogue_has_eleven_exact_half_price_non_call_products(client):
     signup(client, "IN")
     options = client.get("/api/billing/options").json()
-    assert len(options["reports"]) == 10
+    assert len(options["reports"]) == 11
     assert {item["key"] for item in options["reports"]} == set(accounts.PRODUCTS)
     assert all(item["kind"] not in ("call", "consultation") for item in options["reports"])
     for item in options["reports"]:
@@ -508,7 +517,7 @@ def test_report_catalogue_has_ten_exact_half_price_non_call_products(client):
         assert item["owned"] is False
     prices = {item["key"]: item["amount"] for item in options["reports"]}
     assert prices == {"life_1": "149.50", "life_5": "199.50", "life_10": "249.50", "life_20": "349.50",
-                      "sade_sati": "62.50", "dosha": "49.50", "match": "124.50", "marriage": "94.50",
+                      "sade_sati": "62.50", "dosha": "49.50", "match": "124.50", "marriage": "94.50", "child": "99.50",
                       "rudraksha": "24.50", "gemstone": "37.50"}
 
 

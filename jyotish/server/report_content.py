@@ -445,6 +445,8 @@ def _dasha_chapter(ctx, years=None):
                     trs.append([a["label"].replace("-", "–"), _dmy(max(s, ctx.now)), _dmy(e), act, cap(focus)])
         blocks += [H(f"Sub-periods in the next {years} year{'s' if years > 1 else ''}"),
                    TABLE(["Period", "From", "To", "Lord's role", "Brings into focus"], trs, [1.3, .95, .95, 1.2, 2.1], 7.6)]
+    from . import report_extras as X
+    blocks += X.yogini_blocks(ctx)
     return chapter("Your planetary periods", blocks, "The dasha clock: which planet is in charge of your life, and when that changes.")
 
 
@@ -474,6 +476,8 @@ def _yearly_chapters(ctx, years):
         sat_signs = list(dict.fromkeys([ctx.sign_at("SATURN", ys), ctx.sign_at("SATURN", mid), ctx.sign_at("SATURN", ye)]))
         jup_h = [ctx.from_moon(s) for s in jup_signs]
         sat_h = [ctx.from_moon(s) for s in sat_signs]
+        from . import report_extras as X
+        node_sign, node_h, node_text = X.node_transit_text(ctx, mid)
         sade = next((p for p in ss_periods if _dt(p["start"]) < ye and (not p["end"] or _dt(p["end"]) > ys)), None)
         score = sum(1 if K.JUPITER_FROM_MOON[h][0] == "good" else 0 for h in jup_h[-1:]) + \
             sum(1 if K.SATURN_FROM_MOON[h][0] == "good" else (-1 if K.SATURN_FROM_MOON[h][0] == "hard" else 0) for h in sat_h[-1:])
@@ -511,11 +515,13 @@ def _yearly_chapters(ctx, years):
             FACTS([("Planetary periods", dasha_txt or "—"),
                    ("Jupiter from Moon", " → ".join(f"{SIGNS[s]} ({ordinal(h)})" for s, h in zip(jup_signs, jup_h))),
                    ("Saturn from Moon", " → ".join(f"{SIGNS[s]} ({ordinal(h)})" for s, h in zip(sat_signs, sat_h))),
-                   ("Sade Sati", "Running" if sade else "Not running")], cols=2),
+                   ("Sade Sati", "Running" if sade else "Not running"),
+                   ("Rahu–Ketu from Moon", f"Rahu in {node_sign} ({ordinal(node_h)})")], cols=2),
             CALL("Focus for the year", focus, tone),
             H("The transits"),
             P(" ".join(K.JUPITER_FROM_MOON[h][1] for h in dict.fromkeys(jup_h))),
             P(" ".join(K.SATURN_FROM_MOON[h][1] for h in dict.fromkeys(sat_h))),
+            P(node_text),
         ]
         if highlights:
             blocks += [H("What the chart activates"), BUL(highlights)]
@@ -702,11 +708,16 @@ def _life(ctx, item):
         lean = (HEALTH_LEAN if key == "health" else LEAN_WORDS).get(j.lean, j.lean_text)
         verdicts.append(f"**{label}** — {lean}.")
     sections.append(_cover(ctx, "At a glance", verdicts, _how_to_read("life")))
-    sections += [_chart_chapter(ctx), _identity_chapter(ctx), _strength_chapter(ctx)]
+    from . import report_extras as X, report_lalkitab as LK
+    sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
+                 _strength_chapter(ctx), X.bhava_chapter(ctx), X.kp_chapter(ctx),
+                 LK.lal_kitab_chapter(ctx)]
     for key, label, kicker in LIFE_TOPICS:
         sections.append(chapter(label, _topic_blocks(ctx, key), kicker))
     sections.append(_dasha_chapter(ctx, years))
+    sections.append(X.varshaphal_chapter(ctx, min(years, 5)))
     sections += _yearly_chapters(ctx, years)
+    sections.append(X.monthly_chapter(ctx, 12))
     d = _dosha_checks(ctx)
     ss = ctx.r["transits"]["sade_sati"]
     sections.append(chapter("Yogas and doshas", _yoga_blocks(ctx) + [
@@ -1164,6 +1175,20 @@ def _match(ctx, ctx2, item):
                     show_max=True)),
         NOTE(m["direction"] + " " + m["method"]),
     ], "Ashtakoota guna milan for the two charts.", sample=True))
+    from vedic.compat import full_match
+    girl_first = not (c1.birth.gender == "male" and c2.birth.gender == "female")
+    fm = full_match(*((c1, c2, r1, r2) if girl_first else (c2, c1, r2, r1)), ctx.now)
+    adj = (f" After the classical exceptions the score is **{fm['adjusted_score']:g}/36**."
+           if fm["adjusted_score"] != fm["score"] else "")
+    sections.append(chapter("The complete verdict", [
+        CALL(fm["verdict"], [f"Guna Milan **{fm['score']:g}/36**.{adj}",
+                             "This verdict also weighs Mangal Dosha on both sides, each person's own marriage promise, "
+                             "the navamsha and shared timing."],
+             {"good": "good", "gold": "gold"}.get(fm["tone"], "caution"), fm["verdict"].split()[0]),
+        H("Why"), BUL(fm["reasons"]),
+        H("What to watch"), BUL(fm["watch"] or ["Nothing stands out beyond ordinary care and honest conversation."]),
+        H("Remedies"), BUL(fm["remedies"]),
+    ], "Beyond the 36-point score: what a careful astrologer weighs."))
     rows = [[k["name"].split(" ·")[0], f"{k['score']:g} / {k['max']:g}", KOOTA_MEANING.get(k["key"], ""),
              f"{k['person1']} / {k['person2']}", k["interpretation"]] for k in m["kootas"]]
     sections.append(chapter("The eight factors explained", [
@@ -1173,6 +1198,40 @@ def _match(ctx, ctx2, item):
               highlight=[(i, 1, "good" if k["score"] >= k["max"] * .75 else ("gold" if k["score"] > 0 else "caution"))
                          for i, k in enumerate(m["kootas"])]),
     ], "What each koota measures and how the two charts compare.", brk=False))
+    from vedic.porutham import porutham
+    pr = porutham(c1, c2, ctx.now)
+    tones = {True: "good", None: "gold", False: "caution"}
+    sandhi = pr["dasha_sandhi"]
+    sections.append(chapter("Porutham: South Indian matching", [
+        P("South Indian families match horoscopes with the ten Poruthams, counted from the bride's birth star to the "
+          "groom's. Rajju and Vedha are decisive: if either fails, tradition does not recommend the match whatever the "
+          "other scores. The remaining eight are counted as agreeing or not."),
+        CALL("Porutham result", [f"**{pr['verdict']}.** {pr['agree']} of 10 poruthams agree"
+                                 + (f" and {pr['partly']} partly" if pr["partly"] else "") + ".",
+                                 f"Bride's star {pr['bride_star']} · groom's star {pr['groom_star']} · count {pr['count']}."],
+             pr["tone"], f"{pr['agree']}/10"),
+        TABLE(["Porutham", "Result", "Details", "What it protects"],
+              [[x["name"] + (" (key)" if x["weight"] == "decisive" else ""), x["status"], x["detail"], cap(x["meaning"])]
+               for x in pr["rows"]], [1, .9, 2.3, 1.8], 7.8,
+              highlight=[(i, 1, tones[x["ok"]]) for i, x in enumerate(pr["rows"])]),
+        NOTE("(key) marks a decisive porutham. Bride and groom follow the genders on the charts; otherwise partner 1 is read as the bride."),
+        H("Papasamyam (balance of malefics)"),
+        FACTS([(f"{pr['bride_name']} ({'bride' if pr['genders_known'] else 'partner 1, as bride'})", f"{pr['papa']['bride']:g} points"),
+               (f"{pr['groom_name']} ({'groom' if pr['genders_known'] else 'partner 2, as groom'})", f"{pr['papa']['groom']:g} points"),
+               ("Result", "Balanced" if pr["papa"]["ok"] else "Bride's side heavier")], cols=3),
+        P("Malefics (Mars, Saturn, Rahu, Ketu and, at half weight, the Sun) in the 1st, 2nd, 4th, 7th, 8th or 12th "
+          "house are counted from the ascendant, the Moon and Venus. Tradition is satisfied when the groom's total is "
+          "equal to or greater than the bride's. "
+          + ("That holds here." if pr["papa"]["ok"] else "Here the bride's total is higher, which astrologers weigh "
+             "with the rest of the match rather than reject outright.")),
+        H("Dasha Sandhi"),
+        P("Dasha Sandhi is the junction of major planetary periods. When both partners change major period within a "
+          "few months of each other, tradition advises extra care in those months.")
+        if not sandhi else
+        P("Both partners change major period within six months of each other around "
+          + _join([f"{min(a, b):%b %Y}" for a, b in sandhi]) + ". Tradition advises extra patience and care in those months."),
+        NOTE("No Dasha Sandhi falls in the next 30 years." if not sandhi else "Checked over the next 30 years."),
+    ], "The ten Poruthams, Papasamyam and Dasha Sandhi.", brk=True))
     ind1, ind2 = m["person1"]["relationship_indicators"], m["person2"]["relationship_indicators"]
     sections.append(chapter("The two charts side by side", [
         FLOW(V.SideBySide(V.chart_from_report(r1, "D1", n1, 74 * mm), V.chart_from_report(r2, "D1", n2, 74 * mm))),
@@ -1253,6 +1312,8 @@ def _appendix(ctx, brk=True):
         blocks += [H("Birth-time sensitivity"),
                    P(f"Robustness of the supplied birth time: {guidance.get('summary', '')}."),
                    BUL(guidance.get("recommendations") or [])]
+    from . import report_extras as X
+    blocks += X.bav_blocks(ctx)
     return chapter("Technical appendix", blocks, "The calculated data behind every conclusion in this report.", brk=brk)
 
 
@@ -1263,7 +1324,10 @@ def _core(ctx):
         f"Running period: **{(ctx.running()[1] or ctx.running()[0] or {}).get('label', '—').replace('-', '–')}**.",
         "Inside: charts, planets, houses, divisional charts, dashas and transits — each explained."],
         _how_to_read("core"))]
-    sections += [_chart_chapter(ctx), _identity_chapter(ctx), _strength_chapter(ctx)]
+    from . import report_extras as X, report_lalkitab as LK
+    sections += [_chart_chapter(ctx), _identity_chapter(ctx), X.avakhada_chapter(ctx), X.numerology_chapter(ctx),
+                 _strength_chapter(ctx), X.bhava_chapter(ctx), X.kp_chapter(ctx),
+                 LK.lal_kitab_chapter(ctx)]
     keys = [k for k in ("D9", "D10", "D7", "D2", "D3", "D4", "D12", "D60", "D24") if k in r["vargas"]]
     grid = V.ChartGrid([V.chart_from_report(r, k, f"{k} · {r['vargas'][k]['name']}", 50 * mm) for k in keys], cols=3)
     sections.append(chapter("Divisional charts", [
@@ -1312,4 +1376,7 @@ def build_report(product_key, c, report, c2=None, report2=None, now=None):
         return _marriage(ctx, item)
     if kind in ("gemstone", "rudraksha"):
         return _suggestion(ctx, item, kind)
+    if kind == "child":
+        from . import report_child
+        return report_child.build(ctx, item)
     raise ValueError(f"Unknown report kind {kind!r}")

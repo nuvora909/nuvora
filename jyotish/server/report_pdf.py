@@ -283,6 +283,12 @@ def _block(block, styles, width):
         return [Spacer(1, block.get("h", 4) * mm)]
     if t == "pagebreak":
         return [PageBreak()]
+    if t == "duo":  # a drawn chart on the left, short notes on the right
+        chart = block["left"]
+        notes = [_p(x, ParagraphStyle("DuoNote", parent=styles["body"], fontSize=9, leading=13.6)) for x in block["right"]]
+        grid = Table([[chart, notes]], colWidths=[chart.width + 7 * mm, width - chart.width - 7 * mm])
+        grid.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
+        return [grid, Spacer(1, 3 * mm)]
     if t == "keep":
         inner = []
         for b in block["blocks"]:

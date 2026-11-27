@@ -384,6 +384,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
   <link rel="stylesheet" href="/static/tarot-visual.css?v=20261122-2">
   <link rel="stylesheet" href="/static/theme-toggle.css?v=20261124-1">
   <link rel="stylesheet" href="/static/theme-sky.css?v=20261124-6">
+<style>.ai-off .ai-consent,.ai-off .tarot-ai-consent{display:none}</style>
 </head>
 <body class="auth-pending"><div id="accountRoot"></div>
 <button data-theme-toggle class="is-small theme-float"></button>
@@ -391,7 +392,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
   <div class="brand"><span class="mark" aria-hidden="true"></span>Nuvora <small>Jyotish</small></div>
   <nav class="topnav" id="topNav">
     <button data-v="chat" class="on">Chat</button><button data-v="kundli">Kundli</button>
-     <button data-v="report">Kundli PDF</button><button data-v="profile">Profile</button>
+     <button data-v="report">Kundli PDF</button><button data-v="matching">Matching</button><button data-v="muhurat">Muhurat</button><button data-v="profile">Profile</button>
   </nav>
   <div class="hdr-right">
     <span class="pill" id="llmPill" style="display:none" hidden><span class="dot"></span>reader…</span>
@@ -524,6 +525,58 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
       </div>
   </section>
 
+  <section class="view" id="view-matching">
+    <style>
+      .mt-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:760px){.mt-grid{grid-template-columns:1fr}}
+      .mt-side h3{margin:0 0 10px}.mt-side .f{margin-bottom:10px}.mt-ac{position:relative}
+      .mt-ac-list{position:absolute;left:0;right:0;top:100%;z-index:5;background:var(--bg-raised,var(--bg-sunk));border:1px solid var(--border-strong);border-radius:10px;max-height:220px;overflow:auto}
+      .mt-ac-list button{display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:0;color:inherit;cursor:pointer}
+      .mt-ac-list button:hover{background:var(--bg-sunk)}
+      .mt-score{font-size:2.4rem;font-weight:700;line-height:1}.mt-verdict{font-size:1.3rem;font-weight:600;margin:6px 0 10px}
+      .mt-kootas td,.mt-kootas th{padding:6px 8px}.mt-bar{height:6px;border-radius:3px;background:var(--bg-sunk);overflow:hidden}
+      .mt-bar i{display:block;height:100%;background:var(--accent-primary)}
+    </style>
+    <div class="card"><div class="card-b">
+      <h2 style="margin-top:0">Kundli matching — boy &amp; girl</h2>
+      <p class="muted">Guna Milan (36 points) with the classical exceptions most sites skip, Mangal Dosha for both, each
+        person's own marriage promise, the navamsha, shared wedding windows and South Indian Porutham — in one clear verdict.</p>
+      <div class="mt-grid">
+        <div class="mt-side" data-side="girl"><h3>Girl's details</h3></div>
+        <div class="mt-side" data-side="boy"><h3>Boy's details</h3></div>
+      </div>
+      <button class="btn full" type="button" id="mtGo" style="margin-top:14px">Match kundlis</button>
+      <div class="err" id="mtErr"></div>
+    </div></div>
+    <div id="mtOut" aria-live="polite"></div>
+  </section>
+  <section class="view" id="view-muhurat">
+    <style>
+      .mu-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end}.mu-bar .f{margin:0}
+      .mu-tl{position:relative;height:34px;border-radius:8px;background:var(--bg-sunk);overflow:hidden;margin:8px 0 4px}
+      .mu-tl i{position:absolute;top:0;bottom:0;opacity:.85}.mu-tl i.good{background:var(--success)}.mu-tl i.bad{background:var(--danger)}
+      .mu-tl i.neutral{background:var(--warning)}.mu-tl b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text-primary)}
+      .mu-ticks{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-tertiary)}
+      .mu-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:760px){.mu-grid{grid-template-columns:1fr}}
+      .mu-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-default)}
+      .mu-row:last-child{border-bottom:0}.mu-good{color:var(--success)}.mu-bad{color:var(--danger)}.mu-neutral{color:var(--warning)}
+      .mu-now{outline:2px solid var(--accent-primary);outline-offset:-2px;border-radius:6px}
+      .mu-chog td{padding:6px 8px}.mu-chog tr.good td:first-child{color:var(--success);font-weight:600}
+      .mu-chog tr.bad td:first-child{color:var(--danger);font-weight:600}.mu-chog tr.neutral td:first-child{color:var(--warning);font-weight:600}
+    </style>
+    <div class="card"><div class="card-b">
+      <h2 style="margin-top:0">Muhurat — good and bad times</h2>
+      <p class="muted">Calculated from the real sunrise and sunset at your place. Pick any date to plan ahead.</p>
+      <div class="mu-bar">
+        <button class="btn ghost" type="button" id="muPrev" aria-label="Previous day">◀</button>
+        <label class="f">Date<input id="muDate" type="date" min="1900-01-01" max="2100-12-31"></label>
+        <button class="btn ghost" type="button" id="muNext" aria-label="Next day">▶</button>
+        <button class="btn ghost" type="button" id="muToday">Today</button>
+        <label class="f mt-ac" style="flex:1;min-width:220px">Place<input id="muPlace" placeholder="Start typing a city" autocomplete="off"><div class="mt-ac-list" id="muAc" hidden></div></label>
+      </div>
+      <div class="err" id="muErr"></div>
+    </div></div>
+    <div id="muOut" aria-live="polite"></div>
+  </section>
   <section class="view" id="view-report">
     <div class="rep-actions no-print">
       <button class="btn" id="pdfBtn" type="button">Unlock Kundli PDF</button>
@@ -553,9 +606,48 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
     <article class="card editorial-card"><h2>Ephemeris</h2><p>Nuvora uses NASA JPL DE440s through Skyfield to calculate planetary positions. The displayed accuracy figures compare this implementation with Swiss Ephemeris over a recorded set of test charts; they describe that test set, not a guarantee for every birth chart.</p><h2>Sidereal zodiac and houses</h2><p>The default chart uses the Lahiri ayanamsa and whole-sign houses. Varga charts, divisional positions, and Vimshottari dasha periods are derived from the same calculated birth chart and the selected calculation settings.</p><h2>Birth-time uncertainty</h2><p>The Moon usually moves more slowly than the ascendant. A small birth-time difference can change the ascendant, house placements, divisional charts, or timing details. The Birth-time tab identifies which factors are sensitive for the time entered.</p><h2>What “maximum difference” means</h2><p>Arcseconds measure a small angle on the sky. A maximum difference is the largest observed difference in the benchmark set. It is a comparison between two calculation systems, not a statement that all predictions are accurate to that amount.</p><h2>Interpretation limits</h2><p>Astrology is reflective guidance, not a scientific forecast or a substitute for medical, legal, financial, or relationship advice. Predictions about health, death, or another person’s choices should not be treated as certain or used to make high-stakes decisions.</p></article>
   </section>
 
+  <section class="view editorial-page" id="view-terms">
+    <div class="editorial-hero"><div class="eyebrow">TERMS OF SERVICE</div><h1>The terms, in plain words.</h1><p>Please read these before creating an account or buying a report.</p></div>
+    <article class="card editorial-card">
+      <p class="faint">Last updated 26 November 2026. Contact: <a data-support-email href="#">see the support contact on the Plans page</a>.</p>
+      <h2>1. The service</h2><p>Nuvora Jyotish provides Vedic astrology chart calculations, chat readings, Tarot readings and downloadable PDF reports. By creating an account or using the service you agree to these terms.</p>
+      <h2>2. Astrology is guidance, not certainty</h2><p>Readings and reports describe traditional astrological indications and timing. They are for reflection and personal guidance only. They do not predict events with certainty and are <strong>not</strong> medical, psychological, legal, financial, investment or fertility advice. Do not delay or replace professional advice or treatment because of anything in a reading. You remain responsible for your own decisions.</p>
+      <h2>3. AI-assisted answers</h2><p>If you enable the AI reader, answers are written by an AI model from your calculated chart. Chart facts are checked automatically, but AI text can still contain mistakes. Without AI consent, answers come from our built-in chart reader.</p>
+      <h2>4. Accounts</h2><p>You must be 18 or older to create an account. Keep your password private; you are responsible for activity on your account. Give accurate birth details — results depend on them, and an inaccurate birth time mainly affects divisional charts and dates. Parents and guardians may create charts for their children.</p>
+      <h2>5. Plans, reports and prices</h2><p>Prices are shown before you pay: in Indian rupees for buyers in India and in pounds sterling elsewhere. Launch offers apply until the date shown. Passes give access for the period purchased; standalone reports are one-time purchases that unlock instantly after the payment is verified and can be downloaded again from Reports. Taxes and any currency-conversion or payment-provider fees are shown or charged by the payment provider.</p>
+      <h2>6. Refunds and cancellations</h2><p>Our refund and cancellation policy is shown on the Plans and Reports pages at checkout and forms part of these terms. Because reports are digital and delivered immediately, refunds are given as described in that policy, for example when a report fails to download or contains an error. Contact support with your order ID.</p>
+      <h2>7. Acceptable use</h2><p>Do not misuse the service: no attempts to break security, scrape or resell content in bulk, overload the service, use someone else's account, or enter another adult's birth details to harass or harm them.</p>
+      <h2>8. Content and ownership</h2><p>The software, design, report layouts and written interpretations belong to Nuvora Jyotish. Reports you buy are for your personal use; you may share your own report with family or an astrologer.</p>
+      <h2>9. Availability</h2><p>We work to keep the service running but cannot guarantee it will always be available or error-free. Calculations follow the published method (sidereal zodiac, Lahiri ayanamsa, whole-sign houses, Vimshottari dasha); other traditions may give different results.</p>
+      <h2>10. Liability</h2><p>To the extent the law allows, Nuvora Jyotish is not liable for decisions you make based on readings or for indirect or consequential losses, and our total liability for any claim is limited to the amount you paid us in the twelve months before it. Nothing in these terms limits rights you have under consumer protection law that cannot be excluded.</p>
+      <h2>11. Ending your account</h2><p>You can delete your account at any time from Profile. We may suspend accounts that break these terms. Purchases already delivered are not affected except as stated in the refund policy.</p>
+      <h2>12. Changes and law</h2><p>We may update these terms and will show the new date above; continuing to use the service means you accept the update. These terms are governed by the laws of India, without affecting any mandatory consumer rights in your country of residence.</p>
+    </article>
+  </section>
   <section class="view editorial-page" id="view-privacy">
     <div class="editorial-hero"><div class="eyebrow">YOUR DATA</div><h1>Privacy, in plain words.</h1><p>Birth details are sensitive. Here is what this build stores and where it is processed.</p></div>
-    <article class="card editorial-card"><h2>Saved charts</h2><p>Birth details and saved Kundli records are stored in account-namespaced browser storage. You can review and delete individual saved charts from Profile. Signing out does not remove browser-stored charts.</p><h2>Account and usage</h2><p>The server stores your account email, a salted password hash, session data, question usage, payment records, Tarot usage count, and saved-chart identifiers used to enforce account limits. Chat sessions are held in server memory and cached answers are stored by account. Tarot questions and draws are not kept as a personal history by this app.</p><h2>Chart calculations and AI</h2><p>Chart calculations are processed by this service. For Kundli chat, AI processing is optional: when you check its consent box, relevant chart context and your questions are sent to the configured AI provider. Tarot has a separate per-reading consent box; when selected, the Tarot question and drawn card details, positions, and orientations are sent without birth details. The provider may process that content under its own terms. If consent is left unchecked, the reading uses built-in card meanings without sending the question to an AI provider.</p><h2>Deletion and consent</h2><p>Delete individual saved birth charts from Profile, or permanently delete your account there. Account deletion removes account records, saved birth details stored by this browser, and the server's cached answers and active chart sessions. Payment processors may retain transaction data under their own policies. You can change Kundli AI consent when editing a saved chart.</p><h2>Payments</h2><p>Checkout stays unavailable until refund terms and a support contact are published. When enabled, digital access appears in Reports after payment is verified. Payment processors receive the information needed to complete and reconcile a purchase.</p></article>
+    <article class="card editorial-card">
+      <p class="faint">Last updated 26 November 2026. Questions about your data: <a data-support-email href="#">see the support contact on the Plans page</a>.</p>
+      <h2>Who we are</h2><p>Nuvora Jyotish ("Nuvora", "we") provides Vedic astrology calculations, readings and downloadable reports. We decide how your information is used and are responsible for it.</p>
+      <h2>What we collect</h2><ul>
+        <li><strong>Account:</strong> your email address, a salted password hash (we never see your password), your billing region and, if you use Google sign-in, your Google account identifier.</li>
+        <li><strong>Birth details:</strong> name (optional), gender (optional), date, time and place of birth. These are stored in your browser for your saved Kundlis and sent to our server only to calculate charts and answer your questions.</li>
+        <li><strong>Usage:</strong> questions asked, answers cached for your account, question and Tarot counts, saved-chart identifiers and active chart sessions (kept in server memory).</li>
+        <li><strong>Payments:</strong> order records — product, amount, currency, status and the payment provider's reference. Card, bank and PayPal account details are handled by the payment provider and never reach our servers.</li></ul>
+      <h2>Why we use it</h2><p>To calculate your charts, answer your questions, deliver the reports you buy, enforce plan limits, prevent fraud, provide support and meet legal and tax obligations. We do not sell your data and do not use it for advertising.</p>
+      <h2>AI processing (optional)</h2><p>Kundli chat can use an AI model only when you tick its consent box: your relevant chart details and questions are then sent to the configured AI provider, which processes them under its own terms. Tarot has a separate per-reading consent and never sends birth details. Without consent, answers come from our built-in chart reader and nothing is sent to an AI provider.</p>
+      <h2>Who receives data</h2><ul>
+        <li><strong>Payment providers</strong> (PayPal outside India; a UPI provider in India) receive what they need to process and reconcile a payment.</li>
+        <li><strong>AI providers</strong>, only with your consent, as described above.</li>
+        <li><strong>Hosting and infrastructure</strong> providers that run the service on our behalf.</li>
+        <li>Authorities, when the law requires it.</li></ul>
+      <h2>Children</h2><p>Accounts are for adults. Parents and guardians may enter a child's birth details to create a Child Kundli; by doing so they confirm they have the authority to share them. We do not knowingly collect data directly from children.</p>
+      <h2>Cookies and storage</h2><p>We use one essential sign-in cookie and your browser's local storage for saved charts and preferences. We do not use advertising or tracking cookies.</p>
+      <h2>How long we keep it</h2><p>Account data stays until you delete your account. Cached answers and chart sessions are temporary. Payment records are kept as long as tax and accounting law requires, even after account deletion.</p>
+      <h2>Your rights</h2><p>You can view and correct saved charts in Profile, delete individual charts, withdraw AI consent by editing a chart, and permanently delete your account from Profile. You may also ask us for a copy of your data or raise a concern by contacting support. Depending on where you live (for example under India's Digital Personal Data Protection Act or the UK GDPR), you may have further rights, including complaining to your data protection authority.</p>
+      <h2>Security</h2><p>Passwords are hashed, sessions use secure cookies, and access to account data is limited to what is needed to run the service. No system is perfectly secure; please use a unique password.</p>
+      <h2>Changes</h2><p>We will update this page when our practices change and show the new date above.</p>
+    </article>
   </section>
 </main>
 
@@ -570,7 +662,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
           </div>
           <div class="row">
             <label class="f">Date of birth<input id="fDate" type="date" required min="1850-01-01" max="2149-12-31"></label>
-    <label class="f">Time of birth<input id="fTime" type="time" step="1" required><small class="field-help">Use your best estimate if you’re unsure. We’ll show which chart factors may shift with birth time.</small></label>
+    <label class="f">Time of birth<input id="fTime" type="time" step="1" required><small class="field-help">Use your best estimate if you’re unsure. We’ll show which chart factors may shift with birth time.</small><button class="btn ghost" type="button" id="rectifyOpen" style="margin-top:6px;font-size:.8rem">Not sure of the exact time? Correct it from life events</button></label>
           </div>
           <label class="ai-consent"><input id="aiConsent" type="checkbox">Use the AI reader for my answers. My chart context and questions will be sent to the configured AI provider. If unchecked, use the chart reader without AI.</label>
           <label class="f" style="margin-bottom:12px">Place of birth
@@ -599,6 +691,22 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
       </div>
     </div>
 </div></div>
+<style>#rectEvents .rect-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
+#rectEvents .rect-row .f{margin:0}@media (max-width:520px){#rectEvents .rect-row{grid-template-columns:minmax(0,1fr) auto}#rectEvents .rect-row .f:first-child{grid-column:1/-1}}</style>
+<div class="modal" id="rectifyModal"><div class="modal-box">
+  <div class="card">
+    <div class="card-h"><h3>Correct your birth time</h3><button class="btn ghost" type="button" id="rectifyClose" style="margin-left:auto">Close</button></div>
+    <div class="card-b">
+      <p class="muted" style="margin-top:0">A few minutes of birth time can move your period dates by weeks. Add 3 to 8 important events from your life with their dates. We test every minute around your recorded time and keep the one your life fits best, using your dashas, KP cusps and Jupiter–Saturn transits — the method astrologers use by hand.</p>
+      <div id="rectEvents"></div>
+      <button class="btn ghost" type="button" id="rectAdd">+ Add another event</button>
+      <label class="f" style="margin-top:12px">Search around my recorded time<select id="rectWindow"><option value="30">± 30 minutes</option><option value="60" selected>± 1 hour</option><option value="120">± 2 hours</option></select></label>
+      <button class="btn full" type="button" id="rectGo">Find my birth time</button>
+      <div class="err" id="rectErr"></div>
+      <div id="rectOut" aria-live="polite"></div>
+    </div>
+  </div>
+</div></div>
 <div class="modal" id="libModal"><div class="modal-box"><div class="card">
   <div class="card-h"><h3>Prompt library</h3><button class="btn ghost" type="button" id="libClose" style="margin-left:auto">Close</button></div>
   <div class="card-b" id="libBody"></div>
@@ -606,7 +714,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
 <div id="loading"><div class="card"><span class="spinner"></span><span id="loadingText">Calculating…</span></div></div>
 <nav class="bottomnav" id="bottomNav">
   <button data-v="chat" class="on">Chat</button><button data-v="kundli">Kundli</button>
-     <button data-v="report">Kundli PDF</button><button data-v="profile">Profile</button>
+     <button data-v="report">Kundli PDF</button><button data-v="matching">Matching</button><button data-v="muhurat">Muhurat</button><button data-v="profile">Profile</button>
 </nav>
 
 
@@ -616,7 +724,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px}
   <span>Sidereal Lahiri, whole-sign houses, Vimshottari.</span>
   <span id="footAcc"></span>
   <span>Astrology describes tendencies; it is not medical, legal or financial advice.</span>
-  <span class="legal-nav"><button type="button" data-v="methodology">Methodology</button><button type="button" data-v="privacy">Privacy & data</button></span>
+  <span class="legal-nav"><button type="button" data-v="methodology">Methodology</button><button type="button" data-v="privacy">Privacy & data</button><button type="button" data-v="terms">Terms</button></span>
 </div></footer>
 
 <script>
@@ -635,6 +743,7 @@ const SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio
 const ABBR = {SUN:"Su",MOON:"Mo",MARS:"Ma",MERCURY:"Me",JUPITER:"Ju",VENUS:"Ve",SATURN:"Sa",RAHU:"Ra",KETU:"Ke"};
 const BEN = new Set(["JUPITER","VENUS","MOON","MERCURY"]);
 const GRAHAS = Object.keys(ABBR);
+let loadedDay = "";
 let R = null, CID = null, place = null, chartStyle = "north", varga = "D1", selectedHouse = 1, selectedPlanet = null, verifiedRevealTimer = 0;
 
 // The server keeps a calculated chart in memory only, so after a restart or a long gap its session
@@ -649,7 +758,7 @@ function reloadSavedChart() {
     const k = id && store.all().find(x => x.id === id);
     if (!k) return false;
     const j = await api("/api/chart", {...k.body, kundli_id: id, language: $("#responseLanguage").value}, {}, true);
-    R = j.report; CID = j.chart_id; loadedId = id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString(); loadedId = id;
     return true;
   })().catch(() => false).finally(() => { chartReload = null; });
   return chartReload;
@@ -710,6 +819,11 @@ $("#modesBtn").onclick = () => $("#deepHome").scrollIntoView({behavior:"smooth",
 
 /* ---------- status ---------- */
 api("/api/status").then(s => {
+  // With NUVORA_AI_READER=off the site runs on the built-in readers, so the AI consent options are hidden.
+  if (s.llm && s.llm.disabled) document.body.classList.add("ai-off");
+  if (s.support_email) document.querySelectorAll("[data-support-email]").forEach(link => {
+    link.textContent = s.support_email; link.href = "mailto:" + s.support_email;
+  });
   const e = s.accuracy && s.accuracy.longitude_errors;
   if (e) {
     const moon = e.MOON.max_arcsec, asc = e.ASCENDANT.max_arcsec;
@@ -804,6 +918,280 @@ function pickPlace(p) {
   $("#formErr").textContent = "";
 }
 
+/* ---------- birth-time correction from life events ---------- */
+const RECT_KINDS = [["marriage","Marriage"],["job","First job or a new job"],["promotion","Promotion or big career rise"],
+  ["business","Started a business"],["child","Birth of a child"],["education","Graduation or major exam success"],
+  ["abroad","Moved or travelled abroad for long"],["property","Bought a home or property"],["father_loss","Loss of father"],
+  ["mother_loss","Loss of mother"],["separation","Divorce or separation"],["illness","Serious illness, surgery or accident"]];
+function rectRow(kind = "marriage", date = "") {
+  const row = document.createElement("div");
+  row.className = "row rect-row";
+  row.innerHTML = `<label class="f">Event<select class="rect-kind">${RECT_KINDS.map(([k, l]) =>
+      `<option value="${k}"${k === kind ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="f">Date<input class="rect-date" type="date" value="${esc(date)}" min="1850-01-01"></label>
+    <button class="btn ghost" type="button" aria-label="Remove event" style="align-self:end">✕</button>`;
+  row.querySelector("button").onclick = () => row.remove();
+  $("#rectEvents").appendChild(row);
+}
+function birthFormBody() {
+  const lat = parseFloat($("#fLat").value), lon = parseFloat($("#fLon").value);
+  const tz = $("#fTz").value.trim(), off = $("#fOff").value.trim();
+  if (!$("#fDate").value || !$("#fTime").value) return "Enter your date and recorded time of birth first.";
+  if (isNaN(lat) || isNaN(lon) || (!tz && off === "")) return "Pick your place of birth from the list first.";
+  let t = $("#fTime").value; if (t.length === 5) t += ":00";
+  return {date: $("#fDate").value, time: t, lat, lon, tz: tz || null, utc_offset_hours: off === "" ? null : parseFloat(off),
+    place: $("#fPlace").value, node: $("#fNode").value, dasha_year: $("#fYear").value, node_aspects: $("#fNodeAsp").checked};
+}
+$("#rectifyOpen").onclick = () => {
+  const b = birthFormBody();
+  if (typeof b === "string") { $("#formErr").textContent = b; return; }
+  if (!$("#rectEvents").children.length) { rectRow("marriage"); rectRow("job"); rectRow("child"); }
+  $("#rectErr").textContent = ""; $("#rectOut").innerHTML = "";
+  $("#rectifyModal").classList.add("on");
+};
+$("#rectifyClose").onclick = () => $("#rectifyModal").classList.remove("on");
+$("#rectAdd").onclick = () => rectRow("property");
+$("#rectGo").onclick = async () => {
+  $("#rectErr").textContent = ""; $("#rectOut").innerHTML = "";
+  const b = birthFormBody();
+  if (typeof b === "string") { $("#rectErr").textContent = b; return; }
+  const events = [...document.querySelectorAll(".rect-row")].map(r => ({kind: r.querySelector(".rect-kind").value,
+    date: r.querySelector(".rect-date").value})).filter(e => e.date);
+  if (!events.length) { $("#rectErr").textContent = "Add at least one event with its date."; return; }
+  const go = $("#rectGo"); go.disabled = true; go.innerHTML = `<span class="spinner"></span>Testing every minute around ${esc(b.time.slice(0, 5))}…`;
+  try {
+    const r = await api("/api/rectify", {...b, events, window_minutes: parseInt($("#rectWindow").value, 10)});
+    const chip = {high: "good", moderate: "gold", low: "warn"}[r.confidence] || "warn";
+    const tick = v => v === true ? "✓" : v === false ? "—" : "·";
+    const rows = r.best.detail.map(d => `<tr><td>${esc(d.label)}</td><td>${esc(d.date)}</td><td>${esc(d.dasha.replaceAll("-", "–"))}</td>
+      <td>${Math.round(Math.min(1, d.fit) * 100)}%</td><td>${tick(d.kp)}</td><td>${tick(d.transit)}</td></tr>`).join("");
+    $("#rectOut").innerHTML = `<div class="card" style="margin-top:14px"><div class="card-b">
+      <p style="margin-top:0"><span class="chip ${chip}">Confidence: ${esc(r.confidence)}</span></p>
+      <p><strong>${esc(r.message)}</strong></p>
+      ${r.lagna_note ? `<p class="muted">${esc(r.lagna_note)}</p>` : ""}
+      <p class="muted">Best fit: ${esc(r.best_range.from)}${r.best_range.to !== r.best_range.from ? "–" + esc(r.best_range.to) : ""} · ${esc(r.best.lagna)} ascendant.
+        How well your events fit: recorded time ${Math.round(r.given.score * 80)}%, best time ${Math.round(r.best.score * 80)}%.</p>
+      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Event</th><th>Date</th><th>Running period</th><th>Fit</th><th>KP</th><th>Transit</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${r.verdict === "change" ? `<button class="btn full" type="button" id="rectUse" style="margin-top:12px">Use ${esc(r.best.time)} as my birth time</button>` : ""}
+      <p class="faint" style="font-size:.8rem">Only accept a new time if your event dates are accurate. A change of more than a few minutes is worth checking against your birth certificate or family records.</p>
+    </div></div>`;
+    const use = $("#rectUse");
+    if (use) use.onclick = () => { $("#fTime").value = r.best.time + ":00"; $("#rectifyModal").classList.remove("on");
+      $("#formErr").textContent = `Birth time set to ${r.best.time}. Press “Calculate chart” to save it.`; };
+  } catch (err) { $("#rectErr").textContent = err.message; }
+  finally { go.disabled = false; go.textContent = "Find my birth time"; }
+};
+
+/* ---------- kundli matching (boy & girl) ---------- */
+const mtState = {girl: null, boy: null};
+function mtSide(side) {
+  const box = document.querySelector(`.mt-side[data-side="${side}"]`);
+  box.insertAdjacentHTML("beforeend", `
+    <label class="f">Use a saved kundli<select class="mt-saved"><option value="">— enter details below —</option></select></label>
+    <label class="f">Name<input class="mt-name" maxlength="80" placeholder="Optional"></label>
+    <div class="row"><label class="f">Date of birth<input class="mt-date" type="date" min="1850-01-01" max="2149-12-31"></label>
+      <label class="f">Time of birth<input class="mt-time" type="time" step="1"></label></div>
+    <label class="f mt-ac">Place of birth<input class="mt-place" placeholder="Start typing a city" autocomplete="off"><div class="mt-ac-list" hidden></div></label>
+    <div class="faint mt-placeinfo" style="font-size:.8rem"></div>`);
+  const q = c => box.querySelector(c);
+  const fillSaved = () => {
+    const sel = q(".mt-saved"); const cur = sel.value;
+    sel.innerHTML = '<option value="">— enter details below —</option>' + store.all().map(k =>
+      `<option value="${esc(k.id)}">${esc(k.body.name || "Unnamed")} · ${esc(k.body.date)}</option>`).join("");
+    sel.value = cur;
+  };
+  // Filled when opened: the saved-kundli store is created later in this script.
+  box.addEventListener("focusin", e => { if (e.target.matches(".mt-saved")) fillSaved(); });
+  box.addEventListener("pointerdown", e => { if (e.target.matches(".mt-saved")) fillSaved(); });
+  q(".mt-saved").onchange = e => {
+    const k = store.all().find(x => x.id === e.target.value); if (!k) return;
+    const b = k.body;
+    q(".mt-name").value = b.name || ""; q(".mt-date").value = b.date; q(".mt-time").value = b.time;
+    q(".mt-place").value = b.place || "";
+    mtState[side] = {lat: b.lat, lon: b.lon, tz: b.tz, utc_offset_hours: b.utc_offset_hours};
+    q(".mt-placeinfo").textContent = b.place ? "✓ " + b.place : "✓ saved coordinates";
+  };
+  let timer = 0;
+  q(".mt-place").addEventListener("input", e => {
+    clearTimeout(timer); mtState[side] = null; q(".mt-placeinfo").textContent = "";
+    const text = e.target.value.trim(), list = q(".mt-ac-list");
+    if (text.length < 2) { list.hidden = true; return; }
+    timer = setTimeout(async () => {
+      try {
+        const j = await api("/api/places?q=" + encodeURIComponent(text));
+        list.innerHTML = j.results.map((p, i) => `<button type="button" data-i="${i}">${esc([p.name, p.region, p.country].filter(Boolean).join(", "))}</button>`).join("")
+          || '<div class="faint" style="padding:8px">No match — try “city, country”.</div>';
+        list.hidden = false;
+        list.querySelectorAll("button").forEach(btn => btn.onclick = () => {
+          const p = j.results[+btn.dataset.i];
+          q(".mt-place").value = [p.name, p.region, p.country].filter(Boolean).join(", ");
+          mtState[side] = {lat: p.lat, lon: p.lon, tz: p.tz, utc_offset_hours: null};
+          q(".mt-placeinfo").textContent = `✓ ${p.lat.toFixed(3)}, ${p.lon.toFixed(3)} · ${p.tz}`;
+          list.hidden = true;
+        });
+      } catch (_) { list.hidden = true; }
+    }, 250);
+  });
+}
+function mtBody(side) {
+  const box = document.querySelector(`.mt-side[data-side="${side}"]`);
+  const q = c => box.querySelector(c).value;
+  const who = side === "girl" ? "girl's" : "boy's";
+  if (!q(".mt-date") || !q(".mt-time")) return `Enter the ${who} date and time of birth.`;
+  if (!mtState[side]) return `Pick the ${who} place of birth from the list.`;
+  let t = q(".mt-time"); if (t.length === 5) t += ":00";
+  return {name: q(".mt-name"), date: q(".mt-date"), time: t, place: q(".mt-place"), ...mtState[side],
+          gender: side === "girl" ? "female" : "male"};
+}
+function mtRender(r, bodies) {
+  const pct = Math.round((r.adjusted_score / 36) * 100);
+  const chip = {good: "good", gold: "gold", warn: "warn"}[r.tone] || "warn";
+  const head = `<div class="card"><div class="card-b">
+    <div class="faint">${esc(r.girl.name)} &amp; ${esc(r.boy.name)}</div>
+    <div class="mt-verdict"><span class="chip ${chip}">${esc(r.verdict)}</span></div>
+    <div class="mt-score">${r.adjusted_score}<span class="faint" style="font-size:1rem"> / 36</span></div>
+    <div class="mt-bar" style="margin:10px 0"><i style="width:${pct}%"></i></div>
+    <div class="muted">${r.adjusted_score !== r.score ? `Base Guna Milan ${r.score}/36 · ${r.adjusted_score}/36 after the classical exceptions. ` : ""}${esc(r.band)}.</div>
+    <p class="muted">Girl: Moon in ${esc(r.girl.moon.sign)}, ${esc(r.girl.moon.nakshatra)} · Boy: Moon in ${esc(r.boy.moon.sign)}, ${esc(r.boy.moon.nakshatra)}</p>
+  </div></div>`;
+  if (r.locked) {
+    $("#mtOut").innerHTML = head + `<div class="card"><div class="card-b"><p>${esc(r.reasons[0] || "")}</p>
+      <p class="muted">${esc(r.teaser)}</p><button class="btn" type="button" id="mtUnlock">Unlock the full matching report</button></div></div>`;
+    $("#mtUnlock").onclick = async () => { await showView("report"); const b = $("#paidReportsBtn"); if (b) b.click(); };
+    return;
+  }
+  const list = xs => `<ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const kootas = r.kootas.map(k => `<tr><td>${esc(k.name.split(" · ")[0])}<div class="faint" style="font-size:.78rem">${esc(k.name.split(" · ")[1] || "")}</div></td>
+    <td>${k.score} / ${k.max}</td><td style="width:35%"><div class="mt-bar"><i style="width:${Math.round(k.score / k.max * 100)}%"></i></div></td></tr>`).join("");
+  const exc = Object.entries(r.exceptions || {}).filter(([, v]) => v).map(([k, v]) => `${k === "nadi" ? "Nadi" : "Bhakoot"} dosha cancelled: ${v}.`);
+  const poru = r.porutham.rows.map(x => `<tr><td>${esc(x.name)}</td><td>${esc(x.status)}</td><td class="faint">${esc(x.meaning)}</td></tr>`).join("");
+  $("#mtOut").innerHTML = head + `
+    <div class="card"><div class="card-b"><h3 style="margin-top:0">Why</h3>${list(r.reasons)}
+      ${r.watch.length ? `<h3>What to watch</h3>${list(r.watch)}` : ""}
+      <h3>Remedies</h3>${list(r.remedies)}
+      <button class="btn" type="button" id="mtPdf">Download the matching PDF</button></div></div>
+    <div class="card"><div class="card-b"><h3 style="margin-top:0">Guna Milan — the 8 kootas</h3>
+      <table class="mt-kootas"><tbody>${kootas}</tbody></table>${exc.length ? `<p class="muted">${exc.map(esc).join(" ")}</p>` : ""}</div></div>
+    <div class="card"><div class="card-b"><h3 style="margin-top:0">Mangal Dosha</h3>
+      <p>Girl: <strong>${esc(r.manglik.girl.level)}</strong> · Boy: <strong>${esc(r.manglik.boy.level)}</strong></p><p class="muted">${esc(r.manglik.note)}</p>
+      <h3>Each person's own marriage promise</h3><p>Girl: ${esc(r.marriage_promise.girl)}<br>Boy: ${esc(r.marriage_promise.boy)}</p>
+      ${r.shared_windows.length ? `<h3>Shared wedding windows</h3>${list(r.shared_windows.map(w => w.label))}` : ""}</div></div>
+    <div class="card"><div class="card-b"><h3 style="margin-top:0">Porutham (South Indian) — ${r.porutham.agree} agree</h3>
+      <p class="muted">${esc(r.porutham.verdict)}</p><div style="overflow-x:auto"><table><tbody>${poru}</tbody></table></div></div></div>
+    <p class="faint" style="font-size:.8rem">${esc(r.caution)}</p>`;
+  $("#mtPdf").onclick = async () => {
+    const btn = $("#mtPdf"); btn.disabled = true; btn.textContent = "Preparing PDF…";
+    try {
+      const res = await fetch("/api/matching/pdf", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(bodies)});
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "Could not create the PDF");
+      const url = URL.createObjectURL(await res.blob()); const a = document.createElement("a");
+      a.href = url; a.download = "nuvora-kundli-matching.pdf"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e) { $("#mtErr").textContent = e.message; }
+    finally { btn.disabled = false; btn.textContent = "Download the matching PDF"; }
+  };
+}
+mtSide("girl"); mtSide("boy");
+$("#mtGo").onclick = async () => {
+  $("#mtErr").textContent = ""; $("#mtOut").innerHTML = "";
+  const girl = mtBody("girl"), boy = mtBody("boy");
+  const bad = [girl, boy].find(x => typeof x === "string");
+  if (bad) { $("#mtErr").textContent = bad; return; }
+  const go = $("#mtGo"); go.disabled = true; go.innerHTML = '<span class="spinner"></span>Matching both kundlis…';
+  try { mtRender(await api("/api/matching", {girl, boy}), {girl, boy}); }
+  catch (e) { $("#mtErr").textContent = e.message; }
+  finally { go.disabled = false; go.textContent = "Match kundlis"; }
+};
+
+/* ---------- daily muhurat with a calendar ---------- */
+let muPlace = null, muBusy = 0;
+const muIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const muHM = s => s ? s.slice(11, 16) : "";
+function muLoadPlace() {
+  try { const saved = JSON.parse(localStorage.getItem("nuvora.muhurat-place") || "null"); if (saved && saved.tz) return saved; } catch (_) {}
+  const k = store.all().find(x => x.id === store.current()) || store.all()[0];
+  if (k && k.body && k.body.tz) return {name: k.body.place || "Your saved place", lat: k.body.lat, lon: k.body.lon, tz: k.body.tz};
+  return {name: "New Delhi, India", lat: 28.6139, lon: 77.209, tz: "Asia/Kolkata"};
+}
+function muShift(days) { const d = new Date($("#muDate").value + "T12:00:00"); d.setDate(d.getDate() + days); $("#muDate").value = muIso(d); muLoad(); }
+async function muLoad() {
+  if (!muPlace) muPlace = muLoadPlace();
+  $("#muPlace").value = muPlace.name;
+  if (!$("#muDate").value) $("#muDate").value = muIso(new Date());
+  $("#muErr").textContent = "";
+  const seq = ++muBusy;
+  $("#muOut").innerHTML = '<div class="card"><div class="card-b"><span class="spinner"></span> Calculating sunrise, muhurtas and choghadiya…</div></div>';
+  try {
+    const q = new URLSearchParams({date: $("#muDate").value, lat: muPlace.lat, lon: muPlace.lon, tz: muPlace.tz});
+    const m = await api("/api/muhurat?" + q.toString());
+    if (seq === muBusy) muRender(m);
+  } catch (e) { if (seq === muBusy) { $("#muOut").innerHTML = ""; $("#muErr").textContent = e.message; } }
+}
+function muRender(m) {
+  const t0 = Date.parse(m.sunrise), t1 = Date.parse(m.next_sunrise), span = t1 - t0, now = Date.now();
+  const pos = s => Math.max(0, Math.min(100, (Date.parse(s) - t0) / span * 100));
+  const isNow = (a, b) => now >= Date.parse(a) && now < Date.parse(b);
+  const segs = m.periods.map(p => `<i class="${p.kind}" title="${esc(p.name)} ${muHM(p.start)}–${muHM(p.end)}" style="left:${pos(p.start)}%;width:${Math.max(.4, pos(p.end) - pos(p.start))}%"></i>`).join("");
+  const nowMark = now >= t0 && now < t1 ? `<b style="left:${pos(new Date(now).toISOString())}%" title="Now"></b>` : "";
+  const pan = ["tithi", "nakshatra", "yoga", "karana"].map(k => `<div class="mu-row"><span class="muted">${k[0].toUpperCase() + k.slice(1)}</span>
+    <span>${m.panchang[k].map(x => `${esc(x.name)}${x.until ? ` <span class="faint">until ${esc(muHM(x.until))}${x.until.slice(0, 10) !== m.date ? " (next day)" : ""}</span>` : ""}`).join("<br>")}</span></div>`).join("");
+  const rows = m.periods.map(p => `<div class="mu-row${isNow(p.start, p.end) ? " mu-now" : ""}"><span class="mu-${p.kind}"><strong>${esc(p.name)}</strong><br><span class="faint" style="font-size:.8rem">${esc(p.note)}</span></span>
+    <span>${esc(muHM(p.start))}–${esc(muHM(p.end))}${p.start.slice(0, 10) !== m.date ? '<br><span class="faint" style="font-size:.75rem">next day</span>' : ""}</span></div>`).join("");
+  const best = Object.values(m.best).map(b => `<div class="mu-row"><span>${esc(b.label)}</span><span>${b.windows.length ?
+    b.windows.map(w => `<span class="mu-good">${esc(muHM(w.start))}–${esc(muHM(w.end))}</span>`).join("<br>") : '<span class="faint">no clean window today</span>'}</span></div>`).join("");
+  const chog = part => m.choghadiya.filter(c => c.part === part).map(c => `<tr class="${c.kind}${isNow(c.start, c.end) ? " mu-now" : ""}"><td>${esc(c.name)}</td>
+    <td>${esc(muHM(c.start))}–${esc(muHM(c.end))}</td><td class="faint">${esc(c.meaning)}</td></tr>`).join("");
+  const hora = m.hora.map(h => `<tr${isNow(h.start, h.end) ? ' class="mu-now"' : ""}><td>${esc(h.planet)}</td><td>${esc(muHM(h.start))}–${esc(muHM(h.end))}</td><td class="faint">${esc(h.use)}</td></tr>`).join("");
+  const nice = new Date(m.date + "T12:00:00").toLocaleDateString(undefined, {day: "numeric", month: "long", year: "numeric"});
+  $("#muOut").innerHTML = `
+    <div class="card"><div class="card-b">
+      <h3 style="margin:0">${esc(m.weekday)}, ${esc(nice)}</h3>
+      <p class="muted" style="margin:.3rem 0">Sunrise ${esc(muHM(m.sunrise))} · Sunset ${esc(muHM(m.sunset))} · ${esc(muPlace.name)}</p>
+      ${m.notes.map(n => `<p class="mu-bad" style="margin:.3rem 0">${esc(n)}</p>`).join("")}
+      <div class="mu-tl" role="img" aria-label="Day timeline from sunrise to next sunrise">${segs}${nowMark}</div>
+      <div class="mu-ticks"><span>Sunrise ${esc(muHM(m.sunrise))}</span><span>Sunset ${esc(muHM(m.sunset))}</span><span>Next sunrise ${esc(muHM(m.next_sunrise))}</span></div>
+      <p class="faint" style="font-size:.78rem;margin:.4rem 0 0"><span class="mu-good">■</span> auspicious · <span class="mu-bad">■</span> avoid · <span class="mu-neutral">■</span> mixed</p>
+    </div></div>
+    <div class="mu-grid">
+      <div class="card"><div class="card-b"><h3 style="margin-top:0">Best time for…</h3>${best}
+        <p class="faint" style="font-size:.78rem">Good Choghadiya and Abhijit, with Rahu Kaal, Yamaganda, Gulika, Dur Muhurat and Varjyam taken out.</p></div></div>
+      <div class="card"><div class="card-b"><h3 style="margin-top:0">Panchang</h3>${pan}</div></div>
+    </div>
+    <div class="card"><div class="card-b"><h3 style="margin-top:0">Good and bad times</h3>${rows}</div></div>
+    <div class="mu-grid">
+      <div class="card"><div class="card-b"><h3 style="margin-top:0">Day Choghadiya</h3><table class="mu-chog"><tbody>${chog("day")}</tbody></table></div></div>
+      <div class="card"><div class="card-b"><h3 style="margin-top:0">Night Choghadiya</h3><table class="mu-chog"><tbody>${chog("night")}</tbody></table></div></div>
+    </div>
+    <div class="card"><div class="card-b"><details><summary><strong>Hora — planetary hours</strong></summary>
+      <table class="mu-chog" style="margin-top:8px"><tbody>${hora}</tbody></table></details></div></div>`;
+}
+$("#muPrev").onclick = () => muShift(-1);
+$("#muNext").onclick = () => muShift(1);
+$("#muToday").onclick = () => { $("#muDate").value = muIso(new Date()); muLoad(); };
+$("#muDate").addEventListener("change", muLoad);
+(() => {
+  let timer = 0;
+  $("#muPlace").addEventListener("input", e => {
+    clearTimeout(timer);
+    const text = e.target.value.trim(), list = $("#muAc");
+    if (text.length < 2) { list.hidden = true; return; }
+    timer = setTimeout(async () => {
+      try {
+        const j = await api("/api/places?q=" + encodeURIComponent(text));
+        list.innerHTML = j.results.map((p, i) => `<button type="button" data-i="${i}">${esc([p.name, p.region, p.country].filter(Boolean).join(", "))}</button>`).join("")
+          || '<div class="faint" style="padding:8px">No match — try “city, country”.</div>';
+        list.hidden = false;
+        list.querySelectorAll("button").forEach(btn => btn.onclick = () => {
+          const p = j.results[+btn.dataset.i];
+          muPlace = {name: [p.name, p.region, p.country].filter(Boolean).join(", "), lat: p.lat, lon: p.lon, tz: p.tz};
+          try { localStorage.setItem("nuvora.muhurat-place", JSON.stringify(muPlace)); } catch (_) {}
+          list.hidden = true; muLoad();
+        });
+      } catch (_) { list.hidden = true; }
+    }, 250);
+  });
+})();
+document.querySelectorAll('[data-v="muhurat"]').forEach(b => b.addEventListener("click", () => { if (!$("#muOut").children.length) muLoad(); }));
+
 /* ---------- calculate ---------- */
 $("#birthForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -829,7 +1217,7 @@ $("#birthForm").addEventListener("submit", async e => {
   try {
     const kundliId = editingId || newKundliId();
     const j = await api("/api/chart", {...body, kundli_id: kundliId});
-    R = j.report; CID = j.chart_id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString();
     $("#readerChip").textContent = j.chat.label;
     $("#readerChip").className = "chip " + (j.chat.mode === "llm" ? "good" : "warn");
     finishBirth(body, kundliId);
@@ -1363,13 +1751,13 @@ async function ensureChart() {
   const id = $("#homeKundli").value || store.current();
   if (!id) return false;
   store.setCurrent(id);
-  if (R && loadedId === id) return true;
+  if (R && loadedId === id && loadedDay === new Date().toDateString()) return true;  // a new day means new periods and transits
   const k = store.all().find(x => x.id === id);
   if (!k) return false;
   setLoading(true, "Computing chart, dashas and transits…");
   try {
     const j = await api("/api/chart", {...k.body, kundli_id: id, language: $("#responseLanguage").value});
-    R = j.report; CID = j.chart_id; loadedId = id;
+    R = j.report; CID = j.chart_id; loadedDay = new Date().toDateString(); loadedId = id;
     $("#readerChip").textContent = j.chat.label + (j.chat.preparing ? ` · preparing ${j.chat.preparing} answers` : "");
     $("#readerChip").className = "chip " + (j.chat.mode === "llm" ? "good" : "warn");
     showApp();
@@ -1382,7 +1770,7 @@ async function ensureChart() {
 
 async function showView(v) {
   currentView = v;
-  if (!["profile", "dashboard", "billing", "reports", "tarot", "methodology", "privacy"].includes(v) && !store.all().length) { openBirth(); return; }
+  if (!["profile", "dashboard", "billing", "reports", "tarot", "methodology", "privacy", "terms", "matching", "muhurat"].includes(v) && !store.all().length) { openBirth(); return; }
   if (v === "kundli" || v === "report") { if (!(await ensureChart())) return; }
   document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "view-" + v));
   document.querySelectorAll("[data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
@@ -1717,7 +2105,7 @@ updateScrollEffects();
 </script>
 <script src="/static/theme.js?v=20261124-2"></script>
 <script src="/static/youpi.js"></script>
-<script src="/static/account.js?v=20261124-2"></script>
+<script src="/static/account.js?v=20261126-1"></script>
 <script src="/static/reports.js?v=20261124-1"></script>
 <script src="/static/tarot.js?v=20261118-7"></script>
 </body>

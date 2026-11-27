@@ -232,7 +232,7 @@ def test_all_deep_readings_are_structured_and_fully_verified(key, cr):
     assert "chart score" not in text.lower() and "simple textbook weighting" not in text.lower()
     n = TOPICS[key].varga
     if n:
-        assert f"### Divisional-chart confirmation — D{n}" in text
+        assert "### Second opinions" in text and f"(D{n})" in text
     quality = score_reading(text)
     assert quality["score"] >= 85, (key, quality["score"], quality["issues"])
 

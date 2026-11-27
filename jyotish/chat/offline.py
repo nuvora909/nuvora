@@ -46,6 +46,12 @@ def _t(g):
     return g.title()
 
 
+def _cap(text: str) -> str:
+    """Capitalise the first visible letter, looking past a leading fact tag."""
+    m = re.match(r"(\s*(?:<fact[^>]*>)?)(\w)", text)
+    return text if not m else text[:m.end(1)] + m.group(2).upper() + text[m.end(2):]
+
+
 def _point(text, label, weight):
     return {"text": text, "label": label, "weight": weight}
 
@@ -65,7 +71,7 @@ class Reader:
             p = self.c.varga[n]["planets"][g]
             sign, house = p["sign_name"], p["house"]
         chart = "" if n == 1 else f' chart="D{n}"'
-        visible = (f'{_t(g)} in H{house}' if compact else
+        visible = (f'{_t(g)} in the {_ord(house)} house' if compact else
                    f'{_t(g)} in {sign} in the {_ord(house)} house' + (f' of D{n}' if n != 1 else ''))
         return (f'<fact kind="placement" planet="{_t(g)}" sign="{sign}" house="{house}"{chart}>'
                 f'{visible}</fact>')
@@ -80,7 +86,7 @@ class Reader:
         lord = self.c.house_lord[h]
         if compact:
             return (f'<fact kind="house_lord" house="{h}" lord="{_t(lord)}">'
-                    f'H{h} lord {_t(lord)}</fact>')
+                    f'the {_ord(h)} lord {_t(lord)}</fact>')
         return (f'<fact kind="house_lord" house="{h}" lord="{_t(lord)}" in_house="{self.c.house[lord]}">'
                 f'the {_ord(h)} lord {_t(lord)}, placed in the {_ord(self.c.house[lord])} house</fact>')
 
@@ -102,7 +108,7 @@ class Reader:
         return f'<fact kind="dignity" planet="{_t(g)}" status="{key[st]}">{_t(g)} is {phrase}</fact>'
 
     def f_combust(self, g):
-        return f'<fact kind="combust" planet="{_t(g)}" value="true">{_t(g)} is combust</fact>'
+        return f'<fact kind="combust" planet="{_t(g)}" value="true">{_t(g)} is combust</fact> (too close to the Sun)'
 
     def f_retro(self, g):
         return f'<fact kind="retrograde" planet="{_t(g)}" value="true">{_t(g)} is retrograde</fact>'
@@ -113,11 +119,16 @@ class Reader:
                 f'{v} Sarvashtakavarga bindus in the {_ord(h)} house</fact>'), v
 
     def f_dasha(self, p):
+        """A period with exact dates in the tag (for the verifier) and readable dates in the text."""
         label = "-".join(_t(x) for x in p.lords)
-        start = p.start.astimezone(self.tz).date().isoformat()
-        end = p.end.astimezone(self.tz).date().isoformat()
-        return (f'<fact kind="dasha" lords="{label}" start="{start}" end="{end}">'
-                f'{label} ({start} to {end})</fact>')
+        s, e = p.start.astimezone(self.tz), p.end.astimezone(self.tz)
+        shown = "–".join(_t(x) for x in p.lords)
+        if len(p.lords) == 1:
+            visible = f"{shown} major period ({s:%Y} – {e:%Y})"
+        else:
+            visible = f"{shown} period ({s:%b %Y} – {e:%b %Y})"
+        return (f'<fact kind="dasha" lords="{label}" start="{s.date().isoformat()}" end="{e.date().isoformat()}">'
+                f'{visible}</fact>')
 
     def f_transit(self, g):
         p = self.r["transits"]["positions"][g]
@@ -274,7 +285,8 @@ class Reader:
             explanation = "at least one layer is neutral or mixed, making this a qualified confirmation rather than a decisive one."
         text = (f"For D{n} {v['name']} ({v['domain']}), the chart has {self.f_lagna(n)}. {placements} "
                 f"On this structural comparison, D1 and D{n} **{agreement}**: {explanation}")
-        return {"text": text, "agreement": agreement, "score": score}
+        return {"text": text, "agreement": agreement, "score": score, "placements": placements,
+                "explanation": explanation, "name": v["name"], "domain": v["domain"], "n": n}
 
     def relevance(self, g, topic: Topic):
         own = set(self.c.lord_of[g])
@@ -447,6 +459,25 @@ class Reader:
                          f'{s["dasha_shift_per_10_min_days"]} days per 10 minutes of birth-time error, so widen the timing windows.')
         return notes
 
+    def plain_sensitivity(self, topic: Topic) -> str | None:
+        """Birth-time sensitivity in one or two plain sentences, still fact-tagged for the verifier."""
+        s = self.r.get("sensitivity", {})
+        out = []
+        n = topic.varga
+        key = SENSITIVITY_KEYS.get(n) if n else None
+        if key and key in s and s[key]["rating"] != "robust":
+            item = s[key]
+            out.append(f'<fact kind="sensitivity" factor="{key}" rating="{item["rating"]}">The D{n} chart is '
+                       f'{item["rating"]} to birth time</fact>: it would change if your birth time were about '
+                       f'{round(float(item["nearest_change_min"]))} minutes off, so treat that cross-check as provisional.')
+        moon = s.get("moon_nakshatra", {})
+        if moon.get("rating") not in (None, "robust"):
+            days = round(float(s["dasha_shift_per_10_min_days"]))
+            out.append(f'<fact kind="sensitivity" factor="moon_nakshatra" rating="{moon["rating"]}">Your Moon\'s '
+                       f'nakshatra is {moon["rating"]} to birth time</fact>, so every 10 minutes of error in the birth '
+                       f'time moves the period dates by about {days} days.')
+        return " ".join(out) or None
+
     @staticmethod
     def verdict(score):
         if score >= 5:
@@ -594,6 +625,14 @@ class Reader:
         topic = detect_topic(question)
         if classic:
             return self.answer_classic(question, prashna)
+        # Questions with a specific intent (when, a year, remedies, career choice, love vs arranged, a relative...)
+        # or several parts get a direct, human answer to each part; plain topic questions keep the full reading.
+        from .intents import compose, is_overview, special_intent, unclear
+        if special_intent(question):
+            return compose(self.c, self.r, question, self.now)
+        if topic.key == "general" and not prashna and not is_overview(question):
+            # A specific question the reader cannot place must not get a generic life reading.
+            return unclear(self.c, self.r, question, self.now)
         return self.answer_judged(question, topic, prashna)
 
     def foreign_split(self) -> str:
@@ -612,60 +651,114 @@ class Reader:
                 "- **Permanent settlement (12th against the 4th house of home):** " + settle + ".")
 
     def answer_judged(self, question: str, topic: Topic, prashna=None) -> str:
+        """The full reading, in the order a person needs it: the verdict and the best dates first, then the
+        reasons, what pushes back, the independent cross-checks, the timing, what to do and how sure it is."""
         from .judgment import Judge
-        j = Judge(self.c, self.r, self.now).judge(topic)
+        judge = Judge(self.c, self.r, self.now)
+        j = judge.judge(topic)
+        theme = j.theme.split("; the strongest")[0].split("; the main condition")[0].rstrip(".") + "."
+        best = max(j.windows, key=lambda w: (w.score, -w.start.timestamp())) if j.windows and topic.key != "lifetime" else None
         parts = []
         prashna_text = None
         if prashna:
             prashna_text, prashna_score = self.prashna_section(prashna, topic)
             opening = (self.decision_bottom(question, j.score, prashna_score, self.verdict(prashna_score))
-                       + f" On the natal side, the picture is {j.lean_text}. {j.theme}")
+                       + f" On the birth-chart side, the picture is {j.lean_text}. {theme}")
         else:
-            opening = (f"On this question your chart is **{j.lean_text}**. {j.theme} "
-                       "Read what follows as tendencies and timing, not fixed events.")
+            if topic.key == "health":
+                opening = f"Your health picture is **{j.lean_text}**."
+            else:
+                opening = {"strong": "Straight answer: your chart is **strongly on your side** here.",
+                           "supportive": "Straight answer: your chart **supports this, with one clear condition**.",
+                           "mixed": "Honest answer: this one is **genuinely mixed** — real support alongside real friction.",
+                           "demanding": "Honest answer: this area is **demanding** — it asks for patience and structure.",
+                           }.get(j.lean, f"Your chart is **{j.lean_text}** here.")
+            if best:
+                if best.double_transit:
+                    lo, hi = best.double_transit[0], best.double_transit[1]
+                    opening += (f" Your best window is **{judge.span(lo, hi)}**, when Jupiter and Saturn together "
+                                f"reach {best.double_transit[4].removesuffix(' between them')}.")
+                else:
+                    opening += (f" Your best window is **{judge.span(best.start, best.end)}**, during the "
+                                f"{'–'.join(_t(x) for x in best.dasha.lords)} period.")
+            if j.counterweights:
+                opening += f" {theme} The main condition is {j.counterweights[0].label}."
+            else:
+                opening += f" {theme}"
+        # A question about a coming period ("next few months") is answered month by month first;
+        # the natal promise becomes the background.
+        from .near_term import analyse as near_term, offline_sections
+        nt = None if prashna or topic.key == "lifetime" else near_term(self.c, topic, question, self.now)
+        near_sections = []
+        if nt:
+            opening, near_sections = offline_sections(nt, topic, j.lean_text)
         if topic.key == "foreign":
             opening += ("\n\nThese are three different outcomes, and the chart treats them differently:\n"
                         + self.foreign_split())
         parts.append("### The short answer\n\n" + opening)
+        parts += near_sections
         if prashna_text:
             parts.append(prashna_text)
         if topic.key == "general":
             parts.append("### Your chart's foundation\n\n" + self.foundation_text())
 
-        why = [f"- {f.text}." for f in j.drivers] or ["- No single factor dominates; the result comes from several modest supports."]
+        why = [f"- {_cap(f.text)}." for f in j.drivers] or \
+            ["- No single factor dominates; the result comes from several modest supports."]
         why.append(f"- {j.moon_check}")
         parts.append("### Why the chart says this\n\n" + "\n".join(why))
 
         if j.counterweights:
-            push = [f"- {f.text}." for f in j.counterweights]
+            push = [f"- {_cap(f.text)}." for f in j.counterweights]
             push.append("These do not cancel the supports; they decide how much effort and patience the result asks for.")
         else:
-            push = ["No major friction shows in the core houses. The real limit is timing: results arrive when a "
-                    "connected period runs, not because the chart is free of difficulty."]
-        if j.notes:
-            push += j.notes
+            push = ["No major friction shows in the houses that matter here. The real limit is timing: results arrive "
+                    "when a connected period runs, not because the chart is free of difficulty."]
         parts.append("### What pushes back\n\n" + "\n".join(push))
+
+        second = []
         if j.varga:
-            parts.append(f"### Divisional-chart confirmation — D{topic.varga}\n\n" + j.varga["text"])
+            v = j.varga
+            verb = {"agree": "agrees with", "do not fully agree": "does not fully agree with",
+                    "partly agree": "partly agrees with"}[v["agreement"]]
+            domain = " and ".join(v["domain"].rsplit(", ", 1))
+            explanation = v["explanation"].replace("the D1 indication", "the birth chart").replace("D1", "the birth chart")
+            second.append(f"**The {v['name']} (D{v['n']}), the divisional chart for {domain}, {verb} the birth "
+                          f"chart.** It has a {self.f_lagna(v['n'])}. {v['placements']} In short, {explanation}")
+        if j.kp:
+            k = j.kp
+            houses = lambda hs: ", ".join(str(h) for h in hs[:-1]) + (" and " if len(hs) > 1 else "") + str(hs[-1])
+            verdict = "promises it" if k["promised"] else "does not clearly promise it"
+            line = (f"**KP, a separate system, {'agrees' if k['promised'] else 'is more cautious'}.** KP decides an event "
+                    f"by the sub lord of its house cusp. Your {_ord(k['cusp'])} cusp's sub lord is {_t(k['sub_lord'])}, "
+                    f"which connects to houses {houses(k['signifies'])}; KP looks for houses {houses(k['wanted'])} for "
+                    f"{k['label'].lower()}, so it {verdict}.")
+            if k["against"]:
+                line += f" It also touches house{'s' if len(k['against']) > 1 else ''} {houses(k['against'])}, which can add delay or conditions."
+            if k["sensitive"]:
+                line += " This cusp sits near a boundary, so the KP result depends on an exact birth time and is not counted."
+            second.append(line)
+        if second:
+            parts.append("### Second opinions\n\n" + "\n\n".join(second))
 
         timing = [j.activation_now]
         if topic.key == "lifetime":
             timing.append(self.timing_windows(topic))
         elif j.windows:
-            timing.append("The strongest windows ahead, in date order (a window where Jupiter and Saturn also reach the "
-                          "topic together is the classical trigger; one without them is a build-up period):")
-            timing += [f"{i}. {w.text}" for i, w in enumerate(j.windows, 1)]
+            lines = []
+            for i, w in enumerate(j.windows, 1):
+                mark = " **This is the strongest window.**" if best is w and len(j.windows) > 1 else ""
+                lines.append(f"{i}. {w.text}{mark}")
+            timing.append("The windows ahead, in date order:\n" + "\n".join(lines))
         else:
-            timing.append("No period in the horizon connects directly to this topic, so the honest answer is not to "
-                          "force a date: work with the current period's agenda instead.")
+            timing.append("No period in the next few years connects directly to this topic, so the honest answer is not "
+                          "to force a date: work with the present period's agenda instead.")
         ss = (self.r.get("transits") or {}).get("sade_sati")
         if ss and ss["active"]:
             timing.append(f'In the background, <fact kind="sade_sati" active="true">Sade Sati is active</fact> '
                           f"({ss['phase']}): a long Saturn cycle that asks for simplification and endurance, not a curse.")
         if topic.key == "month":
-            short = [line for line in self.transit_lines(topic) if line.startswith("Short-term sign changes")]
-            timing += short
-        parts.append("### Timing\n\n" + "\n\n".join(timing[:2]) + ("\n" + "\n".join(timing[2:]) if len(timing) > 2 else ""))
+            timing += [line for line in self.transit_lines(topic) if line.startswith("Short-term sign changes")]
+        parts.append("### Timing\n\n" + "\n\n".join(timing))
 
         parts.append("### What to do with this\n\n" + "\n".join(f"- {a}" for a in topic.actions))
         reminder = {
@@ -677,7 +770,12 @@ class Reader:
         }.get(topic.key)
         if reminder:
             parts.append(reminder)
-        parts.append(f"**Confidence:** {j.confidence} — {j.confidence_reason}.")
+        confidence = f"**Confidence:** {j.confidence} — {j.confidence_reason}."
+        note = self.plain_sensitivity(topic)
+        parts.append(confidence + (f" {note}" if note else ""))
+        if topic.key == "general":
+            parts.append("*Which part of your life matters most to you right now — career, money, marriage, family, "
+                         "health or a decision you're facing? Ask about it and I'll go deeper there.*")
         return "\n\n".join(parts)
 
     def answer_classic(self, question: str, prashna=None) -> str:
