@@ -1,0 +1,70 @@
+# Render Blueprint for the Nuvora Jyotish app (https://render.com/docs/blueprint-spec).
+# Secrets are marked sync: false, so Render asks for them in the dashboard; never put real values here.
+services:
+  - type: web
+    name: nuvora
+    runtime: python
+    rootDir: jyotish
+    region: singapore
+    # A persistent disk needs a paid instance; the free plan would wipe accounts and orders on every deploy.
+    plan: starter
+    buildCommand: pip install -r requirements.txt && python scripts/fetch_data.py
+    # One worker: chart and chat sessions are kept in memory and the databases are SQLite.
+    startCommand: uvicorn server.app:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /api/status
+    autoDeploy: true
+    disk:
+      name: nuvora-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.15.0
+      - key: NUVORA_AUTH_DB
+        value: /var/data/nuvora.sqlite3
+      - key: NUVORA_READINGS_DB
+        value: /var/data/readings.sqlite3
+      # Admin sign-in
+      - key: NUVORA_ADMIN_EMAIL
+        sync: false
+      - key: NUVORA_ADMIN_PASSWORD
+        sync: false
+      # Google sign-in (add the Render URL to the client's authorised JavaScript origins)
+      - key: NUVORA_GOOGLE_CLIENT_ID
+        sync: false
+      # Payments
+      - key: PAYPAL_MODE
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: NUVORA_SUPPORT_EMAIL
+        sync: false
+      - key: NUVORA_REFUND_POLICY_TEXT
+        sync: false
+      # AI reader (optional; set NUVORA_AI_READER=off to use only the built-in reader)
+      - key: NUVORA_AI_READER
+        sync: false
+      - key: LLM_PROVIDER
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_TIMEOUT
+        sync: false
+      - key: LLM_MAX_TOKENS
+        sync: false
+      - key: LLM_REASONING_EFFORT
+        sync: false
+      - key: LLM_FALLBACK_MODELS
+        sync: false
+      - key: LLM_BACKUP_BASE_URL
+        sync: false
+      - key: LLM_BACKUP_API_KEY
+        sync: false
+      - key: LLM_BACKUP_MODELS
+        sync: false
