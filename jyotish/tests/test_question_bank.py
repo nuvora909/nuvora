@@ -43,7 +43,7 @@ CASES = [
     ('Should I start a business or stay in a job?', 'business_job'),
     ('Will I get a government job?', 'govt_job'),
     ('How will my finances be in the next 6 months?', 'money'),
-    ('Will I become rich?', 'money'),
+    ('Will I become rich?', 'wealth_scale'),
     ('When will I buy a house?', 'when'),
     ('Will I buy a car this year?', 'year'),
     ('Will I settle abroad?', 'foreign'),
@@ -140,3 +140,28 @@ def test_manglik_cancellations():
     m = manglik_status(Chart(B(**REFERENCE_BIRTH), O(vargas=())))
     assert m["level"] in ("none", "cancelled", "mild", "moderate", "strong")
     assert (m["level"] == "none") == (not m["hits"])
+
+
+@pytest.mark.parametrize("question", ["will i become a millionaire or a billionaire?", "Will I be rich?",
+                                      "Will I become a crorepati?", "when will i become rich",
+                                      "Can I achieve financial freedom?"])
+def test_wealth_questions_get_an_honest_wealth_reading(chart, question):
+    import re
+    from chat.intents import intent_of
+    c, r = chart
+    assert detect_topic(question).key == "money"
+    assert intent_of(question) == "wealth_scale"
+    text = offline_answer(c, r, question, question_time=REFERENCE_ASKED_AT)
+    assert "couldn't tie" not in text
+    for must in ("2nd lord", "11th lord", "Jupiter", "Earning versus keeping", "financial adviser"):
+        assert must in text, must
+    assert re.search(r"no chart can honestly promise|not a number", text)
+    assert not re.search(r"you will (become|be) (a )?(millionaire|billionaire|rich)", text, re.I)
+    assert not extract_and_verify(text, c, r).contradicted
+
+
+def test_billionaire_gets_the_rarity_line(chart):
+    c, r = chart
+    text = offline_answer(c, r, "will i become a millionaire or a billionaire?", question_time=REFERENCE_ASKED_AT)
+    assert "### Millionaire or billionaire?" in text and "extremely rare" in text
+    assert "Saturn–Saturn" not in text

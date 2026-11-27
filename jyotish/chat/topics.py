@@ -109,7 +109,8 @@ RULES = [
                 r"canada|usa\b|america|uk\b|england|britain|london|australia|germany|dubai|europe|new zealand|singapore"),
     ("marriage", r"marri|spouse|wife|husband|partner|relationship|love|wedding|divorce|compatib"),
     ("money", r"money|wealth|finance|income|rich|savings|invest|debt|loan|financial|salary|lottery|gambl|speculat|"
-              r"stock|share market|trading|crypto|profit|loss\b"),
+              r"stock|share market|trading|crypto|profit|loss\b|millionaire|billionaire|crorepati|wealthy|affluent|"
+              r"net worth|financial freedom|retire early"),
     ("career", r"career|job|work|profession|business|promotion|boss|office|employ|startup|interview"),
     ("timing", r"dasha|period|now|current|timing|when|future|transit|sade|mahadasha|antardasha|pratyantar"),
 ]

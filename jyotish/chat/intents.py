@@ -1063,6 +1063,9 @@ LATE = [
     ("money_leak", r"money (is )?(not|never) (staying|stay|stays|saving|saved)|can'?t save|cannot save|unable to save|"
                    r"no savings|money (goes|disappears|drains|slips)|financially stable|financial stability|"
                    r"expenses (are )?(too high|rising|out of control)"),
+    ("wealth_scale", r"millionaire|billionaire|crorepati|karodpati|\bcrores?\b|\b(become|be|get|getting|grow) "
+                     r"(very |super |really |filthy )?(rich|wealthy)\b|\bhow rich\b|\bsuper ?rich\b|\bnet worth\b|"
+                     r"financial freedom|\b(a lot|lots|huge amount|plenty) of money\b|\bbig money\b|\bwealth potential\b"),
 ]
 
 
@@ -1283,7 +1286,124 @@ def answer_money_leak(ctx, part, topic):
     return lead, body
 
 
+MONEY_SOURCE = {1: "your own initiative and personality", 2: "family resources and steady saving",
+                3: "your own effort, skills, communication and enterprise", 4: "property, land and home-based assets",
+                5: "intelligence, creativity and investment judgment", 6: "service, competition and solving problems for others",
+                7: "partnerships, clients and trade", 8: "shared money, inheritance, insurance or research — irregular, sometimes sudden",
+                9: "fortune, teaching, advice and long-distance links", 10: "your career, skill and position",
+                11: "networks, large organisations and steady gains", 12: "foreign or remote-linked work"}
+
+
+def _months_until(now, when) -> int:
+    return max(1, round((when - now).days / 30.4))
+
+
+def answer_wealth_scale(ctx, part, topic):
+    """“Will I be a millionaire?”: earning and keeping read separately, timing, honesty about extreme wealth."""
+    from .topics import TOPICS
+    c, rd = ctx.c, _rd(ctx)
+    q = part.lower()
+    j = ctx.j(TOPICS["money"])
+    maha, antar = ctx.running()
+
+    def strength(g):
+        st = c.dignity[g]["status"]
+        if st == "Debilitated":
+            return f"{_t(g)} is debilitated here, so the growth comes through steady effort, not sudden jumps."
+        if st in ("Exalted", "Own sign", "Moolatrikona"):
+            return f"{_t(g)} is {'exalted' if st == 'Exalted' else 'strong in its own sign'}, so this source is reliable."
+        return ""
+
+    l1, l2, l9, l11 = (c.house_lord[h] for h in (1, 2, 9, 11))
+    h2, h9, h11 = c.house[l2], c.house[l9], c.house[l11]
+    sav = {h: ctx.r["ashtakavarga"]["sav_by_house"][h - 1]["sav"] for h in (2, 11, 12)}
+    items = [f"**Savings (2nd house):** {rd.f_lord(2)}. Your money is tied to {MONEY_SOURCE[h2]}. {strength(l2)}".strip()]
+    gains = f"**Gains (11th house):** {rd.f_lord(11)}, so income grows through {MONEY_SOURCE[h11]}."
+    if l11 == l2:
+        gains = f"**Gains (11th house):** the same planet rules your gains, which keeps earning and saving on one track."
+    items.append(gains + (" " + strength(l11) if l11 != l2 and strength(l11) else ""))
+    luck = "well placed, so luck backs your effort" if h9 in (1, 2, 4, 5, 7, 9, 10, 11) else "under strain, so luck plays a smaller part than effort"
+    if l9 == l2:
+        items.append(f"**Fortune (9th house):** the same planet rules your fortune, so savings and luck move together, and it is {luck}.")
+    elif l9 == l11:
+        items.append(f"**Fortune (9th house):** the same planet rules your fortune and your gains, and it is {luck}.")
+    else:
+        items.append(f"**Fortune (9th house):** {rd.f_lord(9)}, {luck}.")
+    jh, jst = c.house["JUPITER"], c.dignity["JUPITER"]["status"]
+    jup = f"**Jupiter, the planet of wealth:** {rd.f_place('JUPITER')}"
+    if jst == "Debilitated" or jh in (6, 8, 12):
+        jup += " — under pressure, so growth needs more patience and care with advice."
+    elif jh in (1, 2, 4, 5, 7, 9, 10, 11):
+        jup += f" — one of your strongest assets, supporting {HOUSE_MEANING_SHORT.get(jh, 'growth')}."
+    else:
+        jup += "."
+    items.append(jup)
+    leak = c.house[l1] == 12 or c.house[c.house_lord[12]] in (2, 11) or h2 == 12 or h11 == 12 or sav[12] >= sav[2]
+    if c.house[l1] == 12:
+        keep = (f"{rd.f_lord(1)}: you are the ruler of your own chart, placed in the house of expenses, so spending "
+                "tends to rise with income. Your challenge is keeping money more than earning it.")
+    elif leak:
+        keep = (f"In Ashtakavarga your 2nd house of savings scores {sav[2]} and your 12th house of expenses {sav[12]}, "
+                "so money comes in more easily than it stays. Your challenge is keeping it more than earning it.")
+    else:
+        keep = (f"In Ashtakavarga your 2nd house of savings scores {sav[2]} against {sav[12]} for expenses, so your "
+                "chart supports holding on to what you earn.")
+    items.append(f"**Earning versus keeping:** {keep}")
+    yogas = sorted({y["name"] for y in ctx.r.get("yogas") or [] if y.get("present")
+                    and re.search(r"dhana|lakshmi|chandra-mangala", y["name"], re.I)})
+    if yogas:
+        items.append(f"**Wealth combinations:** your chart has {_join(yogas)}. "
+                     + ("These add" if len(yogas) > 1 else "It adds")
+                     + " to earning power — potential, not a fixed amount.")
+
+    scale = {"strong": "a strong, above-average capacity to build wealth, with real growth over time",
+             "supportive": "a strong, comfortable, upward income and solid wealth building in the long run",
+             "mixed": "real earning potential that comes in steps, with ups and downs to manage",
+             "demanding": "wealth that builds slowly, through discipline and patience rather than big breaks"}[j.lean]
+    timing = ""
+    if j.windows:
+        w = max(j.windows, key=lambda x: (x.score, -x.start.timestamp()))
+        label = "–".join(_t(x) for x in w.dasha.lords)
+        if w.start <= ctx.now:
+            timing = (f" You are inside your strongest window for financial growth right now, the {label} period, "
+                      f"until **{_my(w.end)}** — this is the time to build.")
+        else:
+            cur = ("the present phase" if not (maha and antar) else
+                   f"your current {_t(antar.lord)} sub-period" if maha.lord == antar.lord else
+                   f"your current {_t(maha.lord)}–{_t(antar.lord)} phase")
+            timing = (f" The strongest window for financial growth opens after {cur}: **{_my(w.start)} – "
+                      f"{_my(w.end)}**, the {label} period, about {_months_until(ctx.now, w.start)} months from now.")
+    big = "billionaire" in q or "crore" in q or "super" in q
+    scale_lines = [f"Your chart supports {scale}.{timing}"]
+    scale_lines.append(("A billionaire-level fortune is extremely rare, and no chart can honestly promise it — I'd be "
+                        "suspicious of any astrologer who does." if big else
+                        "Whether that reaches a particular figure depends on your field, your currency and years of "
+                        "compounding; a chart shows potential and timing, not a number, and I'd be suspicious of any "
+                        "astrologer who promises one."))
+    rahu = (maha and maha.lord == "RAHU") or (antar and antar.lord == "RAHU") or c.house["RAHU"] in (2, 5, 8, 11)
+    todo = ("Automate a fixed saving before you spend, avoid get-rich-quick schemes"
+            + (" (Rahu's period tempts you toward them)" if (maha and maha.lord == "RAHU") or (antar and antar.lord == "RAHU")
+               else " (Rahu's placement in your chart tempts you toward them)" if rahu else "")
+            + ", invest in your skills and long-term assets, and watch lifestyle inflation as income rises. For "
+            "specific investments, speak to a qualified financial adviser.")
+    lead = ("Wanting financial security and freedom is a healthy ambition, so let me tell you what your chart shows — "
+            "and where it can't help.")
+    body = ["### Your wealth indicators", "\n".join("- " + i for i in items),
+            "### " + ("Millionaire or billionaire?" if re.search(r"millionaire|billionaire|crore", q) else "How far can it go?"),
+            " ".join(scale_lines),
+            "### What to do", todo,
+            "The chart shows your tendencies. The wealth comes from what you do with them. Would you like to look at "
+            "your best career direction for building income?"]
+    return lead, body
+
+
+HOUSE_MEANING_SHORT = {1: "confidence and personal growth", 2: "savings and family wealth", 4: "property and assets",
+                       5: "intelligence, good investment judgment and creative income", 7: "partnerships and trade",
+                       9: "fortune and good advice", 10: "career growth and reputation", 11: "gains and income"}
+
+
 COMPOSERS.update({"death": answer_death, "fear": answer_fear, "skeptic": answer_skeptic, "destiny": answer_destiny,
+                  "wealth_scale": answer_wealth_scale,
                   "ex": answer_ex, "manglik": answer_manglik, "kaal_sarp": answer_kaal_sarp,
                   "partner_match": answer_partner_match, "home_conflict": answer_home_conflict,
                   "money_leak": answer_money_leak})
