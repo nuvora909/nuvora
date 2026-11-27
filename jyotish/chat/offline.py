@@ -627,9 +627,12 @@ class Reader:
             return self.answer_classic(question, prashna)
         # Questions with a specific intent (when, a year, remedies, career choice, love vs arranged, a relative...)
         # or several parts get a direct, human answer to each part; plain topic questions keep the full reading.
-        from .intents import compose, special_intent
+        from .intents import compose, is_overview, special_intent, unclear
         if special_intent(question):
             return compose(self.c, self.r, question, self.now)
+        if topic.key == "general" and not prashna and not is_overview(question):
+            # A specific question the reader cannot place must not get a generic life reading.
+            return unclear(self.c, self.r, question, self.now)
         return self.answer_judged(question, topic, prashna)
 
     def foreign_split(self) -> str:
@@ -770,6 +773,9 @@ class Reader:
         confidence = f"**Confidence:** {j.confidence} — {j.confidence_reason}."
         note = self.plain_sensitivity(topic)
         parts.append(confidence + (f" {note}" if note else ""))
+        if topic.key == "general":
+            parts.append("*Which part of your life matters most to you right now — career, money, marriage, family, "
+                         "health or a decision you're facing? Ask about it and I'll go deeper there.*")
         return "\n\n".join(parts)
 
     def answer_classic(self, question: str, prashna=None) -> str:

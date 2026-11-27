@@ -100,13 +100,16 @@ RULES = [
     ("lifetime", r"lifetime|life time|whole life|entire life|life-long|lifelong|major life chapters"),
     ("year", r"yearly|year ahead|next year|this year|annual|12 months|twelve months|202[0-9].*(outlook|forecast|hold)"),
     ("property", r"property|real estate|house purchase|home loan|land|flat|apartment|vehicle|car\b"),
-    ("education", r"educat|study|studies|exam|college|university|degree|learn|course|phd|school"),
+    ("education", r"educat|study|studies|exam|college|university|degree|learn|course|phd|school|mba\b|masters|ms\b|"
+                  r"b\.?tech|m\.?tech|engineering entrance|neet|jee\b|gate\b|cat exam|gre\b|gmat|ielts|upsc prep|coaching"),
     ("children", r"child|children|son|daughter|baby|pregnan|kids|fertil|conceiv"),
     ("spiritual", r"spiritual|spirituality|dharma|meditat|mantra|sadhana|moksha|inner growth|past karma"),
     ("health", r"health|disease|illness|sick|body|surgery|hospital|energy|vitality|mental health"),
-    ("foreign", r"foreign|abroad|travel|visa|relocat|settle|overseas|immigra"),
+    ("foreign", r"foreign|abroad|travel|visa|relocat|settle|overseas|immigra|move to|moving to|shift(?:ing)? to|"
+                r"canada|usa\b|america|uk\b|england|britain|london|australia|germany|dubai|europe|new zealand|singapore"),
     ("marriage", r"marri|spouse|wife|husband|partner|relationship|love|wedding|divorce|compatib"),
-    ("money", r"money|wealth|finance|income|rich|savings|invest|debt|loan|financial|salary"),
+    ("money", r"money|wealth|finance|income|rich|savings|invest|debt|loan|financial|salary|lottery|gambl|speculat|"
+              r"stock|share market|trading|crypto|profit|loss\b"),
     ("career", r"career|job|work|profession|business|promotion|boss|office|employ|startup|interview"),
     ("timing", r"dasha|period|now|current|timing|when|future|transit|sade|mahadasha|antardasha|pratyantar"),
 ]
@@ -137,7 +140,8 @@ def detect_topic(question: str) -> Topic:
     if re.search(r"\brelocat\w*", q) and not re.search(r"\b(?:property|home|house|flat|apartment|land|vehicles?)\b", q):
         return TOPICS["foreign"]
     for key, rx in RULES:
-        if re.search(rx, q):
+        # Each keyword must start a word: "son" is not "reason", "now" is not "know", "land" is not "England".
+        if re.search(rf"\b(?:{rx})", q):
             return TOPICS[key]
     return TOPICS["general"]
 

@@ -15,6 +15,7 @@ import secrets
 import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from functools import lru_cache
 from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
@@ -430,6 +431,72 @@ def report_sample(req: ReportPdfRequest, user: dict = Depends(require_user)):
         "Content-Disposition": f'inline; filename="nuvora-{safe_name}-sample.pdf"',
         "Cache-Control": "private, no-store",
     })
+
+
+@lru_cache(maxsize=512)
+def _muhurat_cached(day: str, lat: float, lon: float, tz: str) -> dict:
+    from datetime import date as _date
+    from vedic.muhurat import day_muhurat
+    return day_muhurat(_date.fromisoformat(day), lat, lon, tz)
+
+
+@app.get("/api/muhurat")
+def muhurat(date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"), lat: float = Query(..., ge=-90, le=90),
+            lon: float = Query(..., ge=-180, le=180), tz: str = Query(..., min_length=3, max_length=64),
+            user: dict = Depends(require_user)):
+    """Good and bad times for one day at one place: Rahu Kaal, Choghadiya, Abhijit, Hora, panchang and more."""
+    y = int(date[:4])
+    if not 1900 <= y <= 2100:
+        raise HTTPException(400, "Choose a date between 1900 and 2100")
+    try:
+        return _muhurat_cached(date, round(lat, 3), round(lon, 3), tz)
+    except (ValueError, KeyError) as e:
+        raise HTTPException(400, str(e) or "Unknown timezone") from None
+
+
+class BoyGirlMatchRequest(BaseModel):
+    girl: ChartRequest
+    boy: ChartRequest
+
+
+def _match_charts(req: BoyGirlMatchRequest):
+    girl = req.girl.model_copy(update={"gender": "female"})
+    boy = req.boy.model_copy(update={"gender": "male"})
+    return _calculate_chart(girl), _calculate_chart(boy)
+
+
+def _match_unlocked(user_id: int) -> bool:
+    return has_report_entitlement(user_id, "match") or account_state(user_id)["subscription"]["active"]
+
+
+@app.post("/api/matching")
+def boy_girl_matching(req: BoyGirlMatchRequest, user: dict = Depends(require_user)):
+    """Complete boy-and-girl compatibility. Everyone sees the verdict and score; the full analysis is unlocked by the
+    matchmaking report or an active pass."""
+    from vedic.compat import full_match
+    (cg, rg), (cb, rb) = _match_charts(req)
+    result = full_match(cg, cb, rg, rb)
+    if _match_unlocked(user["id"]):
+        return {**result, "locked": False}
+    keep = ("verdict", "tone", "score", "adjusted_score", "maximum", "band", "girl", "boy")
+    return {**{k: result[k] for k in keep}, "locked": True,
+            "reasons": result["reasons"][:1],
+            "teaser": "Unlock the full analysis: all 8 kootas, dosha exceptions, Mangal Dosha for both, each person's "
+                      "marriage promise, navamsha rapport, shared wedding windows, Porutham and remedies."}
+
+
+@app.post("/api/matching/pdf")
+def boy_girl_matching_pdf(req: BoyGirlMatchRequest, user: dict = Depends(require_user)):
+    if not _match_unlocked(user["id"]):
+        raise HTTPException(402, "Purchase the matchmaking report to download the PDF")
+    (cg, rg), (cb, rb) = _match_charts(req)
+    try:
+        title, subtitle, sections = build_report("match", cg, rg, cb, rb)
+        content = render_pdf(title, subtitle, sections)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    return Response(content, media_type="application/pdf", headers={
+        "Content-Disposition": 'attachment; filename="nuvora-kundli-matching.pdf"', "Cache-Control": "private, no-store"})
 
 
 @app.post("/api/match")

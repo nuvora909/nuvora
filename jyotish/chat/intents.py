@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 
+from vedic.chart import natural_relation
 from vedic.constants import NAKSHATRAS, SIGN_LORD, SIGNS
 
 from .judgment import HEALTH_LEAN, judge
@@ -42,13 +43,50 @@ INTENTS = [
                  r"struggl|suffering|delays?|obstacles?|why (am i|is my life|is everything)|nothing (is )?work|"
                  r"when will (things|my life|life|time) (improve|get better|change)|(phase|time) (end|be over)"),
 ]
+# Who -> (house read from the ascendant, natural significator, how to name them). Longer phrases are matched first,
+# so "elder brother" and "mother-in-law" win over "brother" and "mother". Younger siblings are the 3rd house,
+# elder siblings the 11th; a mother-in-law is the 4th from the 7th (the 10th), a father-in-law the 9th from the
+# 7th (the 3rd), and the spouse's family as a whole the 2nd from the 7th (the 8th).
 RELATIVES = {
+    "father-in-law": (3, "SUN", "your father-in-law"), "father in law": (3, "SUN", "your father-in-law"),
+    "sasur": (3, "SUN", "your father-in-law"),
+    "mother-in-law": (10, "MOON", "your mother-in-law"), "mother in law": (10, "MOON", "your mother-in-law"),
+    "saas": (10, "MOON", "your mother-in-law"),
+    "in-laws": (8, "VENUS", "your in-laws"), "in laws": (8, "VENUS", "your in-laws"), "sasural": (8, "VENUS", "your in-laws"),
+    "elder brother": (11, "MARS", "your elder brother"), "older brother": (11, "MARS", "your elder brother"),
+    "big brother": (11, "MARS", "your elder brother"), "bade bhai": (11, "MARS", "your elder brother"),
+    "bhaiya": (11, "MARS", "your elder brother"),
+    "younger brother": (3, "MARS", "your younger brother"), "little brother": (3, "MARS", "your younger brother"),
+    "chhota bhai": (3, "MARS", "your younger brother"),
+    "elder sister": (11, "MARS", "your elder sister"), "older sister": (11, "MARS", "your elder sister"),
+    "big sister": (11, "MARS", "your elder sister"), "didi": (11, "MARS", "your elder sister"),
+    "younger sister": (3, "MARS", "your younger sister"), "little sister": (3, "MARS", "your younger sister"),
+    "brothers": (3, "MARS", "your brothers"), "brother": (3, "MARS", "your brother"), "bhai": (3, "MARS", "your brother"),
+    "sisters": (3, "MARS", "your sisters"), "sister": (3, "MARS", "your sister"), "behen": (3, "MARS", "your sister"),
+    "siblings": (3, "MARS", "your siblings"), "sibling": (3, "MARS", "your sibling"),
     "father": (9, "SUN", "your father"), "dad": (9, "SUN", "your father"), "papa": (9, "SUN", "your father"),
-    "mother": (4, "MOON", "your mother"), "mom": (4, "MOON", "your mother"), "mummy": (4, "MOON", "your mother"),
+    "mother": (4, "MOON", "your mother"), "mom": (4, "MOON", "your mother"), "mum": (4, "MOON", "your mother"),
+    "mummy": (4, "MOON", "your mother"), "maa": (4, "MOON", "your mother"),
+    "parents": (4, "MOON", "your parents"),
     "wife": (7, "VENUS", "your wife"), "husband": (7, "JUPITER", "your husband"), "spouse": (7, "VENUS", "your spouse"),
     "son": (5, "JUPITER", "your son"), "daughter": (5, "JUPITER", "your daughter"),
-    "brother": (3, "MARS", "your brother"), "sister": (3, "MARS", "your sister"),
+    "children": (5, "JUPITER", "your children"), "kids": (5, "JUPITER", "your children"),
+    "best friend": (11, "MERCURY", "your best friend"), "friends": (11, "MERCURY", "your friends"),
+    "friend": (11, "MERCURY", "your friend"),
+    "boss": (10, "SUN", "your boss"), "manager": (10, "SUN", "your manager"), "seniors": (10, "SUN", "your seniors"),
+    "colleagues": (11, "MERCURY", "your colleagues"), "coworkers": (11, "MERCURY", "your colleagues"),
+    "co-workers": (11, "MERCURY", "your colleagues"),
 }
+SPOUSE_WORDS = ("wife", "husband", "spouse")
+PLURAL = {"your in-laws", "your brothers", "your sisters", "your siblings", "your parents", "your children",
+          "your friends", "your seniors", "your colleagues"}
+HOUSE_OF_PEOPLE = {3: "younger siblings, courage and effort; also the father-in-law", 4: "mother, home and inner peace",
+                   5: "children and creativity", 7: "partners and marriage", 8: "the spouse's family",
+                   9: "father, teachers and fortune", 10: "authority, career and the mother-in-law",
+                   11: "elder siblings, friends, networks and gains"}
+BOND = re.compile(r"relation|bond|get along|getting along|fight|quarrel|argu|support|close|understand|dispute|conflict|"
+                  r"care|help|trust|terms|talk|patch|reconcil|misunderstand|distance|jealous|rival|attitude|behav|"
+                  r"treat|friendship|connection|love me|hate|angry|respect|cooperat|happy with|problems? with|issues? with")
 CAREER_FIELDS = {
     "SUN": "government, administration, management, politics or medicine",
     "MOON": "hospitality, healthcare and nursing, food, travel, public-facing roles or psychology",
@@ -139,16 +177,44 @@ def split_parts(question: str) -> list[str]:
     return out or [question]
 
 
+def relative_in(p: str) -> str | None:
+    """The person a question is about, when it names one as 'my brother', 'with my sister', "my boss's"..."""
+    p = p.lower()
+    for w in sorted(RELATIVES, key=len, reverse=True):
+        word = re.escape(w)
+        if not re.search(rf"\b(?:my|our|with|and)\s+(?:\w+\s+){{0,2}}{word}\b|\b{word}'s\b|\b{word}\b(?=.*\b(?:me|i|my)\b)", p):
+            continue
+        if w in SPOUSE_WORDS:
+            # "When will I meet my husband?" is a marriage question; a spouse question asks about the person.
+            if re.search(r"\b(when|will i|meet|find|get)\b.*\b(marri|meet|find)|\bwhen will i\b", p) and \
+                    not re.search(r"health|nature|support|settled|rich|kind|caring|loyal|educated|family|like|relation|"
+                                  r"fight|understand|career|job", p):
+                return None
+        if w in ("son", "daughter", "children", "kids") and re.search(r"\b(have|get|blessed|conceive|birth)\b", p):
+            return None      # "Will I have a son?" is a question about children, not about an existing child
+        if w in ("boss", "manager", "seniors", "colleagues", "coworkers", "co-workers") and \
+                re.search(r"promot|raise|salary|hike|appraisal|increment|fire|sack|layoff|job", p):
+            return None      # "Will my boss promote me?" is a career question
+        return w
+    return None
+
+
 def intent_of(part: str) -> str:
     p = part.lower()
-    for key, rx in INTENTS:
+    for key, rx in PRIORITY:
         if re.search(rx, p):
             return key
-    rel = next((w for w in RELATIVES if re.search(rf"\b{w}('s)?\b", p)), None)
-    if rel and not re.search(r"\b(my|our) (own )?(marriage|wedding)\b", p) and \
-            re.search(r"health|well|recover|improve|surgery|hospital|life|future|career|job|marri|okay|fine|support|settled|"
-                      r"nature|rich|kind|caring|loyal|look|educated|family|like", p):
+    rel = relative_in(p)
+    # A question about another person is about that person, whatever else it mentions; only remedies, gemstones,
+    # a legal case or a muhurta keep their own composers.
+    if rel and not re.search(r"remed|upay|gem\s?stone|ratna|court|lawsuit|muhurat", p):
         return "relative:" + rel
+    for key, rx in LATE + INTENTS:
+        if re.search(rx, p):
+            if key == "bad_time" and re.search(r"marri|wedding|job|career|money|financ|child|house|property|visa|abroad|"
+                                               r"exam|study|business|health|promot", p):
+                continue     # "delays in my marriage" is a marriage question, not a general bad phase
+            return key
     if re.search(r"\b20\d\d\b", p) or re.search(r"\b(this|next|coming) year\b", p):
         return "year"
     if re.search(r"\bwhen\b|\bhow soon\b|\bby when\b|\bwhich (year|month)\b|\bhow long\b", p):
@@ -650,10 +716,137 @@ def answer_muhurta(ctx, part, topic):
     return lead, body
 
 
+def _bond(ctx, house: int, karaka: str):
+    """How the ruler of another person's house relates to you, as (score, supports, frictions) with fact tags."""
+    from .offline import Reader
+    c, rd = ctx.c, Reader(ctx.c, ctx.r)
+    lord, me = c.house_lord[house], c.house_lord[1]
+    score, plus, minus = 0.0, [], []
+    lh = c.house[lord]
+    if lh == house:
+        score += 1.0
+        plus.append(f"{rd.f_lord(house)}, holding its own house, which keeps this relationship steady and self-sustaining")
+    elif lh in (1, 4, 5, 7, 9, 10):
+        score += 1.0
+        plus.append(f"{rd.f_lord(house)}, a strong house, so this person is a real presence and support in your life")
+    elif lh in (6, 8, 12):
+        score -= 1.0
+        minus.append(f"{rd.f_lord(house)}, a house of strain, so the relationship goes through distance, "
+                     "misunderstandings or rivalry at times")
+    if lord == me:
+        score += 1.0
+        plus.append(f"the same planet, {_t(me)}, rules your ascendant and their house, so you are alike in temperament")
+    else:
+        rel = natural_relation(lord, me)
+        if rel == "Friend":
+            score += 0.5
+            plus.append(f"{_t(lord)}, who rules their house, is a natural friend of {_t(me)}, your ascendant lord, so "
+                        "goodwill comes easily between you")
+        elif rel == "Enemy":
+            score -= 0.5
+            minus.append(f"{_t(lord)}, who rules their house, is a natural enemy of {_t(me)}, your ascendant lord, so "
+                         "you see things differently and clash over small things")
+        gap = (c.house[lord] - c.house[me]) % 12 + 1
+        if gap in (6, 8):
+            score -= 0.75
+            minus.append(f"{_t(lord)} (ruler of their house) and {_t(me)} (your ascendant lord) sit 6 and 8 houses from "
+                         "each other, the classical axis of friction, so disagreements recur until you both choose patience")
+        elif gap in (1, 5, 9, 4, 10, 7):
+            score += 0.5
+            plus.append(f"{_t(lord)} (ruler of their house) and {_t(me)} (your ascendant lord) sit at a cooperative angle "
+                        "to each other, which helps you come back together after differences")
+    for g in ("JUPITER", "VENUS"):
+        if c.house[g] == house:
+            score += 0.5
+            plus.append(f"{rd.f_place(g)} brings warmth and goodwill straight into their house")
+        elif c.aspects(g, house):
+            score += 0.5
+            plus.append(f"{rd.f_aspect(g, house)}, a protective influence that softens arguments")
+    hits = 0
+    for g in ("SATURN", "MARS", "RAHU", "KETU"):
+        if hits >= 2 or g == lord or g in (karaka,) and c.house[g] != house:
+            continue
+        if c.house[g] == house:
+            score -= 0.5
+            hits += 1
+            minus.append(f"{rd.f_place(g)} adds {'coldness and duty over warmth' if g == 'SATURN' else 'heat and quick tempers' if g == 'MARS' else 'unpredictability and mixed signals'}")
+        elif c.aspects(g, house) and g in ("SATURN", "MARS"):
+            score -= 0.5
+            hits += 1
+            minus.append(f"{rd.f_aspect(g, house)}, adding {'distance or heavy responsibilities' if g == 'SATURN' else 'arguments that flare up fast'}")
+    st = c.dignity[karaka]["status"]
+    d = rd.f_dignity(karaka)
+    if d and st in ("Exalted", "Own sign", "Moolatrikona"):
+        score += 0.5
+        plus.append(f"{d}, which strengthens this bond as its natural significator")
+    elif d and st == "Debilitated":
+        score -= 0.5
+        minus.append(f"{d}, so this bond needs more conscious effort than most")
+    return score, plus, minus
+
+
+def _bond_timing(ctx, house: int, karaka: str, label: str) -> str | None:
+    lord = ctx.c.house_lord[house]
+    maha, antar = ctx.running()
+    for p, kind in ((antar, "sub-period"), (maha, "major period")):
+        if p and (p.lord in (lord, karaka) or ctx.c.house[p.lord] == house):
+            return (f"This relationship is in focus right now: you are in the {_t(p.lord)} {kind} "
+                    f"(until {_my(p.end)}), which works directly through {label}'s house.")
+    for p in ctx.c.dasha.between(ctx.now, ctx.now + timedelta(days=3650), depth=2):
+        if p.start > ctx.now and p.lord == lord:
+            return (f"It comes into sharper focus in the {_t(p.lord)} sub-period ({_my(p.start)} – {_my(p.end)}), "
+                    f"when {_t(lord)}, the ruler of {label}'s house, takes the lead in your chart.")
+    return None
+
+
+def answer_bond(ctx, part, who):
+    """Your relationship with a relative, friend or colleague, read from their house in your chart."""
+    house, karaka, label = RELATIVES[who]
+    score, plus, minus = _bond(ctx, house, karaka)
+    if score >= 1.5:
+        lead = f"Your relationship with {label} looks close and supportive — this is one of the easier bonds in your chart."
+    elif score >= 0.25:
+        lead = f"Your relationship with {label} is good at heart, with some friction you'll need to manage."
+    elif score > -1:
+        lead = (f"Your relationship with {label} is mixed: there is real care between you, but also recurring friction, "
+                "so it works best with some space and clear boundaries.")
+    else:
+        lead = (f"Honestly, the bond with {label} is one of the harder ones in your chart — expect distance, rivalry or "
+                "misunderstandings, and know that it improves with conscious effort, not on its own.")
+    many = label in PLURAL
+    body = [f"{label[0].upper() + label[1:]} {'are' if many else 'is'} read from your {_ord(house)} house "
+            f"({HOUSE_OF_PEOPLE[house]})."]
+    if plus:
+        body.append("**What helps:** " + "; ".join(_lc(x) for x in plus[:3]) + ".")
+    if minus:
+        body.append("**Where it gets tricky:** " + "; ".join(_lc(x) for x in minus[:3]) + ".")
+    t = _bond_timing(ctx, house, karaka, label)
+    if t:
+        body.append(t)
+    if who in ("brother", "sister", "brothers", "sisters", "bhai", "behen", "siblings", "sibling"):
+        other = 11 if house == 3 else 3
+        o_score = _bond(ctx, other, karaka)[0]
+        body.append(f"I've read this for younger siblings (the 3rd house). If you mean an elder one, the 11th house "
+                    f"applies, and that bond looks {'easier' if o_score > score + 0.5 else 'harder' if o_score < score - 0.5 else 'much the same'}.")
+    advice = ("Keep investing in it — a shared plan or regular time together turns this support into something lasting."
+              if score >= 1.5 else
+              "Say clearly what you need, avoid keeping score over money or family duties, and let small things go."
+              if score >= 0.25 else
+              "Give each other room, keep money and property matters on paper, and pick calm moments for hard conversations.")
+    body.append(advice)
+    body.append(f"Your chart shows how {label} {'figure' if many else 'figures'} in your life; their own birth "
+                f"chart{'s' if many else ''} would describe them more fully.")
+    return lead, body
+
+
 def answer_relative(ctx, part, who):
     house, karaka, label = RELATIVES[who]
     c = ctx.c
     p = part.lower()
+    health_q = re.search(r"health|recover|\bill\b|illness|sick|surgery|hospital|disease|operation", p)
+    if who not in SPOUSE_WORDS and not health_q and (BOND.search(p) or not re.search(
+            r"career|job|marri|wedding|future|life|rich|money|settled|educat|study|exam|abroad|foreign", p)):
+        return answer_bond(ctx, part, who)
     lord = c.house_lord[house]
     st_k, st_l = ctx.strength(karaka), ctx.strength(lord)
     afflicted = [g for g in ("SATURN", "MARS", "RAHU", "KETU") if c.house[g] == house or c.aspects(g, house)]
@@ -662,22 +855,33 @@ def answer_relative(ctx, part, who):
         return answer_spouse(ctx, part, label)
     good = sum(x is not None and x >= 55 for x in (st_k, st_l)) - (1 if len(afflicted) >= 2 else 0)
     if health:
-        lead = (f"For {label}'s health, your chart shows " +
-                ("good resilience — recovery is well supported." if good >= 2 else
-                 "reasonable support, though it will take steady care and patience." if good >= 1 else
-                 "that this needs careful attention and good medical support."))
-    else:
-        lead = f"For {label}, your chart is " + ("encouraging." if good >= 2 else "mixed but workable." if good >= 1 else "asking for patience.")
-    body = [f"In your chart {label} is read from your {_ord(house)} house and {_t(karaka)}: the house lord {_t(lord)} "
-            f"scores {st_l or 0:.0f}/100 and {_t(karaka)} {st_k or 0:.0f}/100"
-            + (f", while {_join([_t(g) for g in afflicted])} put pressure on that house" if afflicted else "") + "."]
+        # Never predict how an illness turns out: describe the period, point to the doctors, and to what helps.
+        lead = (f"I'm sorry you're going through this. I won't predict how {label}'s health turns out — no chart can "
+                "do that responsibly, and the doctors' guidance comes first.")
+        tone = ("a testing period that calls for patience" if good < 1 or afflicted else
+                "a period where steady care and routine make a real difference")
+        body = [f"Astrologically, your {_ord(house)} house, which represents {label}, shows {tone}"
+                + (f": {_join([_t(g) for g in afflicted])} put pressure on that house" if afflicted else "") + "."]
+        tr = (ctx.r.get("transits") or {}).get("positions", {})
+        if tr.get("SATURN", {}).get("house_from_lagna") == house:
+            body.append("Transiting Saturn is moving through that house now, which is why everything feels slow and heavy.")
+        if tr.get("JUPITER", {}).get("house_from_lagna") == house:
+            body.append("Transiting Jupiter is moving through that house now, a protective influence for the family.")
+        body.append("What helps most is your presence and care: be with them, keep track of the doctors' advice, and look "
+                    "after your own rest too.")
+        return lead, body
+    lead = f"For {label}, your chart is " + ("encouraging." if good >= 2 else "mixed but workable." if good >= 1 else "asking for patience.")
+    body = [f"In your chart {label} {'are' if label in PLURAL else 'is'} read from your {_ord(house)} house "
+            f"({HOUSE_OF_PEOPLE.get(house, 'their place in your life')}) and from {_t(karaka)}. "
+            + ("Both are in good shape." if good >= 2 else "One of them is strong and one needs support." if good >= 1
+               else "Both need support.")
+            + (f" {_join([_t(g) for g in afflicted])} put pressure on that house." if afflicted else "")]
     tr = (ctx.r.get("transits") or {}).get("positions", {})
     for g in ("JUPITER", "SATURN"):
         if g in tr and tr[g].get("house_from_lagna") == house:
             body.append(f"Transiting {_t(g)} is in that house right now, "
-                        + ("which supports recovery." if g == "JUPITER" else "so things move slowly for now."))
-    body.append(f"{label[0].upper() + label[1:]}'s own birth chart would give a much more reliable answer — "
-                "and for health, the doctors' advice comes first.")
+                        + ("which brings support and good news." if g == "JUPITER" else "so things move slowly for now."))
+    body.append(f"{label[0].upper() + label[1:]}'s own birth chart would give a much more reliable answer.")
     return lead, body
 
 
@@ -775,9 +979,17 @@ def special_intent(question: str) -> bool:
 
 def compose(chart, report, question: str, now: datetime) -> str:
     ctx = Ctx(chart, report, now)
-    parts = split_parts(question)
+    resolved, seen = [], set()
+    for i, (part, intent, topic) in enumerate(resolve_topics(split_parts(question))):
+        key = (intent, topic.key)
+        follow_up = i and intent == "topic" and topic.key == "general" and len(part.split()) <= 5
+        if key in seen or follow_up:
+            continue     # "Is astrology scientific? Do you really believe this?" is one question asked twice
+        seen.add(key)
+        resolved.append((part, intent, topic))
+    parts = [p for p, _, _ in resolved]
     blocks = []
-    for part, intent, topic in resolve_topics(parts):
+    for part, intent, topic in resolved:
         if intent.startswith("relative:"):
             lead, body = answer_relative(ctx, part, intent.split(":", 1)[1])
         elif intent in COMPOSERS:
@@ -792,3 +1004,286 @@ def compose(chart, report, question: str, now: datetime) -> str:
     closing = ("\n\n*This reading is calculated from your birth chart. It describes tendencies and timing, not fixed "
                "fate — your choices still matter most.*")
     return opener + "\n\n".join(blocks) + closing
+
+
+OVERVIEW = re.compile(r"overview|overall|in general|general reading|my (birth )?chart|kundl|horoscope|my life|life reading|"
+                      r"about me|tell me (about|everything)|reading|destiny|my future|prediction|full|complete|everything|"
+                      r"analy[sz]|what does (my|the) (chart|stars)|what is in store|what lies ahead|guidance", re.I)
+
+
+def is_overview(question: str) -> bool:
+    """A request for the whole picture, which deserves the full life reading."""
+    q = question.strip()
+    return q in _library_prompts() or bool(OVERVIEW.search(q)) or len(q.split()) <= 3
+
+
+def unclear(chart, report, question: str, now: datetime) -> str:
+    """An honest reply to a specific question the reader cannot tie to one area of the chart."""
+    ctx = Ctx(chart, report, now)
+    maha, antar = ctx.running()
+    shown = question.strip().rstrip("?")
+    lines = [f"I want to answer exactly what you asked, and I couldn't tie “{shown}” to one clear area of your chart — "
+             "so rather than give you a general reading that misses the point, could you put it another way?",
+             "Questions I can read precisely from your chart:",
+             "- **Career and money:** “Will I get a promotion this year?”, “Business or job for me?”, “How will my finances be in the next 6 months?”",
+             "- **Marriage and love:** “When will I get married?”, “Love or arranged?”, “How will my husband be?”",
+             "- **People in your life:** “How are my relations with my brother?”, “Will my father's health improve?”, “How do I get along with my boss?”",
+             "- **Home, study, travel, children, health:** “When will I buy a house?”, “Will I settle abroad?”, “When will I have children?”",
+             "- **Timing and help:** “When will my bad time end?”, “Is Sade Sati over?”, “Which gemstone suits me?”, “Is this a good day to sign?”"]
+    if maha and antar:
+        lines.append(f"For context, you are in the {_t(maha.lord)} major period with the {_t(antar.lord)} sub-period running "
+                     f"until {_my(antar.end)}.")
+    return "\n\n".join(lines[:2]) + "\n" + "\n".join(lines[2:7]) + ("\n\n" + lines[7] if len(lines) > 7 else "")
+
+
+# ---------------------------------------------------------------- questions that need care more than calculation
+
+# Checked before anything else (even before a relative is detected): safety, honesty and the doshas.
+PRIORITY = [
+    ("death", r"when will i die|\bmy death\b|\blife ?span\b|longevity|how long will i live|\bwill i die\b|\bdie (young|early|soon)\b|"
+              r"\b(when|how) will (my )?\w+ die\b|\bdeath of\b"),
+    ("fear", r"(someone|somebody|astrologer|pandit|panditji|baba|they|he|she|people) (has )?(told|said|predicted|warned)\b.*"
+             r"(terrible|bad|death|die|accident|danger|disaster|curse|black magic|ruin)|something (terrible|bad|horrible|awful) "
+             r"(is going to|will|might) happen|(scared|afraid|worried|frightened) (of|about) (my )?(future|chart|prediction|kundli)"),
+    ("skeptic", r"is astrology (real|true|scientific|science|accurate|fake|a scam|legit)|do you (really )?believe|"
+                r"does astrology (really )?work|astrology (is )?(a )?(scam|fraud|fake|nonsense)|is this (real|accurate|scientific)"),
+    ("destiny", r"change my (destiny|fate|luck|kismat|kismet|bhagya|future)|can (you|astrology|remedies|anyone|a puja) change"),
+    ("ex", r"\bmy ex\b|\bex[- ]?(boyfriend|girlfriend|husband|wife|partner|bf|gf)\b|\bget back together\b|\bcome back to me\b|"
+           r"will (he|she) (come back|return)|\breunite\b|patch up with (him|her)"),
+    ("manglik", r"mangal\s*dosh|manglik|mangalik|kuja\s*dosh|mars\s*dosh|chevvai\s*dosh"),
+    ("kaal_sarp", r"kaal\s*sarp|kal\s*sarp|kala\s*sarpa"),
+    ("partner_match", r"(is|are) (my )?(partner|boyfriend|girlfriend|fianc\w*|bf|gf) (right|good|the one|compatible)|"
+                      r"right (person|partner|match|one) for me|kundli (milan|matching)|guna milan|ashtakoota|"
+                      r"compatib\w* with (my )?(partner|boyfriend|girlfriend|him|her|fianc\w*)"),
+]
+LATE = [
+    ("home_conflict", r"(conflict|fight|fights|fighting|quarrels?|tension|arguments?|problems?|no peace|peace) (at|in) "
+                      r"(my )?(home|house|family)|home (conflict|peace|tension)|family (conflict|tension|problems|fights|disputes)|"
+                      r"ghar (mein|me) (kalesh|jhagda|jhagde)|domestic (peace|problems|harmony)"),
+    ("money_leak", r"money (is )?(not|never) (staying|stay|stays|saving|saved)|can'?t save|cannot save|unable to save|"
+                   r"no savings|money (goes|disappears|drains|slips)|financially stable|financial stability|"
+                   r"expenses (are )?(too high|rising|out of control)"),
+]
+
+
+def _rd(ctx):
+    from .offline import Reader
+    return Reader(ctx.c, ctx.r)
+
+
+def answer_death(ctx, part, topic):
+    lead = ("I won't predict death or lifespan — for you or anyone else. No responsible reading does, the classical "
+            "methods for it are unreliable, and a wrong answer can do real harm.")
+    body = ["If this question comes from a health worry, the right next step is a doctor and regular checkups; you "
+            "can also ask me “How is my health?” to see which areas your chart asks you to look after.",
+            "If someone frightened you with a prediction, please don't carry that fear. Ask me about it, and I'll show "
+            "you what your chart actually says."]
+    return lead, body
+
+
+def answer_fear(ctx, part, topic):
+    maha, antar = ctx.running()
+    ss = (ctx.r.get("transits") or {}).get("sade_sati") or {}
+    lead = ("Please don't carry that fear. No responsible reading predicts death or disaster with certainty, and a "
+            "difficult factor in a chart means caution in one area of life, not catastrophe.")
+    body = []
+    if maha and antar:
+        body.append(f"Here is what your chart actually shows right now: you are in the {_t(maha.lord)} major period, "
+                    f"with the {_t(antar.lord)} sub-period running until {_my(antar.end)}."
+                    + (f" Sade Sati is also active ({ss.get('phase', 'running')}): a long Saturn cycle of hard work and "
+                       "restructuring, which many people come through with real progress." if ss.get("active") else
+                       " There is no Sade Sati running."))
+    body.append("Be wary of anyone who follows a frightening prediction with an expensive puja or remedy — that is "
+                "selling fear, not reading a chart.")
+    body.append("If you tell me which area they warned you about (health, marriage, money, travel), I'll read that "
+                "part of your chart properly.")
+    return lead, body
+
+
+def answer_skeptic(ctx, part, topic):
+    lead = ("Honestly, astrology isn't scientifically validated. I treat it as a symbolic framework for reflection and "
+            "timing, not a law that decides your life.")
+    body = ["What I can promise is that the calculations are exact: planet positions come from NASA-grade ephemeris "
+            "data, and every chart fact in a reading is checked against your chart before you see it — that's the "
+            "“verified” badge.",
+            "The interpretation follows classical Vedic rules and says how sure it is and why. Use it for perspective "
+            "and timing, and keep making your own decisions."]
+    return lead, body
+
+
+def answer_destiny(ctx, part, topic):
+    from .topics import TOPICS
+    j = ctx.j(TOPICS["general"])
+    lead = ("I can't change your destiny, and I'd be wary of anyone who says they can — especially for money. What I "
+            "can do is help you understand your patterns and time your decisions better.")
+    body = []
+    if j.windows:
+        w = max(j.windows, key=lambda x: x.score)
+        body.append(f"For example, your chart's strongest window in the next few years is **{_my(w.start)} – "
+                    f"{_my(w.end)}**, the {'–'.join(_t(x) for x in w.dasha.lords)} period: a good time to make your "
+                    "bigger moves.")
+    body.append("Simple remedies — a steady routine, charity, a mantra — work by changing how you act, and that is where "
+                "real change comes from. Your choices still carry the most weight.")
+    return lead, body
+
+
+def answer_ex(ctx, part, topic):
+    from .topics import TOPICS
+    c, rd = ctx.c, _rd(ctx)
+    j = ctx.j(TOPICS["marriage"])
+    l7 = c.house_lord[7]
+    bits = [f"Relationships in your chart are read from Venus and the 7th house: {rd.f_lord(7)}"]
+    if c.house[l7] in (6, 8, 12):
+        bits.append("a house of separation, so breaks and returns are part of your relationship pattern")
+    nodes = c.house["RAHU"] in (1, 7) or c.house["KETU"] in (1, 7)
+    if nodes:
+        bits.append("and Rahu–Ketu across your 1st and 7th houses give relationships a karmic, on-and-off quality")
+    lead = ("Astrology can show whether a bond still has momentum, but it can't force someone else's choice — and I "
+            "won't pretend it can.")
+    body = [", ".join(bits) + "."]
+    live = j.activation_relevance >= 1
+    body.append("Relationships are active in your chart right now, so contact or closure is likely to come up."
+                if live else
+                "Your present period isn't focused on relationships, so this is a better time for your own healing than "
+                "for waiting on a reply.")
+    if j.windows:
+        w = max(j.windows, key=lambda x: x.score)
+        body.append(f"The next strong relationship window is **{_my(w.start)} – {_my(w.end)}** — whether it brings this "
+                    "person back or someone better suited.")
+    body.append("Rather than waiting, focus on yourself in the meantime: what you learned, what you need next time, and "
+                "the people who are here for you now.")
+    return lead, body
+
+
+def answer_manglik(ctx, part, topic):
+    from vedic.dosha import manglik_status
+    m = manglik_status(ctx.c)
+    rd = _rd(ctx)
+    lead = {"none": "Good news: you don't have Mangal Dosha.",
+            "cancelled": "You have Mangal Dosha on the simple count, but it is cancelled in your chart — it won't ruin your marriage.",
+            "mild": "You have a mild Mangal Dosha — and mild is the honest word for it.",
+            "moderate": "You have a moderate Mangal Dosha. It's real, but it is very manageable.",
+            "strong": "You have a strong Mangal Dosha. It deserves attention in matching, and it is still not a sentence."}[m["level"]]
+    refs = m["references"]
+    body = [f"Mangal Dosha is often overstated. It's checked by where Mars falls from your ascendant, Moon and Venus: "
+            f"{rd.f_place('MARS')}, which is the {_ord(refs['Moon'])} house from your Moon and the {_ord(refs['Venus'])} "
+            f"from Venus. " + (f"It counts from your {_join(m['hits'])}." if m["hits"] else
+                               "None of those are the dosha houses (1st, 2nd, 4th, 7th, 8th or 12th).")]
+    if m["cancellations"]:
+        body.append("**Why it is softened or cancelled:** " + "; ".join(m["cancellations"]) + ".")
+    if m["level"] in ("mild", "moderate", "strong", "cancelled") and m["hits"]:
+        body.append("In matching, the classical answer is a partner with a similar Mars placement, which balances it; "
+                    "beyond that, maturity and real compatibility resolve most concerns. Marriage after 28 is also "
+                    "traditionally said to reduce its effect.")
+    body.append("Please don't let anyone sell you an expensive puja for this. A simple Tuesday practice — Hanuman Chalisa "
+                "or a little charity — is enough if it gives you peace of mind.")
+    return lead, body
+
+
+def answer_kaal_sarp(ctx, part, topic):
+    from vedic.yogas import kaal_sarp
+    k = kaal_sarp(ctx.c)[0]
+    rd = _rd(ctx)
+    axis = f"{rd.f_place('RAHU')} and {rd.f_place('KETU')}"
+    if k["present"]:
+        lead = (f"Yes, your chart has Kaal Sarp Yoga ({k['severity']}): all seven planets sit on one side of the "
+                "Rahu–Ketu axis. It is not dangerous.")
+        body = [f"Your axis is {axis}. Kaal Sarp doesn't appear in the classical texts of Parashara; it's a later idea, "
+                "and it describes concentrated effort and late-blooming results along that axis — not a curse.",
+                "Many accomplished people have it. Steady effort, patience with delays, and avoiding shortcuts are the "
+                "real remedy; there is no need for an expensive puja."]
+    else:
+        lead = "No, your chart does not have Kaal Sarp Yoga — your planets fall on both sides of the Rahu–Ketu axis."
+        body = [f"Your axis is {axis}. If someone told you that you have it, they were mistaken, or used a much looser "
+                "definition. Either way, it isn't something to fear."]
+    if re.search(r"sade|sati|shani", part.lower()):
+        lead_ss, _ = answer_sade_sati(ctx, part, topic)
+        body.append("**Sade Sati:** " + lead_ss + " It's Saturn's 7½-year transit over your Moon — a period of "
+                    "discipline and restructuring, not doom.")
+    return lead, body
+
+
+def answer_partner_match(ctx, part, topic):
+    from vedic.dosha import manglik_status
+    m = manglik_status(ctx.c)
+    moon = SIGNS[ctx.c.sign["MOON"]]
+    lead = ("To answer that properly I need both charts: Guna Milan, Mangal Dosha and the Moons have to be compared "
+            "side by side, and the 36-point score is only the start.")
+    body = [f"From your side: your Moon is in {moon}, your Mangal Dosha is {m['level']}, and your 7th house describes "
+            "the partner you're drawn to — ask me “How will my husband be?” or “How will my wife be?” for that part.",
+            "For the full comparison, use Kundli matching with both birth details. Beyond the score, I look at Mars on "
+            "both sides, the 7th lords, and how the two Moons get on emotionally.",
+            "Chart compatibility is a guide — the conversations you two have matter just as much."]
+    return lead, body
+
+
+def answer_home_conflict(ctx, part, topic):
+    from vedic.transits import ingresses
+    c, rd = ctx.c, _rd(ctx)
+    maha, antar = ctx.running()
+    tr = (ctx.r.get("transits") or {}).get("positions", {})
+    causes, ends = [], None
+    sat_h = tr.get("SATURN", {}).get("house_from_lagna")
+    moon_sign = c.sign["MOON"]
+    sat_sign = tr.get("SATURN", {}).get("sign")
+    if sat_h == 4 or sat_sign == moon_sign:
+        causes.append("transiting Saturn is pressing on your " + ("4th house of home" if sat_h == 4 else "Moon, your emotional centre"))
+        try:
+            nxt = next(iter(ingresses(c.eph, "SATURN", ctx.now, ctx.now + timedelta(days=1200))), None)
+            ends = nxt and nxt["time"]
+        except Exception:
+            ends = None
+    for g in ("MARS", "RAHU"):
+        if tr.get(g, {}).get("house_from_lagna") == 4:
+            causes.append(f"transiting {_t(g)} is moving through your 4th house, adding heat and restlessness at home")
+    if antar and (set(c.lord_of[antar.lord]) & {6, 8, 12} or c.house[antar.lord] == 4):
+        causes.append(f"the {_t(antar.lord)} sub-period you are in "
+                      + ("rules a house of strain" if set(c.lord_of[antar.lord]) & {6, 8, 12} else "sits in your 4th house"))
+        ends = ends or antar.end
+    h4 = c.house[c.house_lord[4]]
+    natal = [f"{rd.f_lord(4)}, " + ("a house of strain, so home life asks for extra patience in general"
+                                    if h4 in (6, 8, 12) else
+                                    "a supportive place, so the underlying bond at home is sound")]
+    if any(c.house[g] == 4 for g in ("SATURN", "MARS", "RAHU", "KETU")):
+        natal.append("a demanding planet sits in your 4th house, so home life is where you feel pressure first")
+    if causes:
+        lead = ("This is a phase, and it has a cause in your chart: " + _join(causes) + "."
+                + (f" It eases around **{_my(ends)}**." if ends else ""))
+    else:
+        lead = ("I don't see a strong planetary trigger for conflict right now, so this is more about circumstances and "
+                "habits than your stars — which also means it is within your power to change.")
+    body = ["Domestic peace is read from your 4th house and the Moon: " + "; ".join(natal) + "."]
+    body.append("Patience and open, calm conversations will help more than any ritual: agree on one issue at a time, "
+                "and keep money and responsibilities clear between family members.")
+    return lead, body
+
+
+def answer_money_leak(ctx, part, topic):
+    from .topics import TOPICS
+    c, rd = ctx.c, _rd(ctx)
+    sav = {h: ctx.r["ashtakavarga"]["sav_by_house"][h - 1]["sav"] for h in (2, 11, 12)}
+    l12 = c.house_lord[12]
+    drain = c.house[l12] in (2, 11) or c.house[c.house_lord[2]] == 12 or c.house[c.house_lord[11]] == 12
+    lead = ("Yes, you can become financially stable — " +
+            ("but your chart shows money coming in more easily than it stays, so stability comes from systems, not "
+             "from earning more." if drain or sav[12] > sav[2] else
+             "your chart supports saving, so the leak is more about habits and timing than a fixed pattern."))
+    body = [f"Savings are read from your 2nd house and gains from your 11th: {rd.f_lord(2)}, and {rd.f_lord(11)}. "
+            f"In Ashtakavarga your 2nd house scores {sav[2]}, your 11th {sav[11]} and your 12th house of spending {sav[12]}"
+            + (" — spending is as strong as saving, which is why money slips away." if sav[12] >= sav[2] else ".")]
+    if drain:
+        body.append(f"{rd.f_lord(12)}: the ruler of expenses is tied to your income houses, so spending rises with income.")
+    j = ctx.j(TOPICS["money"])
+    if j.windows:
+        w = max(j.windows, key=lambda x: x.score)
+        body.append(f"Your most favourable window for building savings is **{_my(w.start)} – {_my(w.end)}**.")
+    body.append("The remedy is practical: automate a fixed saving on payday, keep one month's expenses aside, and wait "
+                "48 hours before any big purchase. This is not financial advice — for investments, speak to a "
+                "qualified adviser.")
+    return lead, body
+
+
+COMPOSERS.update({"death": answer_death, "fear": answer_fear, "skeptic": answer_skeptic, "destiny": answer_destiny,
+                  "ex": answer_ex, "manglik": answer_manglik, "kaal_sarp": answer_kaal_sarp,
+                  "partner_match": answer_partner_match, "home_conflict": answer_home_conflict,
+                  "money_leak": answer_money_leak})

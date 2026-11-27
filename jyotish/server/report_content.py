@@ -1175,6 +1175,20 @@ def _match(ctx, ctx2, item):
                     show_max=True)),
         NOTE(m["direction"] + " " + m["method"]),
     ], "Ashtakoota guna milan for the two charts.", sample=True))
+    from vedic.compat import full_match
+    girl_first = not (c1.birth.gender == "male" and c2.birth.gender == "female")
+    fm = full_match(*((c1, c2, r1, r2) if girl_first else (c2, c1, r2, r1)), ctx.now)
+    adj = (f" After the classical exceptions the score is **{fm['adjusted_score']:g}/36**."
+           if fm["adjusted_score"] != fm["score"] else "")
+    sections.append(chapter("The complete verdict", [
+        CALL(fm["verdict"], [f"Guna Milan **{fm['score']:g}/36**.{adj}",
+                             "This verdict also weighs Mangal Dosha on both sides, each person's own marriage promise, "
+                             "the navamsha and shared timing."],
+             {"good": "good", "gold": "gold"}.get(fm["tone"], "caution"), fm["verdict"].split()[0]),
+        H("Why"), BUL(fm["reasons"]),
+        H("What to watch"), BUL(fm["watch"] or ["Nothing stands out beyond ordinary care and honest conversation."]),
+        H("Remedies"), BUL(fm["remedies"]),
+    ], "Beyond the 36-point score: what a careful astrologer weighs."))
     rows = [[k["name"].split(" ·")[0], f"{k['score']:g} / {k['max']:g}", KOOTA_MEANING.get(k["key"], ""),
              f"{k['person1']} / {k['person2']}", k["interpretation"]] for k in m["kootas"]]
     sections.append(chapter("The eight factors explained", [
